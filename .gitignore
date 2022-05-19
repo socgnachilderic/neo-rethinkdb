@@ -1,0 +1,5 @@
+target
+*.bk
+*.swp
+Cargo.lock
+rethinkdb_data
