@@ -1,4 +1,5 @@
-use crate::{cmd, Command, Func};
+use crate::{cmd, Command};
+use crate::prelude::Func;
 use ql2::term::TermType;
 
 #[derive(Debug, Clone)]

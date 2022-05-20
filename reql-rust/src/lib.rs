@@ -64,6 +64,7 @@
 
 pub mod cmd;
 pub mod connection;
+pub mod prelude;
 mod err;
 mod proto;
 mod constants;
@@ -72,14 +73,11 @@ use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList};
 use ql2::term::TermType;
 
 use std::sync::atomic::{AtomicU64, Ordering};
+pub use prelude::Func;
 
-
-#[doc(hidden)]
-pub use cmd::func::Func;
 pub use err::*;
 pub use connection::*;
 pub use proto::Command;
-pub use reql_rust_macros::func;
 #[doc(inline)]
 pub use reql_rust_types as types;
 
@@ -166,7 +164,7 @@ impl r {
     /// # Example
     /// 
     /// ```
-    /// use futures::TryStreamExt;
+    /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::{DbCreateReturnType};
     /// 
@@ -220,7 +218,7 @@ impl r {
     /// Drop a database named ‘superheroes’.
     /// 
     /// ```
-    /// use futures::TryStreamExt;
+    /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::{DbDropReturnType};
     /// 
@@ -266,7 +264,7 @@ impl r {
     /// 
     /// ```
     /// use std::borrow::Cow;
-    /// use futures::TryStreamExt;
+    /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// 
     /// async fn example() -> Result<()> {

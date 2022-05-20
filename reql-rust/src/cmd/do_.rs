@@ -1,5 +1,6 @@
 use super::args::Args;
-use crate::{cmd, Command, Func};
+use crate::{cmd, Command};
+use crate::prelude::Func;
 use ql2::term::TermType;
 use serde::Serialize;
 
@@ -109,7 +110,8 @@ impl Arg for Func {
 
 #[cfg(test)]
 mod tests {
-    use crate::{self as reql_rust, cmd, func, r};
+    use crate::{self as reql_rust, cmd, r};
+    use crate::prelude::*;
 
     #[test]
     fn r_do() {
