@@ -1,21 +1,25 @@
-use crate::{cmd, Command};
+use std::borrow::Cow;
+
+use crate::{Command};
 use ql2::term::TermType;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use super::StaticString;
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::DbDrop).with_arg(self).into_arg()
+pub(crate) struct DbDrop(Cow<'static, str>);
+
+impl DbDrop {
+    pub fn new(db_name: &'static str) -> Command {
+        let db: Command = DbDrop(db_name.static_string()).into();
+        
+        Command::new(TermType::DbDrop)
+            .with_arg(db)
+            .into_arg::<()>()
+            .into_cmd()
     }
 }
 
-impl<T> Arg for T
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self.into()).arg()
+impl Into<Command> for DbDrop {
+    fn into(self) -> Command {
+        Command::from_json(self.0)
     }
 }

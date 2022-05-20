@@ -68,7 +68,7 @@ mod err;
 mod proto;
 mod constants;
 
-use cmd::{db_create::DbCreate};
+use cmd::{db_create::DbCreate, db_drop::DbDrop};
 use ql2::term::TermType;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -168,20 +168,22 @@ impl r {
     /// ```
     /// use futures::TryStreamExt;
     /// use reql_rust::{r, Result};
-    /// use reql_rust::types::{DbConfig};
+    /// use reql_rust::types::{DbCreateReturnType};
     /// 
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _val: Option<DbConfig> = r.db_create("superheroes").run(&session).try_next().await?;
+    ///     let _val: Option<DbCreateReturnType> = r.db_create("superheroes")
+    ///         .run(&session)
+    ///         .try_next().await?;
     /// 
     ///     Ok(())
     /// }
     /// ```
     /// 
     /// Return:
-    /// ```
+    /// ```text
     /// Some(
-    ///     DbConfig {
+    ///     DbCreateReturnType {
     ///         config_changes: [
     ///             DbConfigChange {
     ///                 new_val: Some(
@@ -201,8 +203,59 @@ impl r {
         DbCreate::new(db_name)
     }
 
-    pub fn db_drop(self, arg: impl cmd::db_drop::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Drop a database. The database, all its tables, and corresponding data will be deleted.
+    /// 
+    /// If successful, the command returns an object with two fields:
+    /// 
+    /// * `dbs_dropped` : 1.
+    /// * `tables_dropped` : the number of tables in the dropped database.
+    /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
+    ///     - `old_val` : the database’s original [config](https://rethinkdb.com/api/java/config) value.
+    ///     - `new_val` : always `None`.
+    /// 
+    /// If the given database does not exist, the command throws ReqlRuntimeError.
+    /// 
+    /// # Example
+    /// 
+    /// Drop a database named ‘superheroes’.
+    /// 
+    /// ```
+    /// use futures::TryStreamExt;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{DbDropReturnType};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _val: Option<DbDropReturnType> = r.db_drop("superheroes")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// Return:
+    /// ```text
+    /// Some(
+    ///     DbDropReturnType {
+    ///         config_changes: [
+    ///             DbConfigChange {
+    ///                 old_val: Some(
+    ///                     DbConfigChangeValue {
+    ///                         id: "e4689cfc-e903-4532-a0e6-2d6797a43f07",
+    ///                         name: "superheroes",
+    ///                     },
+    ///                 ),
+    ///                 new_val: None,
+    ///             },
+    ///         ],
+    ///         tables_dropped: 3,
+    ///         dbs_dropped: 1,
+    ///     },
+    /// )
+    /// ```
+    pub fn db_drop(self, db_name: &'static str) -> Command {
+        DbDrop::new(db_name)
     }
 
     pub fn db_list(self) -> Command {
