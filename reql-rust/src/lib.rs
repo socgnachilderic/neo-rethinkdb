@@ -68,6 +68,7 @@ mod err;
 mod proto;
 mod constants;
 
+use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList};
 use ql2::term::TermType;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -96,7 +97,7 @@ fn current_counter() -> u64 {
 }
 
 /// Custom result returned by various ReQL commands
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T> = std::result::Result<T, ReqlError>;
 
 /// The top-level ReQL namespace
 ///
@@ -124,9 +125,10 @@ impl r {
     /// Open a connection using the default host and port, specifying the default database.
     ///
     /// ```
-    /// # async fn example() -> reql_rust::Result<()> {
-    /// let session = reql_rust::r.connection().connect().await?;
-    /// # Ok(()) }
+    /// async fn example() -> reql_rust::Result<()> {
+    ///     let session = reql_rust::r.connection().connect().await?;
+    ///     Ok(())
+    /// }
     /// ```
     /// 
     /// # Example
@@ -134,13 +136,14 @@ impl r {
     /// Open a new connection, specifying parameters.
     /// 
     /// ```
-    /// # async fn example() -> reql_rust::Result<()> {
-    /// let session = reql_rust::r.connection()
-    ///     .with_host("localhost")
-    ///     .with_port(28015)
-    ///     .with_db("marvel")
-    ///     .connect().await?;
-    /// # Ok(()) }
+    /// async fn example() -> reql_rust::Result<()> {
+    ///     let session = reql_rust::r.connection()
+    ///         .with_host("localhost")
+    ///         .with_port(28015)
+    ///         .with_db("marvel")
+    ///         .connect().await?;
+    ///     Ok(())
+    /// }
     /// ```
     ///
     /// Read more about this command [connect](cmd::connect::ConnectionBuilder)
@@ -148,16 +151,135 @@ impl r {
         cmd::connect::ConnectionBuilder::connection()
     }
 
-    pub fn db_create(self, arg: impl cmd::db_create::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Create a database. A RethinkDB database is a collection of tables, similar to relational databases.
+    /// 
+    /// If successful, the command returns an object with two fields:
+    /// * `dbs_created` : always `1`.
+    /// * `config_changes` : a list containing one object with two fields, `old_val` and `new_val` :
+    ///     - `old_val` : always `None`.
+    ///     - `new_val` : the database’s new [config](https://rethinkdb.com/api/java/config) value.
+    /// 
+    /// If a database with the same name already exists, the command throws `ReqlRuntimeError`.
+    /// 
+    /// Note: Only alphanumeric characters and underscores are valid for the database name.
+    /// 
+    /// # Example
+    /// 
+    /// ```
+    /// use futures::TryStreamExt;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{DbCreateReturnType};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _val: Option<DbCreateReturnType> = r.db_create("superheroes")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// Return:
+    /// ```text
+    /// Some(
+    ///     DbCreateReturnType {
+    ///         config_changes: [
+    ///             DbConfigChange {
+    ///                 new_val: Some(
+    ///                     DbConfigChangeValue {
+    ///                         id: "e4689cfc-e903-4532-a0e6-2d6797a43f07",
+    ///                         name: "superheroes",
+    ///                     },
+    ///                 ),
+    ///                 old_val: None,
+    ///             },
+    ///         ],
+    ///         dbs_created: 1,
+    ///     },
+    /// )
+    /// ```
+    pub fn db_create(self, db_name: &'static str) -> Command {
+        DbCreate::new(db_name)
     }
 
-    pub fn db_drop(self, arg: impl cmd::db_drop::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Drop a database. The database, all its tables, and corresponding data will be deleted.
+    /// 
+    /// If successful, the command returns an object with two fields:
+    /// 
+    /// * `dbs_dropped` : 1.
+    /// * `tables_dropped` : the number of tables in the dropped database.
+    /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
+    ///     - `old_val` : the database’s original [config](https://rethinkdb.com/api/java/config) value.
+    ///     - `new_val` : always `None`.
+    /// 
+    /// If the given database does not exist, the command throws ReqlRuntimeError.
+    /// 
+    /// # Example
+    /// 
+    /// Drop a database named ‘superheroes’.
+    /// 
+    /// ```
+    /// use futures::TryStreamExt;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{DbDropReturnType};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _val: Option<DbDropReturnType> = r.db_drop("superheroes")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// Return:
+    /// ```text
+    /// Some(
+    ///     DbDropReturnType {
+    ///         config_changes: [
+    ///             DbConfigChange {
+    ///                 old_val: Some(
+    ///                     DbConfigChangeValue {
+    ///                         id: "e4689cfc-e903-4532-a0e6-2d6797a43f07",
+    ///                         name: "superheroes",
+    ///                     },
+    ///                 ),
+    ///                 new_val: None,
+    ///             },
+    ///         ],
+    ///         tables_dropped: 3,
+    ///         dbs_dropped: 1,
+    ///     },
+    /// )
+    /// ```
+    pub fn db_drop(self, db_name: &'static str) -> Command {
+        DbDrop::new(db_name)
     }
 
+    /// List all database names in the cluster. The result is a list of strings.
+    /// 
+    /// Example
+    /// 
+    /// List all databases.
+    /// 
+    /// ```
+    /// use std::borrow::Cow;
+    /// use futures::TryStreamExt;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _val: Option<Vec<Cow<'static, str>>> = r.db_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn db_list(self) -> Command {
-        Command::new(TermType::DbList)
+        DbList::new()
     }
 
     /// Reference a database
