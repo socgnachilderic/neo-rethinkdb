@@ -6,7 +6,7 @@ use serde_json::Value;
 async fn index_create() -> reql_rust::Result<()> {
     tracing_subscriber::fmt::init();
 
-    let conn = r.connect(()).await?;
+    let conn = r.connection().connect().await?;
 
     let _ = r
         .table_create("comments")

@@ -18,7 +18,6 @@ pub mod ceil;
 pub mod change_at;
 pub mod changes;
 pub mod circle;
-pub mod close;
 pub mod coerce_to;
 pub mod concat_map;
 pub mod config;
@@ -241,10 +240,7 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn changes<T>(self, arg: T) -> Self
-    where
-        T: changes::Arg,
-    {
+    pub fn changes(self, arg: impl changes::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -289,42 +285,27 @@ impl<'a> Command {
     }
         ```
          */
-    pub fn table_create<T>(self, arg: T) -> Self
-    where
-        T: table_create::Arg,
-    {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn table_create(self, table_name: impl table_create::Arg) -> Self {
+        table_name.arg().into_cmd().with_parent(self)
     }
 
-    pub fn table_drop<T>(self, arg: T) -> Self
-    where
-        T: table_drop::Arg,
-    {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn table_drop(self, table_name: impl table_drop::Arg) -> Self {
+        table_name.arg().into_cmd().with_parent(self)
     }
 
     pub fn table_list(self) -> Self {
         Self::new(TermType::TableList).with_parent(self)
     }
 
-    pub fn table<T>(self, arg: T) -> Self
-    where
-        T: table::Arg,
-    {
+    pub fn table(self, table_name: impl table::Arg) -> Self {
+        table_name.arg().into_cmd().with_parent(self)
+    }
+
+    pub fn index_create(self, arg: impl index_create::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_create<T>(self, arg: T) -> Self
-    where
-        T: index_create::Arg,
-    {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn index_drop<T>(self, arg: T) -> Self
-    where
-        T: index_drop::Arg,
-    {
+    pub fn index_drop(self, arg: impl index_drop::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -332,31 +313,19 @@ impl<'a> Command {
         Self::new(TermType::IndexList).with_parent(self)
     }
 
-    pub fn index_rename<T>(self, arg: T) -> Self
-    where
-        T: index_rename::Arg,
-    {
+    pub fn index_rename(self, arg: impl index_rename::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_status<T>(self, arg: T) -> Self
-    where
-        T: index_status::Arg,
-    {
+    pub fn index_status(self, arg: impl index_status::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_wait<T>(self, arg: T) -> Self
-    where
-        T: index_wait::Arg,
-    {
+    pub fn index_wait(self, arg: impl index_wait::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn set_write_hook<T>(self, arg: T) -> Self
-    where
-        T: set_write_hook::Arg,
-    {
+    pub fn set_write_hook(self, arg: impl set_write_hook::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -364,31 +333,19 @@ impl<'a> Command {
         Self::new(TermType::GetWriteHook).with_parent(self)
     }
 
-    pub fn insert<T>(self, arg: T) -> Self
-    where
-        T: insert::Arg,
-    {
+    pub fn insert(self, arg: impl insert::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn update<T>(self, arg: T) -> Self
-    where
-        T: update::Arg,
-    {
+    pub fn update(self, arg: impl update::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn replace<T>(self, arg: T) -> Self
-    where
-        T: replace::Arg,
-    {
+    pub fn replace(self, arg: impl replace::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn delete<T>(self, arg: T) -> Self
-    where
-        T: delete::Arg,
-    {
+    pub fn delete(self, arg: impl delete::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -396,52 +353,31 @@ impl<'a> Command {
         Self::new(TermType::Sync).with_parent(self)
     }
 
-    pub fn get<T>(self, arg: T) -> Self
-    where
-        T: get::Arg,
-    {
+    pub fn get(self, arg: impl get::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn get_all<T>(self, arg: T) -> Self
-    where
-        T: get_all::Arg,
-    {
+    pub fn get_all(self, arg: impl get_all::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn between<T>(self, arg: T) -> Self
-    where
-        T: between::Arg<'a>,
-    {
+    pub fn between(self, arg: impl between::Arg<'a>) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn filter<T>(self, arg: T) -> Self
-    where
-        T: filter::Arg,
-    {
+    pub fn filter(self, arg: impl filter::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn inner_join<T>(self, arg: T) -> Self
-    where
-        T: inner_join::Arg,
-    {
+    pub fn inner_join(self, arg: impl inner_join::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn outer_join<T>(self, arg: T) -> Self
-    where
-        T: outer_join::Arg,
-    {
+    pub fn outer_join(self, arg: impl outer_join::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn eq_join<T>(self, arg: T) -> Self
-    where
-        T: eq_join::Arg,
-    {
+    pub fn eq_join(self, arg: impl eq_join::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -449,24 +385,15 @@ impl<'a> Command {
         Self::new(TermType::Zip).with_parent(self)
     }
 
-    pub fn map<T>(self, arg: T) -> Self
-    where
-        T: map::Arg,
-    {
+    pub fn map(self, arg: impl map::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn with_fields<T>(self, arg: T) -> Self
-    where
-        T: with_fields::Arg,
-    {
+    pub fn with_fields(self, arg: impl with_fields::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn concat_map<T>(self, arg: T) -> Self
-    where
-        T: concat_map::Arg,
-    {
+    pub fn concat_map(self, arg: impl concat_map::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -478,23 +405,17 @@ impl<'a> Command {
     /// ## Example
     ///
     /// Sort the result in descending order based on the `created_at` column.
-    /// ```
-    /// # reql_rust::example(|r, conn| async_stream::stream! {
-    /// r.db("database").table("users").order_by(r.desc("created_at")).run(conn)
-    /// # });
-    /// ```
+    // ```
+    // # reql_rust::example(|r, conn| async_stream::stream! {
+    // r.db("database").table("users").order_by(r.desc("created_at")).run(conn)
+    // # });
+    // ```
     ///
-    pub fn order_by<T>(self, arg: T) -> Self
-    where
-        T: order_by::Arg,
-    {
+    pub fn order_by(self, arg: impl order_by::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn skip<T>(self, arg: T) -> Self
-    where
-        T: skip::Arg,
-    {
+    pub fn skip(self, arg: impl skip::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -511,31 +432,19 @@ impl<'a> Command {
     /// # });
     /// ```
     ///
-    pub fn limit<T>(self, arg: T) -> Self
-    where
-        T: limit::Arg,
-    {
+    pub fn limit(self, arg: impl limit::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn slice<T>(self, arg: T) -> Self
-    where
-        T: slice::Arg,
-    {
+    pub fn slice(self, arg: impl slice::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn nth<T>(self, arg: T) -> Self
-    where
-        T: nth::Arg,
-    {
+    pub fn nth(self, arg: impl nth::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn offsets_of<T>(self, arg: T) -> Self
-    where
-        T: offsets_of::Arg,
-    {
+    pub fn offsets_of(self, arg: impl offsets_of::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -543,24 +452,15 @@ impl<'a> Command {
         Self::new(TermType::IsEmpty).with_parent(self)
     }
 
-    pub fn union<T>(self, arg: T) -> Self
-    where
-        T: union::Arg,
-    {
+    pub fn union(self, arg: impl union::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn sample<T>(self, arg: T) -> Self
-    where
-        T: sample::Arg,
-    {
+    pub fn sample(self, arg: impl sample::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn group<T>(self, arg: T) -> Self
-    where
-        T: group::Arg,
-    {
+    pub fn group(self, arg: impl group::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -568,185 +468,107 @@ impl<'a> Command {
         Self::new(TermType::Ungroup).with_parent(self)
     }
 
-    pub fn reduce<T>(self, arg: T) -> Self
-    where
-        T: reduce::Arg,
-    {
+    pub fn reduce(self, arg: impl reduce::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn fold<T>(self, arg: T) -> Self
-    where
-        T: fold::Arg,
-    {
+    pub fn fold(self, arg: impl fold::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn count<T>(self, arg: T) -> Self
-    where
-        T: count::Arg,
-    {
+    pub fn count(self, arg: impl count::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn sum<T>(self, arg: T) -> Self
-    where
-        T: sum::Arg,
-    {
+    pub fn sum(self, arg: impl sum::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn avg<T>(self, arg: T) -> Self
-    where
-        T: avg::Arg,
-    {
+    pub fn avg(self, arg: impl avg::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn min<T>(self, arg: T) -> Self
-    where
-        T: min::Arg,
-    {
+    pub fn min(self, arg: impl min::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn max<T>(self, arg: T) -> Self
-    where
-        T: max::Arg,
-    {
+    pub fn max(self, arg: impl max::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn distinct<T>(self, arg: T) -> Self
-    where
-        T: distinct::Arg,
-    {
+    pub fn distinct(self, arg: impl distinct::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn contains<T>(self, arg: T) -> Self
-    where
-        T: contains::Arg,
-    {
+    pub fn contains(self, arg: impl contains::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn pluck<T>(self, arg: T) -> Self
-    where
-        T: pluck::Arg,
-    {
+    pub fn pluck(self, arg: impl pluck::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn without<T>(self, arg: T) -> Self
-    where
-        T: without::Arg,
-    {
+    pub fn without(self, arg: impl without::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn merge<T>(self, arg: T) -> Self
-    where
-        T: merge::Arg,
-    {
+    pub fn merge(self, arg: impl merge::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn append<T>(self, arg: T) -> Self
-    where
-        T: append::Arg,
-    {
+    pub fn append(self, arg: impl append::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn prepend<T>(self, arg: T) -> Self
-    where
-        T: prepend::Arg,
-    {
+    pub fn prepend(self, arg: impl prepend::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn difference<T>(self, arg: T) -> Self
-    where
-        T: difference::Arg,
-    {
+    pub fn difference(self, arg: impl difference::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn set_insert<T>(self, arg: T) -> Self
-    where
-        T: set_insert::Arg,
-    {
+    pub fn set_insert(self, arg: impl set_insert::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn set_union<T>(self, arg: T) -> Self
-    where
-        T: set_union::Arg,
-    {
+    pub fn set_union(self, arg: impl set_union::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn set_intersection<T>(self, arg: T) -> Self
-    where
-        T: set_intersection::Arg,
-    {
+    pub fn set_intersection(self, arg: impl set_intersection::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn set_difference<T>(self, arg: T) -> Self
-    where
-        T: set_difference::Arg,
-    {
+    pub fn set_difference(self, arg: impl set_difference::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn bracket<T>(self, arg: T) -> Self
-    where
-        T: bracket::Arg,
-    {
+    pub fn bracket(self, arg: impl bracket::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn get_field<T>(self, arg: T) -> Self
-    where
-        T: get_field::Arg,
-    {
+    pub fn get_field(self, arg: impl get_field::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn has_fields<T>(self, arg: T) -> Self
-    where
-        T: has_fields::Arg,
-    {
+    pub fn has_fields(self, arg: impl has_fields::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn insert_at<T>(self, arg: T) -> Self
-    where
-        T: insert_at::Arg,
-    {
+    pub fn insert_at(self, arg: impl insert_at::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn splice_at<T>(self, arg: T) -> Self
-    where
-        T: splice_at::Arg,
-    {
+    pub fn splice_at(self, arg: impl splice_at::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn delete_at<T>(self, arg: T) -> Self
-    where
-        T: delete_at::Arg,
-    {
+    pub fn delete_at(self, arg: impl delete_at::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn change_at<T>(self, arg: T) -> Self
-    where
-        T: change_at::Arg,
-    {
+    pub fn change_at(self, arg: impl change_at::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -758,17 +580,11 @@ impl<'a> Command {
         Self::new(TermType::Values).with_parent(self)
     }
 
-    pub fn match_<T>(self, arg: T) -> Self
-    where
-        T: match_::Arg,
-    {
+    pub fn match_(self, arg: impl match_::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn split<T>(self, arg: T) -> Self
-    where
-        T: split::Arg,
-    {
+    pub fn split(self, arg: impl split::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -780,87 +596,51 @@ impl<'a> Command {
         Self::new(TermType::Downcase).with_parent(self)
     }
 
-    pub fn and<T>(self, arg: T) -> Self
-    where
-        T: and::Arg,
-    {
+    pub fn and(self, arg: impl and::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn or<T>(self, arg: T) -> Self
-    where
-        T: or::Arg,
-    {
+    pub fn or(self, arg: impl or::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn eq<T>(self, arg: T) -> Self
-    where
-        T: eq::Arg,
-    {
+    pub fn eq(self, arg: impl eq::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn ne<T>(self, arg: T) -> Self
-    where
-        T: ne::Arg,
-    {
+    pub fn ne(self, arg: impl ne::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn gt<T>(self, arg: T) -> Self
-    where
-        T: gt::Arg,
-    {
+    pub fn gt(self, arg: impl gt::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn ge<T>(self, arg: T) -> Self
-    where
-        T: ge::Arg,
-    {
+    pub fn ge(self, arg: impl ge::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn lt<T>(self, arg: T) -> Self
-    where
-        T: lt::Arg,
-    {
+    pub fn lt(self, arg: impl lt::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn le<T>(self, arg: T) -> Self
-    where
-        T: le::Arg,
-    {
+    pub fn le(self, arg: impl le::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn not<T>(self, arg: T) -> Self
-    where
-        T: not::Arg,
-    {
+    pub fn not(self, arg: impl not::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn bit_and<T>(self, arg: T) -> Self
-    where
-        T: bit_and::Arg,
-    {
+    pub fn bit_and(self, arg: impl bit_and::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn bit_or<T>(self, arg: T) -> Self
-    where
-        T: bit_or::Arg,
-    {
+    pub fn bit_or(self, arg: impl bit_or::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn bit_xor<T>(self, arg: T) -> Self
-    where
-        T: bit_xor::Arg,
-    {
+    pub fn bit_xor(self, arg: impl bit_xor::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -868,17 +648,11 @@ impl<'a> Command {
         !self
     }
 
-    pub fn bit_sal<T>(self, arg: T) -> Self
-    where
-        T: bit_sal::Arg,
-    {
+    pub fn bit_sal(self, arg: impl bit_sal::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn bit_sar<T>(self, arg: T) -> Self
-    where
-        T: bit_sar::Arg,
-    {
+    pub fn bit_sar(self, arg: impl bit_sar::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -894,10 +668,7 @@ impl<'a> Command {
         Self::new(TermType::Floor).with_parent(self)
     }
 
-    pub fn in_timezone<T>(self, arg: T) -> Self
-    where
-        T: in_timezone::Arg,
-    {
+    pub fn in_timezone(self, arg: impl in_timezone::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -905,10 +676,7 @@ impl<'a> Command {
         Self::new(TermType::Timezone).with_parent(self)
     }
 
-    pub fn during<T>(self, arg: T) -> Self
-    where
-        T: during::Arg,
-    {
+    pub fn during(self, arg: impl during::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -960,45 +728,27 @@ impl<'a> Command {
         Self::new(TermType::ToEpochTime).with_parent(self)
     }
 
-    pub fn binary<T>(self, arg: T) -> Self
-    where
-        T: binary::Arg,
-    {
+    pub fn binary(self, arg: impl binary::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn do_<T>(self, arg: T) -> Self
-    where
-        T: do_::Arg,
-    {
+    pub fn do_(self, arg: impl do_::Arg) -> Self {
         arg.arg(Some(self)).into_cmd()
     }
 
-    pub fn branch<T>(self, arg: T) -> Self
-    where
-        T: branch::Arg,
-    {
+    pub fn branch(self, arg: impl branch::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn for_each<T>(self, arg: T) -> Self
-    where
-        T: for_each::Arg,
-    {
+    pub fn for_each(self, arg: impl for_each::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn default<T>(self, arg: T) -> Self
-    where
-        T: default::Arg,
-    {
+    pub fn default(self, arg: impl default::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn coerce_to<T>(self, arg: T) -> Self
-    where
-        T: coerce_to::Arg,
-    {
+    pub fn coerce_to(self, arg: impl coerce_to::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -1014,10 +764,7 @@ impl<'a> Command {
         Self::new(TermType::ToJsonString).with_parent(self)
     }
 
-    pub fn distance<T>(self, arg: T) -> Self
-    where
-        T: distance::Arg,
-    {
+    pub fn distance(self, arg: impl distance::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -1029,45 +776,27 @@ impl<'a> Command {
         Self::new(TermType::ToGeojson).with_parent(self)
     }
 
-    pub fn get_intersecting<T>(self, arg: T) -> Self
-    where
-        T: get_intersecting::Arg,
-    {
+    pub fn get_intersecting(self, arg: impl get_intersecting::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn get_nearest<T>(self, arg: T) -> Self
-    where
-        T: get_nearest::Arg,
-    {
+    pub fn get_nearest(self, arg: impl get_nearest::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn includes<T>(self, arg: T) -> Self
-    where
-        T: includes::Arg,
-    {
+    pub fn includes(self, arg: impl includes::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn intersects<T>(self, arg: T) -> Self
-    where
-        T: intersects::Arg,
-    {
+    pub fn intersects(self, arg: impl intersects::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn polygon_sub<T>(self, arg: T) -> Self
-    where
-        T: polygon_sub::Arg,
-    {
+    pub fn polygon_sub(self, arg: impl polygon_sub::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn grant<T>(self, arg: T) -> Self
-    where
-        T: grant::Arg,
-    {
+    pub fn grant(self, arg: impl grant::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -1079,10 +808,7 @@ impl<'a> Command {
         Self::new(TermType::Rebalance).with_parent(self)
     }
 
-    pub fn reconfigure<T>(self, arg: T) -> Self
-    where
-        T: reconfigure::Arg,
-    {
+    pub fn reconfigure(self, arg: impl reconfigure::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -1090,10 +816,7 @@ impl<'a> Command {
         Self::new(TermType::Status).with_parent(self)
     }
 
-    pub fn wait<T>(self, arg: T) -> Self
-    where
-        T: wait::Arg,
-    {
+    pub fn wait(self, arg: impl wait::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -1108,5 +831,5 @@ impl<'a> Command {
 
 #[cfg(test)]
 fn serialise(cmd: &Command) -> String {
-    serde_json::to_string(&crate::Query(cmd)).unwrap()
+    serde_json::to_string(&crate::proto::Query(cmd)).unwrap()
 }

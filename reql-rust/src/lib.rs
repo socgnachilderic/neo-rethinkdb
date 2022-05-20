@@ -44,7 +44,7 @@
 //! use reql_rust::r;
 //!
 //! # async fn example() -> reql_rust::Result<()> {
-//! let session = r.connect(()).await?;
+//! let session = r.connection().connect().await?;
 //! # Ok(()) };
 //! ```
 //!
@@ -63,30 +63,20 @@
 #![allow(clippy::wrong_self_convention)]
 
 pub mod cmd;
+pub mod connection;
 mod err;
 mod proto;
+mod constants;
 
-use async_net::TcpStream;
-use cmd::run::Response;
-use cmd::StaticString;
-use dashmap::DashMap;
-use futures::channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
-use futures::lock::Mutex;
-use proto::{Payload, Query};
-use ql2::query::QueryType;
-use ql2::response::ResponseType;
 use ql2::term::TermType;
-use serde_json::json;
-use std::borrow::Cow;
-use std::ops::Drop;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use std::sync::Arc;
-use tracing::trace;
-use reql_rust_types::ServerInfo;
+
+use std::sync::atomic::{AtomicU64, Ordering};
+
 
 #[doc(hidden)]
 pub use cmd::func::Func;
 pub use err::*;
+pub use connection::*;
 pub use proto::Command;
 pub use reql_rust_macros::func;
 #[doc(inline)]
@@ -108,239 +98,6 @@ fn current_counter() -> u64 {
 /// Custom result returned by various ReQL commands
 pub type Result<T> = std::result::Result<T, Error>;
 
-type Sender = UnboundedSender<Result<(ResponseType, Response)>>;
-type Receiver = UnboundedReceiver<Result<(ResponseType, Response)>>;
-
-#[derive(Debug)]
-struct InnerSession {
-    db: Mutex<Cow<'static, str>>,
-    stream: Mutex<TcpStream>,
-    channels: DashMap<u64, Sender>,
-    token: AtomicU64,
-    broken: AtomicBool,
-    change_feed: AtomicBool,
-}
-
-impl InnerSession {
-    fn token(&self) -> u64 {
-        let token = self
-            .token
-            .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |x| Some(x + 1))
-            .unwrap();
-        if token == u64::MAX {
-            self.mark_broken();
-        }
-        token
-    }
-
-    fn mark_broken(&self) {
-        self.broken.store(true, Ordering::SeqCst);
-    }
-
-    fn broken(&self) -> Result<()> {
-        if self.broken.load(Ordering::SeqCst) {
-            return Err(err::Driver::ConnectionBroken.into());
-        }
-        Ok(())
-    }
-
-    fn mark_change_feed(&self) {
-        self.change_feed.store(true, Ordering::SeqCst);
-    }
-
-    fn unmark_change_feed(&self) {
-        self.change_feed.store(false, Ordering::SeqCst);
-    }
-
-    fn is_change_feed(&self) -> bool {
-        self.change_feed.load(Ordering::SeqCst)
-    }
-
-    fn change_feed(&self) -> Result<()> {
-        if self.change_feed.load(Ordering::SeqCst) {
-            return Err(err::Driver::ConnectionLocked.into());
-        }
-        Ok(())
-    }
-}
-
-/// The connection object returned by `r.connect()`
-#[derive(Debug, Clone)]
-pub struct Session {
-    inner: Arc<InnerSession>,
-}
-
-impl Session {
-    pub fn connection(&self) -> Result<Connection> {
-        self.inner.broken()?;
-        self.inner.change_feed()?;
-        let token = self.inner.token();
-        let (tx, rx) = mpsc::unbounded();
-        self.inner.channels.insert(token, tx);
-        Ok(Connection::new(self.clone(), rx, token))
-    }
-
-    /// Change the default database on this connection
-    ///
-    /// ## Example
-    ///
-    /// Change the default database so that we don’t need to specify the
-    /// database when referencing a table.
-    ///
-    /// ```
-    /// # reql_rust::example(|r, conn| async_stream::stream! {
-    /// conn.use_("marvel").await;
-    /// r.table("heroes").run(conn) // refers to r.db("marvel").table("heroes")
-    /// # });
-    /// ```
-    ///
-    /// ## Related commands
-    /// * [connect](r::connect)
-    /// * [close](Connection::close)
-    pub async fn use_<T>(&mut self, db_name: T)
-    where
-        T: StaticString,
-    {
-        *self.inner.db.lock().await = db_name.static_string();
-    }
-
-    /// Ensures that previous queries with the `noreply` flag have been
-    /// processed by the server
-    ///
-    /// Note that this guarantee only applies to queries run on the given
-    /// connection.
-    ///
-    /// ## Example
-    ///
-    /// We have previously run queries with [noreply](cmd::run::Options::noreply())
-    /// set to `true`. Now wait until the server has processed them.
-    ///
-    /// ```
-    /// # async fn example() -> reql_rust::Result<()> {
-    /// # let session = reql_rust::r.connect(()).await?;
-    /// session.noreply_wait().await
-    /// # }
-    /// ```
-    ///
-    pub async fn noreply_wait(&self) -> Result<()> {
-        let mut conn = self.connection()?;
-        let payload = Payload(QueryType::NoreplyWait, None, Default::default());
-        trace!(
-            "waiting for noreply operations to finish; token: {}",
-            conn.token
-        );
-        let (typ, _) = conn.request(&payload, false).await?;
-        trace!(
-            "session.noreply_wait() run; token: {}, response type: {:?}",
-            conn.token,
-            typ,
-        );
-        Ok(())
-    }
-
-    pub async fn server(&self) -> Result<ServerInfo> {
-        let mut conn = self.connection()?;
-        let payload = Payload(QueryType::ServerInfo, None, Default::default());
-        trace!("retrieving server information; token: {}", conn.token);
-        let (typ, resp) = conn.request(&payload, false).await?;
-        trace!(
-            "session.server() run; token: {}, response type: {:?}",
-            conn.token,
-            typ,
-        );
-        let mut vec = serde_json::from_value::<Vec<ServerInfo>>(resp.r)?;
-        let info = vec
-            .pop()
-            .ok_or_else(|| Driver::Other("server info is empty".into()))?;
-        Ok(info)
-    }
-
-    #[doc(hidden)]
-    pub fn is_broken(&self) -> bool {
-        self.inner.broken.load(Ordering::SeqCst)
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Connection {
-    session: Session,
-    rx: Arc<Mutex<Receiver>>,
-    token: u64,
-    closed: Arc<AtomicBool>,
-}
-
-impl Connection {
-    fn new(session: Session, rx: Receiver, token: u64) -> Connection {
-        Connection {
-            session,
-            token,
-            rx: Arc::new(Mutex::new(rx)),
-            closed: Arc::new(AtomicBool::new(false)),
-        }
-    }
-
-    /// Close an open connection
-    ///
-    /// ## Example
-    ///
-    /// Close an open connection, waiting for noreply writes to finish.
-    ///
-    /// ```
-    /// # async fn example() -> reql_rust::Result<()> {
-    /// # let session = reql_rust::r.connect(()).await?;
-    /// # let mut conn = session.connection()?;
-    /// conn.close(()).await
-    /// # }
-    /// ```
-    ///
-    /// [Read more about this command →](cmd::close)
-    pub async fn close<T>(&mut self, arg: T) -> Result<()>
-    where
-        T: cmd::close::Arg,
-    {
-        if !self.session.inner.is_change_feed() {
-            trace!(
-                "ignoring conn.close() called on a normal connection; token: {}",
-                self.token
-            );
-            return Ok(());
-        }
-        self.set_closed(true);
-        let arg = if arg.noreply_wait() {
-            None
-        } else {
-            Some(r.expr(json!({ "noreply": false })))
-        };
-        let payload = Payload(QueryType::Stop, arg.as_ref().map(Query), Default::default());
-        trace!("closing a changefeed; token: {}", self.token);
-        let (typ, _) = self.request(&payload, false).await?;
-        self.session.inner.unmark_change_feed();
-        trace!(
-            "conn.close() run; token: {}, response type: {:?}",
-            self.token,
-            typ,
-        );
-        Ok(())
-    }
-
-    fn closed(&self) -> bool {
-        self.closed.load(Ordering::SeqCst)
-    }
-
-    fn set_closed(&self, closed: bool) {
-        self.closed.store(closed, Ordering::SeqCst);
-    }
-}
-
-impl Drop for Connection {
-    fn drop(&mut self) {
-        self.session.inner.channels.remove(&self.token);
-        if self.session.inner.is_change_feed() {
-            self.session.inner.unmark_change_feed();
-        }
-    }
-}
-
 /// The top-level ReQL namespace
 ///
 /// # Example
@@ -354,39 +111,48 @@ impl Drop for Connection {
 pub struct r;
 
 impl r {
-    /// Create a new connection to the database server
+    /// Create a new connection to the database server.
+    /// [connection](cmd::connect::ConnectionBuilder::connection) returns a connection builder with the following methods:
+    /// - [with_host(&'static str)](cmd::connect::ConnectionBuilder::with_host): the host to connect to (default `localhost`)
+    /// - [with_port(value: u16)](cmd::connect::ConnectionBuilder::with_port): the port to connect on (default `28015`).
+    /// - [with_db(value: &'static str)](cmd::connect::ConnectionBuilder::with_db): the default database (default `test`).
+    /// - [with_user(username: &'static str, password: &'static str)](cmd::connect::ConnectionBuilder::with_user): the user account and password to connect as (default `"admin", ""`).
+    /// 
     ///
     /// # Example
     ///
     /// Open a connection using the default host and port, specifying the default database.
     ///
     /// ```
-    /// use reql_rust::{r, cmd::connect::Options};
-    ///
     /// # async fn example() -> reql_rust::Result<()> {
-    /// let session = r.connect(Options::new().db("marvel")).await?;
+    /// let session = reql_rust::r.connection().connect().await?;
+    /// # Ok(()) }
+    /// ```
+    /// 
+    /// # Example
+    /// 
+    /// Open a new connection, specifying parameters.
+    /// 
+    /// ```
+    /// # async fn example() -> reql_rust::Result<()> {
+    /// let session = reql_rust::r.connection()
+    ///     .with_host("localhost")
+    ///     .with_port(28015)
+    ///     .with_db("marvel")
+    ///     .connect().await?;
     /// # Ok(()) }
     /// ```
     ///
-    /// Read more about this command [connect](cmd::connect)
-    pub async fn connect<T>(self, options: T) -> Result<Session>
-    where
-        T: cmd::connect::Arg,
-    {
-        cmd::connect::new(options.into_connect_opts()).await
+    /// Read more about this command [connect](cmd::connect::ConnectionBuilder)
+    pub fn connection(self) -> cmd::connect::ConnectionBuilder {
+        cmd::connect::ConnectionBuilder::connection()
     }
 
-    pub fn db_create<T>(self, arg: T) -> Command
-    where
-        T: cmd::db_create::Arg,
-    {
+    pub fn db_create(self, arg: impl cmd::db_create::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn db_drop<T>(self, arg: T) -> Command
-    where
-        T: cmd::db_drop::Arg,
-    {
+    pub fn db_drop(self, arg: impl cmd::db_drop::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
@@ -398,7 +164,7 @@ impl r {
     ///
     /// The `db` command is optional. If it is not present in a query, the
     /// query will run against the default database for the connection,
-    /// specified in the `db` argument to [connect](r::connect).
+    /// specified in the `db` argument to [connection](r::connection).
     ///
     /// # Examples
     ///
@@ -409,144 +175,84 @@ impl r {
     /// r.db("heroes").table("marvel").run(conn)
     /// # });
     /// ```
-    pub fn db<T>(self, arg: T) -> Command
-    where
-        T: cmd::db::Arg,
-    {
+    pub fn db(self, arg: impl cmd::db::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
     /// See [Command::table_create]
-    pub fn table_create<T>(self, arg: T) -> Command
-    where
-        T: cmd::table_create::Arg,
-    {
+    pub fn table_create(self, arg: impl cmd::table_create::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn table<T>(self, arg: T) -> Command
-    where
-        T: cmd::table::Arg,
-    {
+    pub fn table(self, arg: impl cmd::table::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn map<T>(self, arg: T) -> Command
-    where
-        T: cmd::map::Arg,
-    {
+    pub fn map(self, arg: impl cmd::map::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn union<T>(self, arg: T) -> Command
-    where
-        T: cmd::union::Arg,
-    {
+    pub fn union(self, arg: impl cmd::union::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn group<T>(self, arg: T) -> Command
-    where
-        T: cmd::group::Arg,
-    {
+    pub fn group(self, arg: impl cmd::group::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn reduce<T>(self, arg: T) -> Command
-    where
-        T: cmd::reduce::Arg,
-    {
+    pub fn reduce(self, arg: impl cmd::reduce::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn count<T>(self, arg: T) -> Command
-    where
-        T: cmd::count::Arg,
-    {
+    pub fn count(self, arg: impl cmd::count::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn sum<T>(self, arg: T) -> Command
-    where
-        T: cmd::sum::Arg,
-    {
+    pub fn sum(self, arg: impl cmd::sum::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn avg<T>(self, arg: T) -> Command
-    where
-        T: cmd::avg::Arg,
-    {
+    pub fn avg(self, arg: impl cmd::avg::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn min<T>(self, arg: T) -> Command
-    where
-        T: cmd::min::Arg,
-    {
+    pub fn min(self, arg: impl cmd::min::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn max<T>(self, arg: T) -> Command
-    where
-        T: cmd::max::Arg,
-    {
+    pub fn max(self, arg: impl cmd::max::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn distinct<T>(self, arg: T) -> Command
-    where
-        T: cmd::distinct::Arg,
-    {
+    pub fn distinct(self, arg: impl cmd::distinct::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn contains<T>(self, arg: T) -> Command
-    where
-        T: cmd::contains::Arg,
-    {
+    pub fn contains(self, arg: impl cmd::contains::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn literal<T>(self, arg: T) -> Command
-    where
-        T: cmd::literal::Arg,
-    {
+    pub fn literal(self, arg: impl cmd::literal::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn object<T>(self, arg: T) -> Command
-    where
-        T: cmd::object::Arg,
-    {
+    pub fn object(self, arg: impl cmd::object::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn random<T>(self, arg: T) -> Command
-    where
-        T: cmd::random::Arg,
-    {
+    pub fn random(self, arg: impl cmd::random::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn round<T>(self, arg: T) -> Command
-    where
-        T: cmd::round::Arg,
-    {
+    pub fn round(self, arg: impl cmd::round::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn ceil<T>(self, arg: T) -> Command
-    where
-        T: cmd::ceil::Arg,
-    {
+    pub fn ceil(self, arg: impl cmd::ceil::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn floor<T>(self, arg: T) -> Command
-    where
-        T: cmd::floor::Arg,
-    {
+    pub fn floor(self, arg: impl cmd::floor::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
@@ -554,178 +260,103 @@ impl r {
         Command::new(TermType::Now)
     }
 
-    pub fn time<T>(self, arg: T) -> Command
-    where
-        T: cmd::time::Arg,
-    {
+    pub fn time(self, arg: impl cmd::time::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn epoch_time<T>(self, arg: T) -> Command
-    where
-        T: cmd::epoch_time::Arg,
-    {
+    pub fn epoch_time(self, arg: impl cmd::epoch_time::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn iso8601<T>(self, arg: T) -> Command
-    where
-        T: cmd::iso8601::Arg,
-    {
+    pub fn iso8601(self, arg: impl cmd::iso8601::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn do_<T>(self, arg: T) -> Command
-    where
-        T: cmd::do_::Arg,
-    {
+    pub fn do_(self, arg: impl cmd::do_::Arg) -> Command    {
         arg.arg(None).into_cmd()
     }
 
-    pub fn branch<T>(self, arg: T) -> Command
-    where
-        T: cmd::branch::Arg,
-    {
+    pub fn branch(self, arg: impl cmd::branch::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn range<T>(self, arg: T) -> Command
-    where
-        T: cmd::range::Arg,
-    {
+    pub fn range(self, arg: impl cmd::range::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn error<T>(self, arg: T) -> Command
-    where
-        T: cmd::error::Arg,
-    {
+    pub fn error(self, arg: impl cmd::error::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn expr<T>(self, arg: T) -> Command
-    where
-        T: cmd::expr::Arg,
-    {
+    pub fn expr(self, arg: impl cmd::expr::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn js<T>(self, arg: T) -> Command
-    where
-        T: cmd::js::Arg,
-    {
+    pub fn js(self, arg: impl cmd::js::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn info<T>(self, arg: T) -> Command
-    where
-        T: cmd::info::Arg,
-    {
+    pub fn info(self, arg: impl cmd::info::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn json<T>(self, arg: T) -> Command
-    where
-        T: cmd::json::Arg,
-    {
+    pub fn json(self, arg: impl cmd::json::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn http<T>(self, arg: T) -> Command
-    where
-        T: cmd::http::Arg,
-    {
+    pub fn http(self, arg: impl cmd::http::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn uuid<T>(self, arg: T) -> Command
-    where
-        T: cmd::uuid::Arg,
-    {
+    pub fn uuid(self, arg: impl cmd::uuid::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn circle<T>(self, arg: T) -> Command
-    where
-        T: cmd::circle::Arg,
-    {
+    pub fn circle(self, arg: impl cmd::circle::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn distance<T>(self, arg: T) -> Command
-    where
-        T: cmd::distance::Arg,
-    {
+    pub fn distance(self, arg: impl cmd::distance::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn geojson<T>(self, arg: T) -> Command
-    where
-        T: cmd::geojson::Arg,
-    {
+    pub fn geojson(self, arg: impl cmd::geojson::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn intersects<T>(self, arg: T) -> Command
-    where
-        T: cmd::intersects::Arg,
-    {
+    pub fn intersects(self, arg: impl cmd::intersects::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn line<T>(self, arg: T) -> Command
-    where
-        T: cmd::line::Arg,
-    {
+    pub fn line(self, arg: impl cmd::line::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn point<T>(self, arg: T) -> Command
-    where
-        T: cmd::point::Arg,
-    {
+    pub fn point(self, arg: impl cmd::point::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn polygon<T>(self, arg: T) -> Command
-    where
-        T: cmd::polygon::Arg,
-    {
+    pub fn polygon(self, arg: impl cmd::polygon::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn grant<T>(self, arg: T) -> Command
-    where
-        T: cmd::grant::Arg,
-    {
+    pub fn grant(self, arg: impl cmd::grant::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn wait<T>(self, arg: T) -> Command
-    where
-        T: cmd::wait::Arg,
-    {
+    pub fn wait(self, arg: impl cmd::wait::Arg) -> Command    {
         arg.arg().into_cmd()
     }
 
-    pub fn asc<T>(self, arg: T) -> cmd::asc::Asc
-    where
-        T: cmd::asc::Arg,
-    {
+    pub fn asc(self, arg: impl cmd::asc::Arg) -> cmd::asc::Asc {
         cmd::asc::Asc(arg.arg().into_cmd())
     }
 
-    pub fn desc<T>(self, arg: T) -> cmd::desc::Desc
-    where
-        T: cmd::desc::Arg,
-    {
+    pub fn desc(self, arg: impl cmd::desc::Arg) -> cmd::desc::Desc {
         cmd::desc::Desc(arg.arg().into_cmd())
     }
 
-    pub fn index<T>(self, arg: T) -> cmd::index::Index
-    where
-        T: cmd::index::Arg,
-    {
+    pub fn index(self, arg: impl cmd::index::Arg) -> cmd::index::Index {
         cmd::index::Index(arg.arg().into_cmd())
     }
 
