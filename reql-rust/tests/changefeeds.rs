@@ -1,5 +1,5 @@
 use futures::stream::{select_all, TryStreamExt};
-use reql_rust::{r, Driver, Error};
+use reql_rust::{r, ReqlDriverError, ReqlError};
 use serde_json::Value;
 
 #[tokio::test]
@@ -7,7 +7,7 @@ async fn changefeeds_should_use_dedicated_connections() {
     tracing_subscriber::fmt::init();
 
     match changefeeds().await.unwrap_err() {
-        Error::Driver(Driver::ConnectionLocked) => {}
+        ReqlError::Driver(ReqlDriverError::ConnectionLocked) => {}
         error => panic!("{:?}", error),
     }
 }

@@ -107,10 +107,7 @@ impl Command {
     }
 
     #[doc(hidden)]
-    pub fn with_arg<T>(mut self, arg: T) -> Self
-    where
-        T: Into<Command>,
-    {
+    pub fn with_arg(mut self, arg: impl Into<Command>) -> Self {
         let arg = arg.into();
         self.args.push_back(Ok(arg));
         self
@@ -132,7 +129,7 @@ impl Command {
     where
         T: Serialize,
     {
-        serde_json::to_value(arg).map_err(super::Error::from).into()
+        serde_json::to_value(arg).map_err(super::ReqlError::from).into()
     }
 
     pub(crate) fn mark_change_feed(mut self) -> Self {
@@ -292,7 +289,7 @@ impl Serialize for Payload<'_> {
 }
 
 impl Payload<'_> {
-    pub(crate) fn to_bytes(&self) -> Result<Vec<u8>, err::Error> {
+    pub(crate) fn to_bytes(&self) -> Result<Vec<u8>, err::ReqlError> {
         Ok(serde_json::to_vec(self)?)
     }
 }

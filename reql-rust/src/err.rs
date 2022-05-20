@@ -3,15 +3,15 @@ use std::{error, fmt, io};
 
 /// The most generic error message in ReQL
 #[derive(Debug, Clone)]
-pub enum Error {
+pub enum ReqlError {
     Compile(String),
-    Runtime(Runtime),
-    Driver(Driver),
+    Runtime(ReqlRuntimeError),
+    Driver(ReqlDriverError),
 }
 
-impl error::Error for Error {}
+impl error::Error for ReqlError {}
 
-impl fmt::Display for Error {
+impl fmt::Display for ReqlError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Compile(msg) => write!(f, "compile error; {}", msg),
@@ -26,24 +26,24 @@ impl fmt::Display for Error {
 /// All errors on the server unrelated to compilation. Programs may use this to catch any runtime
 /// error, but the server will always return a more specific error class.
 #[derive(Debug, Clone)]
-pub enum Runtime {
+pub enum ReqlRuntimeError {
     /// The query contains a logical impossibility, such as adding a number to a string.
     QueryLogic(String),
     NonExistence(String),
     ResourceLimit(String),
     User(String),
     Internal(String),
-    Availability(Availability),
+    Availability(ReqlAvailabilityError),
     Permission(String),
 }
 
-impl From<Runtime> for Error {
-    fn from(err: Runtime) -> Error {
-        Error::Runtime(err)
+impl From<ReqlRuntimeError> for ReqlError {
+    fn from(err: ReqlRuntimeError) -> ReqlError {
+        ReqlError::Runtime(err)
     }
 }
 
-impl fmt::Display for Runtime {
+impl fmt::Display for ReqlRuntimeError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::QueryLogic(msg) => write!(f, "query logic; {}", msg),
@@ -63,18 +63,18 @@ impl fmt::Display for Runtime {
 /// to catch any availability error, but the server will always return one of this class’s
 /// children.
 #[derive(Debug, Clone)]
-pub enum Availability {
+pub enum ReqlAvailabilityError {
     OpFailed(String),
     OpIndeterminate(String),
 }
 
-impl From<Availability> for Error {
-    fn from(err: Availability) -> Error {
-        Runtime::Availability(err).into()
+impl From<ReqlAvailabilityError> for ReqlError {
+    fn from(err: ReqlAvailabilityError) -> ReqlError {
+        ReqlRuntimeError::Availability(err).into()
     }
 }
 
-impl fmt::Display for Availability {
+impl fmt::Display for ReqlAvailabilityError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::OpFailed(msg) => write!(f, "operation failed; {}", msg),
@@ -89,7 +89,7 @@ impl fmt::Display for Availability {
 /// query.
 #[derive(Debug, Clone)]
 #[non_exhaustive]
-pub enum Driver {
+pub enum ReqlDriverError {
     Auth(String),
     ConnectionBroken,
     ConnectionLocked,
@@ -98,13 +98,13 @@ pub enum Driver {
     Other(String),
 }
 
-impl From<Driver> for Error {
-    fn from(err: Driver) -> Error {
-        Error::Driver(err)
+impl From<ReqlDriverError> for ReqlError {
+    fn from(err: ReqlDriverError) -> ReqlError {
+        ReqlError::Driver(err)
     }
 }
 
-impl fmt::Display for Driver {
+impl fmt::Display for ReqlDriverError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Self::Auth(msg) => write!(f, "auth error; {}", msg),
@@ -120,14 +120,14 @@ impl fmt::Display for Driver {
     }
 }
 
-impl From<io::Error> for Error {
-    fn from(err: io::Error) -> Error {
-        Driver::Io(err.kind(), err.to_string()).into()
+impl From<io::Error> for ReqlError {
+    fn from(err: io::Error) -> ReqlError {
+        ReqlDriverError::Io(err.kind(), err.to_string()).into()
     }
 }
 
-impl From<serde_json::Error> for Error {
-    fn from(err: serde_json::Error) -> Error {
-        Driver::Json(Arc::new(err)).into()
+impl From<serde_json::Error> for ReqlError {
+    fn from(err: serde_json::Error) -> ReqlError {
+        ReqlDriverError::Json(Arc::new(err)).into()
     }
 }

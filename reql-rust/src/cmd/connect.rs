@@ -213,7 +213,7 @@ async fn handshake(mut stream: TcpStream, opts: &ConnectionBuilder) -> Result<Tc
         Some(auth) => auth,
         None => {
             let msg = String::from("server did not send authentication info");
-            return Err(err::Driver::Other(msg).into());
+            return Err(err::ReqlDriverError::Other(msg).into());
         }
     };
 
@@ -257,7 +257,7 @@ impl ServerInfo<'_> {
     fn validate(resp: &[u8]) -> Result<()> {
         let info = serde_json::from_slice::<ServerInfo>(resp)?;
         if !info.success {
-            return Err(err::Runtime::Internal(bytes_to_string(resp)).into());
+            return Err(err::ReqlRuntimeError::Internal(bytes_to_string(resp)).into());
         }
         #[allow(clippy::absurd_extreme_comparisons)]
         if PROTOCOL_VERSION < info.min_protocol_version
@@ -269,7 +269,7 @@ impl ServerInfo<'_> {
                 min = info.min_protocol_version,
                 max = info.max_protocol_version,
             );
-            return Err(err::Driver::Other(msg).into());
+            return Err(err::ReqlDriverError::Other(msg).into());
         }
         Ok(())
     }
@@ -303,7 +303,7 @@ fn client_final(scram: ServerFirst<'_>, auth: &str) -> Result<(ServerFinal, Vec<
     let scram = scram
         .handle_server_first(auth)
         .map_err(|x| x.to_string())
-        .map_err(err::Driver::Other)?;
+        .map_err(err::ReqlDriverError::Other)?;
     let (scram, client_final) = scram.client_final();
     let conf = AuthConfirmation {
         authentication: client_final,
@@ -328,10 +328,10 @@ impl AuthResponse {
             // If error code is between 10 and 20, this is an auth error
             if let Some(10..=20) = info.error_code {
                 if let Some(msg) = info.error {
-                    return Err(err::Driver::Auth(msg).into());
+                    return Err(err::ReqlDriverError::Auth(msg).into());
                 }
             }
-            return Err(err::Runtime::Internal(bytes_to_string(resp)).into());
+            return Err(err::ReqlRuntimeError::Internal(bytes_to_string(resp)).into());
         }
         Ok(info)
     }
@@ -341,7 +341,7 @@ fn server_final(scram: ServerFinal, resp: &[u8]) -> Result<()> {
     let info = AuthResponse::from_slice(resp)?;
     if let Some(auth) = info.authentication {
         if let Err(error) = scram.handle_server_final(&auth) {
-            return Err(err::Driver::Other(error.to_string()).into());
+            return Err(err::ReqlDriverError::Other(error.to_string()).into());
         }
     }
     Ok(())

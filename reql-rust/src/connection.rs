@@ -15,7 +15,7 @@ use tracing::trace;
 use reql_rust_types::ServerInfo;
 
 use crate::proto::{Payload, Query};
-use crate::{Result, err, Driver, r};
+use crate::{Result, err, ReqlDriverError, r};
 use super::cmd::run::Response;
 use super::cmd::StaticString;
 
@@ -50,7 +50,7 @@ impl InnerSession {
 
     pub(crate) fn broken(&self) -> Result<()> {
         if self.broken.load(Ordering::SeqCst) {
-            return Err(err::Driver::ConnectionBroken.into());
+            return Err(err::ReqlDriverError::ConnectionBroken.into());
         }
         Ok(())
     }
@@ -69,7 +69,7 @@ impl InnerSession {
 
     pub(crate) fn change_feed(&self) -> Result<()> {
         if self.change_feed.load(Ordering::SeqCst) {
-            return Err(err::Driver::ConnectionLocked.into());
+            return Err(err::ReqlDriverError::ConnectionLocked.into());
         }
         Ok(())
     }
@@ -243,7 +243,7 @@ impl Session {
         let mut vec = serde_json::from_value::<Vec<ServerInfo>>(resp.r)?;
         let info = vec
             .pop()
-            .ok_or_else(|| Driver::Other("server info is empty".into()))?;
+            .ok_or_else(|| ReqlDriverError::Other("server info is empty".into()))?;
         Ok(info)
     }
 

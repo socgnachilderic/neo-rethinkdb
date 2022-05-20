@@ -1,6 +1,7 @@
 //! Common ReQL data types
 
 mod date_time;
+mod db_config;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -8,6 +9,8 @@ use std::collections::HashMap;
 use std::net::IpAddr;
 use time::OffsetDateTime;
 use uuid::Uuid;
+
+// pub use db_config::*;
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct DateTime(OffsetDateTime);
@@ -56,7 +59,10 @@ pub struct CurrentIssue {}
 /// Structure of data in `db_config` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct DbConfig {}
+pub struct DbConfig {
+    pub config_changes: Vec<db_config::DbConfigChange>,
+    pub dbs_created: u16,
+}
 
 /// Structure of data in `jobs` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

@@ -251,7 +251,7 @@ impl Connection {
             trace!("db_token: {}", token);
             if token > self.session.inner.token.load(Ordering::SeqCst) {
                 self.session.inner.mark_broken();
-                return Err(err::Driver::ConnectionBroken.into());
+                return Err(err::ReqlDriverError::ConnectionBroken.into());
             }
             token
         };
@@ -281,7 +281,7 @@ impl Connection {
         trace!("response successfully parsed; token: {}", self.token,);
 
         let response_type = ResponseType::from_i32(resp.t)
-            .ok_or_else(|| err::Driver::Other(format!("unknown response type `{}`", resp.t)))?;
+            .ok_or_else(|| err::ReqlDriverError::Other(format!("unknown response type `{}`", resp.t)))?;
 
         if let Some(error_type) = resp.e {
             let msg = error_message(resp.r)?;
@@ -297,25 +297,25 @@ fn error_message(response: Value) -> Result<String> {
     Ok(messages.join(" "))
 }
 
-fn response_error(response_type: ResponseType, error_type: Option<i32>, msg: String) -> err::Error {
+fn response_error(response_type: ResponseType, error_type: Option<i32>, msg: String) -> err::ReqlError {
     match response_type {
-        ResponseType::ClientError => err::Driver::Other(msg).into(),
-        ResponseType::CompileError => err::Error::Compile(msg),
+        ResponseType::ClientError => err::ReqlDriverError::Other(msg).into(),
+        ResponseType::CompileError => err::ReqlError::Compile(msg),
         ResponseType::RuntimeError => match error_type
             .map(ErrorType::from_i32)
-            .ok_or_else(|| err::Driver::Other(format!("unexpected runtime error: {}", msg)))
+            .ok_or_else(|| err::ReqlDriverError::Other(format!("unexpected runtime error: {}", msg)))
         {
-            Ok(Some(ErrorType::Internal)) => err::Runtime::Internal(msg).into(),
-            Ok(Some(ErrorType::ResourceLimit)) => err::Runtime::ResourceLimit(msg).into(),
-            Ok(Some(ErrorType::QueryLogic)) => err::Runtime::QueryLogic(msg).into(),
-            Ok(Some(ErrorType::NonExistence)) => err::Runtime::NonExistence(msg).into(),
-            Ok(Some(ErrorType::OpFailed)) => err::Availability::OpFailed(msg).into(),
-            Ok(Some(ErrorType::OpIndeterminate)) => err::Availability::OpIndeterminate(msg).into(),
-            Ok(Some(ErrorType::User)) => err::Runtime::User(msg).into(),
-            Ok(Some(ErrorType::PermissionError)) => err::Runtime::Permission(msg).into(),
+            Ok(Some(ErrorType::Internal)) => err::ReqlRuntimeError::Internal(msg).into(),
+            Ok(Some(ErrorType::ResourceLimit)) => err::ReqlRuntimeError::ResourceLimit(msg).into(),
+            Ok(Some(ErrorType::QueryLogic)) => err::ReqlRuntimeError::QueryLogic(msg).into(),
+            Ok(Some(ErrorType::NonExistence)) => err::ReqlRuntimeError::NonExistence(msg).into(),
+            Ok(Some(ErrorType::OpFailed)) => err::ReqlAvailabilityError::OpFailed(msg).into(),
+            Ok(Some(ErrorType::OpIndeterminate)) => err::ReqlAvailabilityError::OpIndeterminate(msg).into(),
+            Ok(Some(ErrorType::User)) => err::ReqlRuntimeError::User(msg).into(),
+            Ok(Some(ErrorType::PermissionError)) => err::ReqlRuntimeError::Permission(msg).into(),
             Err(error) => error.into(),
-            _ => err::Driver::Other(format!("unexpected runtime error: {}", msg)).into(),
+            _ => err::ReqlDriverError::Other(format!("unexpected runtime error: {}", msg)).into(),
         },
-        _ => err::Driver::Other(format!("unexpected response: {}", msg)).into(),
+        _ => err::ReqlDriverError::Other(format!("unexpected response: {}", msg)).into(),
     }
 }
