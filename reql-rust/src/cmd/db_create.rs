@@ -1,7 +1,8 @@
 use std::borrow::Cow;
 
-use crate::{Command};
 use ql2::term::TermType;
+
+use crate::Command;
 
 use super::StaticString;
 

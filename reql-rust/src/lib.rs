@@ -68,7 +68,7 @@ mod err;
 mod proto;
 mod constants;
 
-use cmd::{db_create::DbCreate, db_drop::DbDrop};
+use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList};
 use ql2::term::TermType;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -258,8 +258,28 @@ impl r {
         DbDrop::new(db_name)
     }
 
+    /// List all database names in the cluster. The result is a list of strings.
+    /// 
+    /// Example
+    /// 
+    /// List all databases.
+    /// 
+    /// ```
+    /// use std::borrow::Cow;
+    /// use futures::TryStreamExt;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _val: Option<Vec<Cow<'static, str>>> = r.db_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn db_list(self) -> Command {
-        Command::new(TermType::DbList)
+        DbList::new()
     }
 
     /// Reference a database
