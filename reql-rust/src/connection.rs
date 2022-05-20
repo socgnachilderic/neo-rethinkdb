@@ -1,10 +1,12 @@
 use async_net::TcpStream;
 use dashmap::DashMap;
+use futures::TryFutureExt;
 use futures::channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
 use futures::lock::Mutex;
 use ql2::query::QueryType;
 use ql2::response::ResponseType;
 use serde_json::json;
+use tokio::time;
 use std::borrow::Cow;
 use std::ops::Drop;
 use std::sync::Arc;
@@ -90,6 +92,64 @@ impl Session {
         Ok(Connection::new(self.clone(), rx, token))
     }
 
+    /// Close and reopen a connection.
+    /// Closing a connection normally waits until all outstanding requests have finished 
+    /// and then frees any open resources associated with the connection. 
+    /// By passing `false` as an optional boolean argument to `reconnect`, 
+    /// the connection will be closed immediately, possibly aborting any outstanding noreply writes. 
+    /// A optional second argument is a (`Option<std::time::Duration>`) timeout indicating how long you would like 
+    /// `reconnect` to wait before closing the existing connection.
+    /// 
+    /// A noreply query is executed by passing the `noreply` option to the
+    /// [run](crate::Command::run) command, indicating that `run()` should not
+    /// wait for the query to complete before returning. You may also
+    /// explicitly wait for a noreply query to complete by using the
+    /// [noreply_wait](crate::Session::noreply_wait) command.
+    /// 
+    /// ## Example
+    /// 
+    /// Cancel outstanding requests/queries that are no longer needed.
+    /// 
+    /// ```
+    /// async fn example() -> reql_rust::Result<()> {
+    ///     let session = reql_rust::r.connection().connect().await?;
+    ///     session.reconnect(false, None).await
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Wait up for outstanding requests to finish before reconnecting.
+    /// 
+    /// ```
+    /// async fn example() -> reql_rust::Result<()> {
+    ///     let session = reql_rust::r.connection().connect().await?;
+    ///     session.reconnect(true, None).await
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Cancel outstanding requests/queries that are no longer needed after a timeout.
+    /// 
+    /// ```
+    /// async fn example() -> reql_rust::Result<()> {
+    ///     let session = reql_rust::r.connection().connect().await?;
+    ///     session.reconnect(false, Some(std::time::Duration::from_secs(5))).await
+    /// }
+    /// ```
+    pub async fn reconnect(&self, noreply_wait: bool, timeout: Option<std::time::Duration>) -> Result<()> {
+        let future = self.close(noreply_wait).and_then(|_| async {self.connection()});
+    
+        if let Some(timeout) = timeout {
+            time::timeout(timeout, future).await.unwrap()?;
+        } else {
+            future.await?;
+        }
+
+        Ok(())
+    }
+
     /// Change the default database on this connection
     ///
     /// ## Example
@@ -133,7 +193,6 @@ impl Session {
     ///     session.noreply_wait().await
     /// }
     /// ```
-    ///
     pub async fn noreply_wait(&self) -> Result<()> {
         let mut conn = self.connection()?;
         let payload = Payload(QueryType::NoreplyWait, None, Default::default());
@@ -171,8 +230,6 @@ impl Session {
      ///     session.server().await
      /// }
      /// ```
-     /// 
-     ///
     pub async fn server(&self) -> Result<ServerInfo> {
         let mut conn = self.connection()?;
         let payload = Payload(QueryType::ServerInfo, None, Default::default());
