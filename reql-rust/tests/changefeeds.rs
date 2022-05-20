@@ -13,7 +13,7 @@ async fn changefeeds_should_use_dedicated_connections() {
 }
 
 async fn changefeeds() -> reql_rust::Result<()> {
-    let conn = r.connect(()).await?;
+    let conn = r.connection().connect().await?;
 
     let _ = r
         .table_create("foo")

@@ -5,7 +5,7 @@ use serde_json::Value;
 #[tokio::test]
 async fn order_by() -> reql_rust::Result<()> {
     tracing_subscriber::fmt::init();
-    let conn = r.connect(()).await?;
+    let conn = r.connection().connect().await?;
     let mut query = r
         .db("rethinkdb")
         .table("server_status")

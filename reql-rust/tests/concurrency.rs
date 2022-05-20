@@ -3,7 +3,7 @@ use reql_rust::r;
 
 #[tokio::test]
 async fn concurrency() -> reql_rust::Result<()> {
-    let conn = r.connect(()).await?;
+    let conn = r.connection().connect().await?;
 
     let mut streams = Vec::new();
 

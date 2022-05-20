@@ -1,6 +1,6 @@
 use super::args::Args;
-use super::connect::DEFAULT_DB;
 use crate::cmd::{Durability, ReadMode};
+use crate::constants::{DEFAULT_RETHINKDB_DBNAME, HEADER_SIZE, TOKEN_SIZE, DATA_SIZE};
 use crate::proto::{Payload, Query};
 use crate::{err, r, Command, Connection, Result, Session};
 use async_stream::try_stream;
@@ -16,10 +16,6 @@ use std::borrow::Cow;
 use std::str;
 use std::sync::atomic::Ordering;
 use tracing::trace;
-
-const DATA_SIZE: usize = 4;
-const TOKEN_SIZE: usize = 8;
-const HEADER_SIZE: usize = DATA_SIZE + TOKEN_SIZE;
 
 #[derive(Deserialize, Debug)]
 #[allow(dead_code)]
@@ -80,7 +76,7 @@ pub struct Db(pub Cow<'static, str>);
 impl Options {
     async fn default_db(self, session: &Session) -> Options {
         let session_db = session.inner.db.lock().await;
-        if self.db.is_none() && *session_db != DEFAULT_DB {
+        if self.db.is_none() && *session_db != DEFAULT_RETHINKDB_DBNAME {
             return self.db(&*session_db);
         }
         self
