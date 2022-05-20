@@ -159,7 +159,7 @@ impl Session {
     ///
     /// ```
     /// use reql_rust::{r, Result};
-    /// use futures::TryStreamExt;
+    /// use reql_rust::prelude::*;
     /// 
     /// async fn example() -> Result<()> {
     ///     let mut session = r.connection().connect().await?;
