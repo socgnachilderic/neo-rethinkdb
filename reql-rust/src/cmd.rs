@@ -238,8 +238,29 @@ impl<'a> Command {
         index_drop::IndexDropBuilder::new(index_name)._with_parent(self)
     }
 
-    pub fn index_list(self) -> Self {
-        Self::new(TermType::IndexList).with_parent(self)
+    /// List all the secondary indexes of this table.
+    /// 
+    /// ## Example
+    /// 
+    /// List the available secondary indexes for this table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("dc_universe")
+    ///         .index_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_list(self) -> index_list::IndexListBuilder {
+        index_list::IndexListBuilder::new()._with_parent(self)
     }
 
     pub fn index_rename(self, arg: impl index_rename::Arg) -> Self {
