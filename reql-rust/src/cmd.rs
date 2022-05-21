@@ -317,8 +317,95 @@ impl<'a> Command {
         index_rename::IndexRenameBuilder::new(old_index_name, new_index_name)._with_parent(self)
     }
 
-    pub fn index_status(self, arg: impl index_status::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Get the status of the specified indexes on this table, or the status of all indexes on this table if no indexes are specified.
+    /// 
+    /// The result is an array where for each index, there will be an object like this one (shown as JSON):
+    /// 
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": true,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    /// 
+    /// or this one:
+    /// 
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": false,
+    ///     "progress": <float>,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Get the status of all the indexes on `test`
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Get the status of the `timestamp` index
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .with_one_index("timestamp")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Get the status of the `mail` and `author_name`` indexes
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .with_indexes(&vec!["mail", "author_name"])
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_status(self) -> index_status::IndexStatusBuilder {
+        index_status::IndexStatusBuilder::new()._with_parent(self)
     }
 
     /// Wait for the specified indexes on this table to be ready, or for all indexes on this table to be ready if no indexes are specified.

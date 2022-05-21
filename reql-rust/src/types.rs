@@ -33,8 +33,8 @@ pub struct IndexStatusResponseType {
     pub ready: bool,
     pub multi: bool,
     pub outdated: bool,
+    pub progress: Option<f64>,
     pub index: Cow<'static, str>,
-    // pub query: Cow<'static, str>,
     pub function: Binary,
 }
 

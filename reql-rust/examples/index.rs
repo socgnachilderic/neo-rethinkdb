@@ -28,6 +28,15 @@ pub async fn main() -> Result<()> {
 
     let result = r
         .table("heroes")
+        .index_status()
+        .with_one_index("author_name")
+        .run(&conn)
+        .try_next()
+        .await?;
+    dbg!(result);
+
+    let result = r
+        .table("heroes")
         .index_wait()
         .with_one_index("mail")
         .run(&conn)
