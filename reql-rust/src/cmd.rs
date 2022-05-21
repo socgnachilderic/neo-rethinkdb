@@ -321,9 +321,83 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_wait(self, index_name: &str) -> index_wait::IndexWaitBuilder {
-        // arg.arg().into_cmd().with_parent(self)
-        index_wait::IndexWaitBuilder::new(index_name)
+    /// Wait for the specified indexes on this table to be ready, or for all indexes on this table to be ready if no indexes are specified.
+    /// 
+    /// The result is an array containing one object for each table index:
+    /// 
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": true,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    /// 
+    /// See the [index_status](#index_status) documentation for a description of the field values.
+    /// 
+    /// ## Example
+    /// 
+    /// Wait for all indexes on the table `test` to be ready
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Wait for `timestamp` index on the table `test` to be ready
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .with_one_index("timestamp")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Wait for `mail` and `author_name` indexes on the table `test` to be ready
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .with_indexes(&vec!["mail", "author_name"])
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_wait(self) -> index_wait::IndexWaitBuilder {
+        index_wait::IndexWaitBuilder::new()._with_parent(self)
     }
 
     pub fn set_write_hook(self, arg: impl set_write_hook::Arg) -> Self {

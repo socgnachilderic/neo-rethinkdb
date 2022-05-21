@@ -25,6 +25,19 @@ pub struct IndexResponseType {
     pub renamed: Option<u8>,
 }
 
+/// Structure of return data in `index_status` table
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[non_exhaustive]
+pub struct IndexStatusResponseType {
+    pub geo: bool,
+    pub ready: bool,
+    pub multi: bool,
+    pub outdated: bool,
+    pub index: Cow<'static, str>,
+    // pub query: Cow<'static, str>,
+    pub function: Binary,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct ConfigChange {
