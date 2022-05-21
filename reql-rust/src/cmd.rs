@@ -321,8 +321,9 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_wait(self, arg: impl index_wait::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn index_wait(self, index_name: &str) -> index_wait::IndexWaitBuilder {
+        // arg.arg().into_cmd().with_parent(self)
+        index_wait::IndexWaitBuilder::new(index_name)
     }
 
     pub fn set_write_hook(self, arg: impl set_write_hook::Arg) -> Self {

@@ -12,6 +12,9 @@ pub async fn main() -> Result<()> {
     let result = r.table("heroes").index_create("author_name").run::<_, serde_json::Value>(&conn).try_next().await?;
     dbg!(result);
 
+    let result = r.table("heroes").index_wait("author_name").run(&conn).try_next().await?;
+    dbg!(result);
+
     let result = r.table("heroes").index_rename("author_name", "code_name").run(&conn).try_next().await?;
     dbg!(result);
 
