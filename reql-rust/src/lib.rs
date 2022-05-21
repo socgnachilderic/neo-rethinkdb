@@ -65,11 +65,12 @@
 pub mod cmd;
 pub mod connection;
 pub mod prelude;
+pub mod types;
 mod err;
 mod proto;
 mod constants;
 
-use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList};
+use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList, table_create::TableCreateBuilder, table_drop::TableDropBuilder, table_list::TableListBuilder};
 use ql2::term::TermType;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -78,8 +79,7 @@ pub use prelude::Func;
 pub use err::*;
 pub use connection::*;
 pub use proto::Command;
-#[doc(inline)]
-pub use reql_rust_types as types;
+
 
 #[doc(hidden)]
 pub static VAR_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -299,9 +299,253 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    /// See [Command::table_create]
-    pub fn table_create(self, arg: impl cmd::table_create::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Create a table
+    ///
+    /// A RethinkDB table is a collection of JSON documents.
+    /// 
+    /// If successful, the command returns an object with two fields:
+    /// * `tables_created` : always `1`.
+    /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
+    ///     - `old_val` : always `None` .
+    ///     - `new_val` : the table’s new [config](https://rethinkdb.com/api/java/config) value.
+    /// 
+    /// If a table with the same name already exists, the command throws ReqlRuntimeError.
+    /// 
+    /// # Note
+    /// 
+    /// Only alphanumeric characters and underscores are valid for the table name.
+    /// 
+    /// ```text
+    /// Invoking tableCreate without specifying a database using db creates a 
+    /// table in the database specified in connect, or test if no database was specified.
+    /// ```
+    /// 
+    /// When creating a table, [TableCreateBuild](cmd::table_create::TableCreateBuilder) 
+    /// returned you can specify the options with following method:
+    /// * [with_primary_key(&'static str)](cmd::table_create::TableCreateBuilder::with_primary_key) :
+    /// the name of the primary key. The default primary key is `id`.
+    /// * [with_durability(types::Durability)](cmd::table_create::TableCreateBuilder::with_durability) :
+    /// if set to `Durability::Soft`, writes will be acknowledged by the server immediately and flushed to disk in 
+    /// the background. The default is `Durability::Hard`: acknowledgment of writes happens after data has been 
+    /// written to disk
+    /// * [with_shards(u8)](cmd::table_create::TableCreateBuilder::with_shards) :
+    /// the number of shards, an integer from 1-64. Defaults to 1.
+    /// * [with_replicas(types::Replicas)](cmd::table_create::TableCreateBuilder::with_replicas) :
+    /// either an integer or a mapping object. Defaults to `Replicas::Int(1)`.
+    ///     - If `replicas` is an `Replicas::Int`, it specifies the number of replicas per shard. Specifying more replicas than there are servers will return an error.
+    ///     - If `replicas` is an `Replicas::Map`, t specifies key-value pairs of server tags and the number of replicas to assign to those servers: `{tag1: 2, tag2: 4, tag3: 2, ...}` .
+    ///
+    /// Tables will be available for writing when the command returns.
+    /// 
+    /// # Example
+    ///
+    /// Create a table named "dc_universe" with the default settings.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table_create("dc_universe")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// Return :
+    /// 
+    /// ```text
+    /// Some(
+    ///     TableCreateReturnType {
+    ///         config_changes: [
+    ///             DbConfigChange {
+    ///                 new_val: Some(
+    ///                     DbConfigChangeValue {
+    ///                         id: "20ea60d4-3b76-4817-8828-98a236df0297",
+    ///                         name: "dc_universe",
+    ///                         db: Some(
+    ///                             "test",
+    ///                         ),
+    ///                         durability: Some(
+    ///                             Hard,
+    ///                         ),
+    ///                         indexes: Some(
+    ///                             [],
+    ///                         ),
+    ///                         primary_key: Some(
+    ///                             "id",
+    ///                         ),
+    ///                         shards: Some(
+    ///                             [
+    ///                                 ShardType {
+    ///                                     primary_replica: "rethinkdb_srv1",
+    ///                                     replicas: [
+    ///                                         "rethinkdb_srv1",
+    ///                                         "rethinkdb_srv2"
+    ///                                     ],
+    ///                                 },
+    ///                             ],
+    ///                         ),
+    ///                         write_acks: Some(
+    ///                             Majority,
+    ///                         ),
+    ///                         write_hook: None,
+    ///                     },
+    ///                 ),
+    ///                 old_val: None,
+    ///             },
+    ///         ],
+    ///         tables_created: 1,
+    ///     },
+    /// )
+    /// ```
+    /// 
+    /// # Example
+    /// 
+    /// Create a table named ‘dc_universe’ using the field ‘name’ as primary key.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table_create("dc_universe")
+    ///         .with_primary_key("name")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// # Example
+    /// 
+    /// Create a table set up for two shards and three replicas per shard. This requires three available servers.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::Replicas;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table_create("dc_universe")
+    ///         .with_shards(2)
+    ///         .with_replicas(Replicas::Int(3))
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn table_create(self, table_name: &'static str) -> TableCreateBuilder {
+        TableCreateBuilder::new(table_name)
+    }
+
+    /// Drop a table from a default database. The table and all its data will be deleted.
+    /// 
+    /// If successful, the command returns an object with two fields:
+    /// * `tables_dropped` : always `1`.
+    /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
+    ///     - `old_val` : the dropped table”s [config](https://rethinkdb.com/api/java/config) value.
+    ///     - `new_val` : always `null`.
+    /// 
+    /// If the given table does not exist in the database, the command throws `ReqlRuntimeError`.
+    /// 
+    /// ## Example
+    /// 
+    /// Drop a table named “dc_universe”.
+    /// 
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table_drop("dc_universe")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// # Return
+    /// 
+    /// ```text
+    /// Some(
+    ///     TableDropReturnType {
+    ///         config_changes: [
+    ///             DbConfigChange {
+    ///                 new_val: None,
+    ///                 old_val: Some(
+    ///                     DbConfigChangeValue {
+    ///                         id: "1bdc3c9c-e2ea-42d5-8c70-61dee9cb3f9d",
+    ///                         name: "dc_universe",
+    ///                         db: Some(
+    ///                             "test",
+    ///                         ),
+    ///                         durability: Some(
+    ///                             Hard,
+    ///                         ),
+    ///                         indexes: Some(
+    ///                             [],
+    ///                         ),
+    ///                         primary_key: Some(
+    ///                             "id",
+    ///                         ),
+    ///                         shards: Some(
+    ///                             [
+    ///                                 ShardType {
+    ///                                     primary_replica: "00_11_22_33_44_55_pha",
+    ///                                     replicas: [
+    ///                                         "00_11_22_33_44_55_pha",
+    ///                                     ],
+    ///                                 },
+    ///                             ],
+    ///                         ),
+    ///                         write_acks: Some(
+    ///                             Majority,
+    ///                         ),
+    ///                         write_hook: None,
+    ///                     },
+    ///                 ),
+    ///             },
+    ///         ],
+    ///         tables_dropped: 1,
+    ///     },
+    /// )
+    /// ```
+    pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
+        TableDropBuilder::new(table_name)
+    }
+
+    /// List all table names in a default database. The result is a list of strings.
+    /// 
+    /// # Example
+    /// 
+    /// List all tables of the default database (‘test’).
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn table_list(self) -> TableListBuilder {
+        TableListBuilder::new()
     }
 
     pub fn table(self, arg: impl cmd::table::Arg) -> Command {

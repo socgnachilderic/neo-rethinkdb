@@ -1,6 +1,5 @@
 use super::args::Args;
-use crate::cmd::{Durability, ReturnChanges};
-use crate::{cmd, Command};
+use crate::{cmd, Command, types::{Durability, ReturnChanges}};
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;

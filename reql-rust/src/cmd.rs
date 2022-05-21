@@ -166,45 +166,14 @@ use crate::Command;
 use futures::stream::Stream;
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
-use serde::{Serialize, Serializer};
 use std::borrow::Cow;
 use std::str;
 
 pub use crate::proto::Arg;
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub enum ReturnChanges {
-    Bool(bool),
-    Always,
-}
-
-impl Serialize for ReturnChanges {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Self::Bool(boolean) => boolean.serialize(serializer),
-            Self::Always => "always".serialize(serializer),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum Durability {
-    Hard,
-    Soft,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum ReadMode {
-    Single,
-    Majority,
-    Outdated,
-}
+use self::table_create::TableCreateBuilder;
+use self::table_drop::TableDropBuilder;
+use self::table_list::TableListBuilder;
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
@@ -253,48 +222,74 @@ impl<'a> Command {
     /// Create a table named "dc_universe" with the default settings.
     ///
     /// ```
-    /// # reql_rust::example(|r, conn| async_stream::stream! {
-    /// r.db("heroes").table_create("dc_universe").run(conn)
-    /// # });
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table_create("dc_universe")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
     /// ```
-    /** ```json
-    {
-        "config_changes": [
-            {
-                "new_val": {
-                    "db": "test",
-                    "durability":  "hard",
-                    "id": "20ea60d4-3b76-4817-8828-98a236df0297",
-                    "name": "dc_universe",
-                    "primary_key": "id",
-                    "shards": [
-                        {
-                            "primary_replica": "rethinkdb_srv1",
-                            "replicas": [
-                                "rethinkdb_srv1",
-                                "rethinkdb_srv2"
-                            ]
-                        }
-                    ],
-                    "write_acks": "majority"
-                },
-                "old_val": None
-            }
-        ],
-        "tables_created": 1
-    }
-        ```
-         */
-    pub fn table_create(self, table_name: impl table_create::Arg) -> Self {
-        table_name.arg().into_cmd().with_parent(self)
+    /// 
+    /// See [r::table_create](crate::r::table_create) for more details.
+    /// 
+    pub fn table_create(self, table_name: &'static str) -> TableCreateBuilder {
+        TableCreateBuilder::new(table_name)._with_parent(self)
     }
 
-    pub fn table_drop(self, table_name: impl table_drop::Arg) -> Self {
-        table_name.arg().into_cmd().with_parent(self)
+    /// Drop a table from a database. The table and all its data will be deleted.
+    /// 
+    /// ## Example
+    /// 
+    /// Drop a table named “dc_universe”.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table_drop("dc_universe")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// See [r::table_create](crate::r::table_create) for more details.
+    /// 
+    pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
+        TableDropBuilder::new(table_name)._with_parent(self)
     }
 
-    pub fn table_list(self) -> Self {
-        Self::new(TermType::TableList).with_parent(self)
+    /// List all table names in a default database. The result is a list of strings.
+    /// 
+    /// # Example
+    /// 
+    /// List all tables of the ‘marvel’ database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").table_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn table_list(self) -> TableListBuilder {
+        TableListBuilder::new()._with_parent(self)
     }
 
     pub fn table(self, table_name: impl table::Arg) -> Self {
