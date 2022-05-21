@@ -1,30 +1,35 @@
-use crate::{cmd, Command};
+use crate::Command;
+use crate::types::IndexResponseType;
+use futures::Stream;
 use ql2::term::TermType;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use super::run;
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::IndexDrop).with_arg(self).into_arg()
+pub struct IndexDropBuilder(Command, Option<Command>);
+
+impl IndexDropBuilder {
+    pub fn new(index_name: &str) -> Self {
+        let args = Command::from_json(index_name);
+        let command = Command::new(TermType::IndexDrop).with_arg(args);
+
+        IndexDropBuilder(command, None)
     }
-}
 
-impl Arg for &str {
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self).arg()
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.1 = Some(parent);
+        self
     }
-}
 
-impl Arg for &String {
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self.as_str()).arg()
-    }
-}
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<IndexResponseType>> {
+        let mut cmd = self.0;
 
-impl Arg for String {
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self).arg()
+        if let Some(parent) = self.1 {
+            cmd = cmd.with_parent(parent);
+        }
+            
+        let cmd = cmd.into_arg::<()>()
+            .into_cmd();
+
+        cmd.run::<_, IndexResponseType>(arg)
     }
 }

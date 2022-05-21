@@ -17,7 +17,7 @@ async fn index_create() -> reql_rust::Result<()> {
     let _ = r
         .table("comments")
         .index_drop("author_name")
-        .run::<_, Value>(&conn)
+        .run(&conn)
         .try_next()
         .await;
 
@@ -34,7 +34,7 @@ async fn index_create() -> reql_rust::Result<()> {
     let _ = r
         .table("comments")
         .index_drop("post_and_date")
-        .run::<_, Value>(&conn)
+        .run(&conn)
         .try_next()
         .await;
 

@@ -168,11 +168,11 @@ impl r {
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// use reql_rust::types::{DbCreateReturnType};
+    /// use reql_rust::types::{DbResponseType};
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _val: Option<DbCreateReturnType> = r.db_create("superheroes")
+    ///     let _val: Option<DbResponseType> = r.db_create("superheroes")
     ///         .run(&session)
     ///         .try_next().await?;
     ///
@@ -183,7 +183,7 @@ impl r {
     /// Return:
     /// ```text
     /// Some(
-    ///     DbCreateReturnType {
+    ///     DbResponseType {
     ///         config_changes: [
     ///             DbConfigChange {
     ///                 new_val: Some(
@@ -229,7 +229,7 @@ impl r {
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// use reql_rust::types::{DbDropReturnType};
+    /// use reql_rust::types::{DbResponseType};
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
@@ -244,7 +244,7 @@ impl r {
     /// Return:
     /// ```text
     /// Some(
-    ///     DbDropReturnType {
+    ///     DbResponseType {
     ///         config_changes: [
     ///             DbConfigChange {
     ///                 new_val: None,

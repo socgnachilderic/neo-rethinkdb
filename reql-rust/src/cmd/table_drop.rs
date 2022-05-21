@@ -1,7 +1,8 @@
 use futures::Stream;
 use ql2::term::TermType;
 
-use crate::{Command, types::TableDropReturnType};
+use crate::Command;
+use crate::types::DbResponseType;
 
 use super::run;
 
@@ -12,6 +13,7 @@ impl TableDropBuilder {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::TableDrop)
             .with_arg(args);
+
         TableDropBuilder(command, None)
     }
 
@@ -20,7 +22,7 @@ impl TableDropBuilder {
         self
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<TableDropReturnType>> {
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {
         let mut cmd = self.0;
 
         if let Some(parent) = self.1 {
@@ -30,6 +32,6 @@ impl TableDropBuilder {
         let cmd = cmd.into_arg::<()>()
             .into_cmd();
 
-        cmd.run::<_, TableDropReturnType>(arg)
+        cmd.run::<_, DbResponseType>(arg)
     }
 }

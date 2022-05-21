@@ -213,8 +213,29 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_drop(self, arg: impl index_drop::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Delete a previously created secondary index of this table.
+    /// 
+    /// ## Example
+    /// 
+    /// Drop a secondary index named ‘code_name’.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("dc_universe")
+    ///         .index_drop("code_name")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_drop(self, index_name: &str) -> index_drop::IndexDropBuilder {
+        index_drop::IndexDropBuilder::new(index_name)._with_parent(self)
     }
 
     pub fn index_list(self) -> Self {
