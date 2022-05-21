@@ -315,6 +315,6 @@ impl Serialize for Db {
     {
         let Self(name) = self;
         let cmd = r.db(name.as_ref());
-        Query(&cmd).serialize(serializer)
+        Query(&cmd.into()).serialize(serializer)
     }
 }

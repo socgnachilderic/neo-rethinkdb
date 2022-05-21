@@ -1,32 +1,50 @@
 use super::args::Args;
-use crate::{cmd, Command, types::ReadMode};
+// use super::run;
+use crate::{cmd, Command};
+use crate::types::{ReadMode, IdentifierFormat};
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
+pub struct TableBuilder(Command, TableOption, Option<Command>);
+
 #[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct Options {
+pub struct TableOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read_mode: Option<ReadMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub identifier_format: Option<IdentifierFormat>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-#[serde(rename_all = "lowercase")]
-pub enum IdentifierFormat {
-    Name,
-    Uuid,
-}
+/* impl TableBuilder {
+    pub fn new(table_name: &str) -> Self {
+        let args = Command::from_json(table_name);
+        let command = Command::new(TermType::Table).with_arg(args);
+
+        Self(command, TableOption::default(), None)
+    }
+
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<TableCreateReturnType>> {
+        let mut cmd = self.0.with_opts(self.1);
+
+        if let Some(parent) = self.2 {
+            cmd = cmd.with_parent(parent);
+        }
+            
+        let cmd = cmd.into_arg::<()>()
+            .into_cmd();
+
+        cmd.run::<_, TableCreateReturnType>(arg)
+    }
+} */
 
 pub trait Arg {
-    fn arg(self) -> cmd::Arg<Options>;
+    fn arg(self) -> cmd::Arg<TableOption>;
 }
 
 impl Arg for Command {
-    fn arg(self) -> cmd::Arg<Options> {
+    fn arg(self) -> cmd::Arg<TableOption> {
         Self::new(TermType::Table).with_arg(self).into_arg()
     }
 }
@@ -35,23 +53,23 @@ impl<T> Arg for T
 where
     T: Into<String>,
 {
-    fn arg(self) -> cmd::Arg<Options> {
+    fn arg(self) -> cmd::Arg<TableOption> {
         Command::from_json(self.into()).arg()
     }
 }
 
-impl Arg for Args<(Command, Options)> {
-    fn arg(self) -> cmd::Arg<Options> {
+impl Arg for Args<(Command, TableOption)> {
+    fn arg(self) -> cmd::Arg<TableOption> {
         let Args((query, options)) = self;
         query.arg().with_opts(options)
     }
 }
 
-impl<T> Arg for Args<(T, Options)>
+impl<T> Arg for Args<(T, TableOption)>
 where
     T: Into<String>,
 {
-    fn arg(self) -> cmd::Arg<Options> {
+    fn arg(self) -> cmd::Arg<TableOption> {
         let Args((name, options)) = self;
         name.arg().with_opts(options)
     }

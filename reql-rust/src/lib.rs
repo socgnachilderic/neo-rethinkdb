@@ -64,22 +64,24 @@
 
 pub mod cmd;
 pub mod connection;
-pub mod prelude;
-pub mod types;
-mod err;
-mod proto;
 mod constants;
+mod err;
+pub mod prelude;
+mod proto;
+pub mod types;
 
-use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList, table_create::TableCreateBuilder, table_drop::TableDropBuilder, table_list::TableListBuilder};
+use cmd::{
+    db_create::DbCreateBuilder, db_drop::DbDropBuilder, db_list::DbListBuilder,
+    table_create::TableCreateBuilder, table_drop::TableDropBuilder, table_list::TableListBuilder, db::DbBuilder,
+};
 use ql2::term::TermType;
 
-use std::sync::atomic::{AtomicU64, Ordering};
 pub use prelude::Func;
+use std::sync::atomic::{AtomicU64, Ordering};
 
-pub use err::*;
 pub use connection::*;
+pub use err::*;
 pub use proto::Command;
-
 
 #[doc(hidden)]
 pub static VAR_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -116,7 +118,7 @@ impl r {
     /// - [with_port(value: u16)](cmd::connect::ConnectionBuilder::with_port): the port to connect on (default `28015`).
     /// - [with_db(value: &'static str)](cmd::connect::ConnectionBuilder::with_db): the default database (default `test`).
     /// - [with_user(username: &'static str, password: &'static str)](cmd::connect::ConnectionBuilder::with_user): the user account and password to connect as (default `"admin", ""`).
-    /// 
+    ///
     ///
     /// # Example
     ///
@@ -128,11 +130,11 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// Open a new connection, specifying parameters.
-    /// 
+    ///
     /// ```
     /// async fn example() -> reql_rust::Result<()> {
     ///     let session = reql_rust::r.connection()
@@ -150,34 +152,34 @@ impl r {
     }
 
     /// Create a database. A RethinkDB database is a collection of tables, similar to relational databases.
-    /// 
+    ///
     /// If successful, the command returns an object with two fields:
     /// * `dbs_created` : always `1`.
     /// * `config_changes` : a list containing one object with two fields, `old_val` and `new_val` :
     ///     - `old_val` : always `None`.
     ///     - `new_val` : the database’s new [config](https://rethinkdb.com/api/java/config) value.
-    /// 
+    ///
     /// If a database with the same name already exists, the command throws `ReqlRuntimeError`.
-    /// 
+    ///
     /// Note: Only alphanumeric characters and underscores are valid for the database name.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::{DbCreateReturnType};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val: Option<DbCreateReturnType> = r.db_create("superheroes")
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// Return:
     /// ```text
     /// Some(
@@ -188,6 +190,13 @@ impl r {
     ///                     DbConfigChangeValue {
     ///                         id: "e4689cfc-e903-4532-a0e6-2d6797a43f07",
     ///                         name: "superheroes",
+    ///                         db: None,
+    ///                         durability: None,
+    ///                         indexes: None,
+    ///                         primary_key: None,
+    ///                         shards: None,
+    ///                         write_acks: None,
+    ///                         write_hook: None,
     ///                     },
     ///                 ),
     ///                 old_val: None,
@@ -197,54 +206,61 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn db_create(self, db_name: &'static str) -> Command {
-        DbCreate::new(db_name)
+    pub fn db_create(self, db_name: &str) -> DbCreateBuilder {
+        DbCreateBuilder::new(db_name)
     }
 
     /// Drop a database. The database, all its tables, and corresponding data will be deleted.
-    /// 
+    ///
     /// If successful, the command returns an object with two fields:
-    /// 
+    ///
     /// * `dbs_dropped` : 1.
     /// * `tables_dropped` : the number of tables in the dropped database.
     /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
     ///     - `old_val` : the database’s original [config](https://rethinkdb.com/api/java/config) value.
     ///     - `new_val` : always `None`.
-    /// 
+    ///
     /// If the given database does not exist, the command throws ReqlRuntimeError.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// Drop a database named ‘superheroes’.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::{DbDropReturnType};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _val: Option<DbDropReturnType> = r.db_drop("superheroes")
+    ///     let _val = r.db_drop("superheroes")
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// Return:
     /// ```text
     /// Some(
     ///     DbDropReturnType {
     ///         config_changes: [
     ///             DbConfigChange {
+    ///                 new_val: None,
     ///                 old_val: Some(
     ///                     DbConfigChangeValue {
     ///                         id: "e4689cfc-e903-4532-a0e6-2d6797a43f07",
     ///                         name: "superheroes",
+    ///                         db: None,
+    ///                         durability: None,
+    ///                         indexes: None,
+    ///                         primary_key: None,
+    ///                         shards: None,
+    ///                         write_acks: None,
+    ///                         write_hook: None,
     ///                     },
     ///                 ),
-    ///                 new_val: None,
     ///             },
     ///         ],
     ///         tables_dropped: 3,
@@ -252,32 +268,32 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn db_drop(self, db_name: &'static str) -> Command {
-        DbDrop::new(db_name)
+    pub fn db_drop(self, db_name: &str) -> DbDropBuilder {
+        DbDropBuilder::new(db_name)
     }
 
     /// List all database names in the cluster. The result is a list of strings.
-    /// 
+    ///
     /// Example
-    /// 
+    ///
     /// List all databases.
-    /// 
+    ///
     /// ```
     /// use std::borrow::Cow;
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _val: Option<Vec<Cow<'static, str>>> = r.db_list()
+    ///     let _val = r.db_list()
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn db_list(self) -> Command {
-        DbList::new()
+    pub fn db_list(self) -> DbListBuilder {
+        DbListBuilder::new()
     }
 
     /// Reference a database
@@ -295,38 +311,39 @@ impl r {
     /// r.db("heroes").table("marvel").run(conn)
     /// # });
     /// ```
-    pub fn db(self, arg: impl cmd::db::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn db(self, db_name: &str) -> DbBuilder {
+        // arg.arg().into_cmd()
+        DbBuilder::new(db_name)
     }
 
     /// Create a table
     ///
     /// A RethinkDB table is a collection of JSON documents.
-    /// 
+    ///
     /// If successful, the command returns an object with two fields:
     /// * `tables_created` : always `1`.
     /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
     ///     - `old_val` : always `None` .
     ///     - `new_val` : the table’s new [config](https://rethinkdb.com/api/java/config) value.
-    /// 
+    ///
     /// If a table with the same name already exists, the command throws ReqlRuntimeError.
-    /// 
+    ///
     /// # Note
-    /// 
+    ///
     /// Only alphanumeric characters and underscores are valid for the table name.
-    /// 
+    ///
     /// ```text
-    /// Invoking tableCreate without specifying a database using db creates a 
+    /// Invoking tableCreate without specifying a database using db creates a
     /// table in the database specified in connect, or test if no database was specified.
     /// ```
-    /// 
-    /// When creating a table, [TableCreateBuild](cmd::table_create::TableCreateBuilder) 
+    ///
+    /// When creating a table, [TableCreateBuild](cmd::table_create::TableCreateBuilder)
     /// returned you can specify the options with following method:
     /// * [with_primary_key(&'static str)](cmd::table_create::TableCreateBuilder::with_primary_key) :
     /// the name of the primary key. The default primary key is `id`.
     /// * [with_durability(types::Durability)](cmd::table_create::TableCreateBuilder::with_durability) :
-    /// if set to `Durability::Soft`, writes will be acknowledged by the server immediately and flushed to disk in 
-    /// the background. The default is `Durability::Hard`: acknowledgment of writes happens after data has been 
+    /// if set to `Durability::Soft`, writes will be acknowledged by the server immediately and flushed to disk in
+    /// the background. The default is `Durability::Hard`: acknowledgment of writes happens after data has been
     /// written to disk
     /// * [with_shards(u8)](cmd::table_create::TableCreateBuilder::with_shards) :
     /// the number of shards, an integer from 1-64. Defaults to 1.
@@ -336,7 +353,7 @@ impl r {
     ///     - If `replicas` is an `Replicas::Map`, t specifies key-value pairs of server tags and the number of replicas to assign to those servers: `{tag1: 2, tag2: 4, tag3: 2, ...}` .
     ///
     /// Tables will be available for writing when the command returns.
-    /// 
+    ///
     /// # Example
     ///
     /// Create a table named "dc_universe" with the default settings.
@@ -344,19 +361,19 @@ impl r {
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_create("dc_universe")
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// Return :
-    /// 
+    ///
     /// ```text
     /// Some(
     ///     TableCreateReturnType {
@@ -402,35 +419,35 @@ impl r {
     ///     },
     /// )
     /// ```
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// Create a table named ‘dc_universe’ using the field ‘name’ as primary key.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_create("dc_universe")
     ///         .with_primary_key("name")
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// Create a table set up for two shards and three replicas per shard. This requires three available servers.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::Replicas;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_create("dc_universe")
@@ -438,45 +455,45 @@ impl r {
     ///         .with_replicas(Replicas::Int(3))
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn table_create(self, table_name: &'static str) -> TableCreateBuilder {
+    pub fn table_create(self, table_name: &str) -> TableCreateBuilder {
         TableCreateBuilder::new(table_name)
     }
 
     /// Drop a table from a default database. The table and all its data will be deleted.
-    /// 
+    ///
     /// If successful, the command returns an object with two fields:
     /// * `tables_dropped` : always `1`.
     /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
     ///     - `old_val` : the dropped table”s [config](https://rethinkdb.com/api/java/config) value.
     ///     - `new_val` : always `null`.
-    /// 
+    ///
     /// If the given table does not exist in the database, the command throws `ReqlRuntimeError`.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Drop a table named “dc_universe”.
-    /// 
-    /// 
+    ///
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_drop("dc_universe")
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// # Return
-    /// 
+    ///
     /// ```text
     /// Some(
     ///     TableDropReturnType {
@@ -521,26 +538,26 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
+    pub fn table_drop(self, table_name: &str) -> TableDropBuilder {
         TableDropBuilder::new(table_name)
     }
 
     /// List all table names in a default database. The result is a list of strings.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// List all tables of the default database (‘test’).
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_list()
     ///         .run(&session)
     ///         .try_next().await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
@@ -552,71 +569,71 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn map(self, arg: impl cmd::map::Arg) -> Command    {
+    pub fn map(self, arg: impl cmd::map::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn union(self, arg: impl cmd::union::Arg) -> Command    {
+    pub fn union(self, arg: impl cmd::union::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn group(self, arg: impl cmd::group::Arg) -> Command    {
+    pub fn group(self, arg: impl cmd::group::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn reduce(self, arg: impl cmd::reduce::Arg) -> Command    {
+    pub fn reduce(self, arg: impl cmd::reduce::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn count(self, arg: impl cmd::count::Arg) -> Command    {
+    pub fn count(self, arg: impl cmd::count::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn sum(self, arg: impl cmd::sum::Arg) -> Command    {
+    pub fn sum(self, arg: impl cmd::sum::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn avg(self, arg: impl cmd::avg::Arg) -> Command    {
+    pub fn avg(self, arg: impl cmd::avg::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn min(self, arg: impl cmd::min::Arg) -> Command    {
+    pub fn min(self, arg: impl cmd::min::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn max(self, arg: impl cmd::max::Arg) -> Command    {
+    pub fn max(self, arg: impl cmd::max::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn distinct(self, arg: impl cmd::distinct::Arg) -> Command    {
+    pub fn distinct(self, arg: impl cmd::distinct::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn contains(self, arg: impl cmd::contains::Arg) -> Command    {
+    pub fn contains(self, arg: impl cmd::contains::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn literal(self, arg: impl cmd::literal::Arg) -> Command    {
+    pub fn literal(self, arg: impl cmd::literal::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn object(self, arg: impl cmd::object::Arg) -> Command    {
+    pub fn object(self, arg: impl cmd::object::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn random(self, arg: impl cmd::random::Arg) -> Command    {
+    pub fn random(self, arg: impl cmd::random::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn round(self, arg: impl cmd::round::Arg) -> Command    {
+    pub fn round(self, arg: impl cmd::round::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn ceil(self, arg: impl cmd::ceil::Arg) -> Command    {
+    pub fn ceil(self, arg: impl cmd::ceil::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn floor(self, arg: impl cmd::floor::Arg) -> Command    {
+    pub fn floor(self, arg: impl cmd::floor::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
@@ -624,91 +641,91 @@ impl r {
         Command::new(TermType::Now)
     }
 
-    pub fn time(self, arg: impl cmd::time::Arg) -> Command    {
+    pub fn time(self, arg: impl cmd::time::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn epoch_time(self, arg: impl cmd::epoch_time::Arg) -> Command    {
+    pub fn epoch_time(self, arg: impl cmd::epoch_time::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn iso8601(self, arg: impl cmd::iso8601::Arg) -> Command    {
+    pub fn iso8601(self, arg: impl cmd::iso8601::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn do_(self, arg: impl cmd::do_::Arg) -> Command    {
+    pub fn do_(self, arg: impl cmd::do_::Arg) -> Command {
         arg.arg(None).into_cmd()
     }
 
-    pub fn branch(self, arg: impl cmd::branch::Arg) -> Command    {
+    pub fn branch(self, arg: impl cmd::branch::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn range(self, arg: impl cmd::range::Arg) -> Command    {
+    pub fn range(self, arg: impl cmd::range::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn error(self, arg: impl cmd::error::Arg) -> Command    {
+    pub fn error(self, arg: impl cmd::error::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn expr(self, arg: impl cmd::expr::Arg) -> Command    {
+    pub fn expr(self, arg: impl cmd::expr::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn js(self, arg: impl cmd::js::Arg) -> Command    {
+    pub fn js(self, arg: impl cmd::js::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn info(self, arg: impl cmd::info::Arg) -> Command    {
+    pub fn info(self, arg: impl cmd::info::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn json(self, arg: impl cmd::json::Arg) -> Command    {
+    pub fn json(self, arg: impl cmd::json::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn http(self, arg: impl cmd::http::Arg) -> Command    {
+    pub fn http(self, arg: impl cmd::http::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn uuid(self, arg: impl cmd::uuid::Arg) -> Command    {
+    pub fn uuid(self, arg: impl cmd::uuid::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn circle(self, arg: impl cmd::circle::Arg) -> Command    {
+    pub fn circle(self, arg: impl cmd::circle::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn distance(self, arg: impl cmd::distance::Arg) -> Command    {
+    pub fn distance(self, arg: impl cmd::distance::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn geojson(self, arg: impl cmd::geojson::Arg) -> Command    {
+    pub fn geojson(self, arg: impl cmd::geojson::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn intersects(self, arg: impl cmd::intersects::Arg) -> Command    {
+    pub fn intersects(self, arg: impl cmd::intersects::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn line(self, arg: impl cmd::line::Arg) -> Command    {
+    pub fn line(self, arg: impl cmd::line::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn point(self, arg: impl cmd::point::Arg) -> Command    {
+    pub fn point(self, arg: impl cmd::point::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn polygon(self, arg: impl cmd::polygon::Arg) -> Command    {
+    pub fn polygon(self, arg: impl cmd::polygon::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn grant(self, arg: impl cmd::grant::Arg) -> Command    {
+    pub fn grant(self, arg: impl cmd::grant::Arg) -> Command {
         arg.arg().into_cmd()
     }
 
-    pub fn wait(self, arg: impl cmd::wait::Arg) -> Command    {
+    pub fn wait(self, arg: impl cmd::wait::Arg) -> Command {
         arg.arg().into_cmd()
     }
 

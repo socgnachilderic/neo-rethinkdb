@@ -7,7 +7,7 @@ use serde::{Serialize, Serializer};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-pub struct TableCreateBuilder(Cow<'static, str>, TableCreateOption, Option<Command>);
+pub struct TableCreateBuilder(Command, TableCreateOption, Option<Command>);
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[non_exhaustive]
@@ -19,8 +19,24 @@ pub struct TableCreateOption {
 }
 
 impl TableCreateBuilder {
-    pub fn new(table_name: &'static str) -> Self {
-        Self(table_name.static_string(), TableCreateOption::default(), None)
+    pub fn new(table_name: &str) -> Self {
+        let args = Command::from_json(table_name);
+        let command = Command::new(TermType::TableCreate).with_arg(args);
+
+        Self(command, TableCreateOption::default(), None)
+    }
+
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<TableCreateReturnType>> {
+        let mut cmd = self.0.with_opts(self.1);
+
+        if let Some(parent) = self.2 {
+            cmd = cmd.with_parent(parent);
+        }
+            
+        let cmd = cmd.into_arg::<()>()
+            .into_cmd();
+
+        cmd.run::<_, TableCreateReturnType>(arg)
     }
 
     /// The name of the primary key. The default primary key is id.
@@ -53,22 +69,6 @@ impl TableCreateBuilder {
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.2 = Some(parent);
         self
-    }
-
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<TableCreateReturnType>> {
-        let args = Command::from_json(&self.0);
-        let mut cmd = Command::new(TermType::TableCreate)
-            .with_arg(args)
-            .with_opts(self.1);
-
-        if let Some(parent) = self.2 {
-            cmd = cmd.with_parent(parent);
-        }
-            
-        let cmd = cmd.into_arg::<()>()
-            .into_cmd();
-
-        cmd.run::<_, TableCreateReturnType>(arg)
     }
 }
 
