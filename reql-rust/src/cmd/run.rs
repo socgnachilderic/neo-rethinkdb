@@ -1,7 +1,7 @@
 use super::args::Args;
-use crate::cmd::{Durability, ReadMode};
 use crate::constants::{DEFAULT_RETHINKDB_DBNAME, HEADER_SIZE, TOKEN_SIZE, DATA_SIZE};
 use crate::proto::{Payload, Query};
+use crate::types::{ReadMode, Durability};
 use crate::{err, r, Command, Connection, Result, Session};
 use async_stream::try_stream;
 use futures::io::{AsyncReadExt, AsyncWriteExt};

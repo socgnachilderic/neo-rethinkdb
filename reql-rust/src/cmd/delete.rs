@@ -1,5 +1,7 @@
-use crate::cmd::{self, Durability, ReturnChanges};
+use crate::cmd;
 use crate::Command;
+use crate::types::Durability;
+use crate::types::ReturnChanges;
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;

@@ -1,5 +1,6 @@
 use super::args::Args;
-use crate::cmd::{self, Durability, ReturnChanges};
+use crate::cmd;
+use crate::types::{Durability, ReturnChanges};
 use crate::{Command, Func};
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;

@@ -17,14 +17,14 @@ async fn changefeeds() -> reql_rust::Result<()> {
 
     let _ = r
         .table_create("foo")
-        .run::<_, Value>(&conn)
+        .run(&conn)
         .try_next()
         .await;
     let foo = r.table("foo").changes(()).run::<_, Value>(&conn);
 
     let _ = r
         .table_create("bar")
-        .run::<_, Value>(&conn)
+        .run(&conn)
         .try_next()
         .await;
     let bar = r.table("bar").changes(()).run::<_, Value>(&conn);

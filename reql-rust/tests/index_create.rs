@@ -10,7 +10,7 @@ async fn index_create() -> reql_rust::Result<()> {
 
     let _ = r
         .table_create("comments")
-        .run::<_, Value>(&conn)
+        .run(&conn)
         .try_next()
         .await;
 

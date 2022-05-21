@@ -1,7 +1,6 @@
 //! Common ReQL data types
 
 mod date_time;
-mod db_config;
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -59,19 +58,7 @@ pub struct CurrentIssue {}
 /// Structure of data in `db_config` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct DbCreateReturnType {
-    pub config_changes: Vec<db_config::DbConfigChange>,
-    pub dbs_created: u32,
-}
-
-/// Structure of data in `db_config` table
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
-pub struct DbDropReturnType {
-    pub config_changes: Vec<db_config::DbConfigChange>,
-    pub tables_dropped: u32,
-    pub dbs_dropped: u32,
-}
+pub struct DbConfig {}
 
 /// Structure of data in `jobs` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
