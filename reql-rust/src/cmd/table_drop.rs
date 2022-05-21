@@ -21,7 +21,7 @@ impl TableDropBuilder {
 
     pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<TableDropReturnType>> {
         let args = Command::from_json(&self.0);
-        let mut cmd = Command::new(TermType::TableCreate)
+        let mut cmd = Command::new(TermType::TableDrop)
             .with_arg(args);
 
         if let Some(parent) = self.1 {

@@ -72,7 +72,7 @@ pub mod types;
 
 use cmd::{
     db_create::DbCreateBuilder, db_drop::DbDropBuilder, db_list::DbListBuilder,
-    table_create::TableCreateBuilder, table_drop::TableDropBuilder, table_list::TableListBuilder,
+    table_create::TableCreateBuilder, table_drop::TableDropBuilder, table_list::TableListBuilder, db::DbBuilder,
 };
 use ql2::term::TermType;
 
@@ -311,8 +311,9 @@ impl r {
     /// r.db("heroes").table("marvel").run(conn)
     /// # });
     /// ```
-    pub fn db(self, arg: impl cmd::db::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn db(self, db_name: &str) -> DbBuilder {
+        // arg.arg().into_cmd()
+        DbBuilder::new(db_name)
     }
 
     /// Create a table
