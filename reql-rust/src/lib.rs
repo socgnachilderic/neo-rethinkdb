@@ -70,7 +70,7 @@ mod err;
 mod proto;
 mod constants;
 
-use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList, table_create::TableCreateBuilder};
+use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList, table_create::TableCreateBuilder, table_drop::TableDropBuilder};
 use ql2::term::TermType;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -444,6 +444,85 @@ impl r {
     /// ```
     pub fn table_create(self, table_name: &'static str) -> TableCreateBuilder {
         TableCreateBuilder::new(table_name)
+    }
+
+    /// Drop a table from a default database. The table and all its data will be deleted.
+    /// 
+    /// If successful, the command returns an object with two fields:
+    /// * `tables_dropped` : always `1`.
+    /// * `config_changes` : a list containing one two-field object, `old_val` and `new_val` :
+    ///     - `old_val` : the dropped table”s [config](https://rethinkdb.com/api/java/config) value.
+    ///     - `new_val` : always `null`.
+    /// 
+    /// If the given table does not exist in the database, the command throws `ReqlRuntimeError`.
+    /// 
+    /// ## Example
+    /// 
+    /// Drop a table named “dc_universe”.
+    /// 
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table_drop("dc_universe")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// # Return
+    /// 
+    /// ```text
+    /// Some(
+    ///     TableDropReturnType {
+    ///         config_changes: [
+    ///             DbConfigChange {
+    ///                 new_val: None,
+    ///                 old_val: Some(
+    ///                     DbConfigChangeValue {
+    ///                         id: "1bdc3c9c-e2ea-42d5-8c70-61dee9cb3f9d",
+    ///                         name: "dc_universe",
+    ///                         db: Some(
+    ///                             "test",
+    ///                         ),
+    ///                         durability: Some(
+    ///                             Hard,
+    ///                         ),
+    ///                         indexes: Some(
+    ///                             [],
+    ///                         ),
+    ///                         primary_key: Some(
+    ///                             "id",
+    ///                         ),
+    ///                         shards: Some(
+    ///                             [
+    ///                                 ShardType {
+    ///                                     primary_replica: "00_11_22_33_44_55_pha",
+    ///                                     replicas: [
+    ///                                         "00_11_22_33_44_55_pha",
+    ///                                     ],
+    ///                                 },
+    ///                             ],
+    ///                         ),
+    ///                         write_acks: Some(
+    ///                             Majority,
+    ///                         ),
+    ///                         write_hook: None,
+    ///                     },
+    ///                 ),
+    ///             },
+    ///         ],
+    ///         tables_dropped: 1,
+    ///     },
+    /// )
+    /// ```
+    pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
+        TableDropBuilder::new(table_name)
     }
 
     pub fn table(self, arg: impl cmd::table::Arg) -> Command {

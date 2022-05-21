@@ -30,6 +30,14 @@ pub struct TableCreateReturnType {
     pub tables_created: u32,
 }
 
+/// Structure of return data in `table_drop` table
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[non_exhaustive]
+pub struct TableDropReturnType {
+    pub config_changes: Vec<DbConfigChange>,
+    pub tables_dropped: u32,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct DbConfigChange {

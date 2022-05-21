@@ -172,6 +172,7 @@ use std::str;
 pub use crate::proto::Arg;
 
 use self::table_create::TableCreateBuilder;
+use self::table_drop::TableDropBuilder;
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
@@ -240,8 +241,31 @@ impl<'a> Command {
         TableCreateBuilder::new(table_name)._with_parent(self)
     }
 
-    pub fn table_drop(self, table_name: impl table_drop::Arg) -> Self {
-        table_name.arg().into_cmd().with_parent(self)
+    /// Drop a table from a database. The table and all its data will be deleted.
+    /// 
+    /// ## Example
+    /// 
+    /// Drop a table named “dc_universe”.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table_drop("dc_universe")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// See [r::table_create](crate::r::table_create) for more details.
+    /// 
+    pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
+        TableDropBuilder::new(table_name)._with_parent(self)
     }
 
     pub fn table_list(self) -> Self {
