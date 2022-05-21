@@ -263,8 +263,58 @@ impl<'a> Command {
         index_list::IndexListBuilder::new()._with_parent(self)
     }
 
-    pub fn index_rename(self, arg: impl index_rename::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Rename an existing secondary index on a table. 
+    /// 
+    /// If the `overwrite` option is specified as `true`, a previously existing index with the new name will be deleted and the index will be renamed.
+    /// If `overwrite` is `false` (the default) an error will be raised if the new index name already exists.
+    /// 
+    /// The return value on success will be an object of the format `{"renamed": 1}`, or `{"renamed": 0}` if the old and new names are the same.
+    /// 
+    /// An error will be raised if the old index name does not exist, if the new index name is already in use and 
+    /// `overwrite` is `false`, or if either the old or new index name are the same as the primary key field name.
+    /// 
+    /// ## Example
+    /// 
+    /// Rename an index on the comments table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("comments")
+    ///         .index_rename("postId", "messageId")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Rename an index on the users table, overwriting any existing index with the new name.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("users")
+    ///         .index_rename("mail", "email")
+    ///         .with_overwrite(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_rename(self, old_index_name: &str, new_index_name: &str) -> index_rename::IndexRenameBuilder {
+        index_rename::IndexRenameBuilder::new(old_index_name, new_index_name)._with_parent(self)
     }
 
     pub fn index_status(self, arg: impl index_status::Arg) -> Self {

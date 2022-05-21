@@ -22,6 +22,7 @@ pub struct DbResponseType {
 pub struct IndexResponseType {
     pub created: Option<u32>,
     pub dropped: Option<u32>,
+    pub renamed: Option<u8>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
