@@ -206,7 +206,7 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn db_create(self, db_name: &'static str) -> DbCreateBuilder {
+    pub fn db_create(self, db_name: &str) -> DbCreateBuilder {
         DbCreateBuilder::new(db_name)
     }
 
@@ -268,7 +268,7 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn db_drop(self, db_name: &'static str) -> DbDropBuilder {
+    pub fn db_drop(self, db_name: &str) -> DbDropBuilder {
         DbDropBuilder::new(db_name)
     }
 
@@ -459,7 +459,7 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    pub fn table_create(self, table_name: &'static str) -> TableCreateBuilder {
+    pub fn table_create(self, table_name: &str) -> TableCreateBuilder {
         TableCreateBuilder::new(table_name)
     }
 
@@ -538,7 +538,7 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
+    pub fn table_drop(self, table_name: &str) -> TableDropBuilder {
         TableDropBuilder::new(table_name)
     }
 

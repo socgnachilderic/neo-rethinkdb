@@ -1,24 +1,21 @@
-use std::borrow::Cow;
-
 use futures::Stream;
 use ql2::term::TermType;
 
 use crate::{Command, types::DbDropReturnType};
 
-use super::{StaticString, run};
+use super::run;
 
-pub struct DbDropBuilder(Cow<'static, str>);
+pub struct DbDropBuilder(Command);
 
 impl DbDropBuilder {
-    pub fn new(db_name: &'static str) -> Self {
-       DbDropBuilder(db_name.static_string())
+    pub fn new(db_name: &str) -> Self {
+        let args = Command::from_json(db_name);
+        DbDropBuilder(args)
     }
 
     pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbDropReturnType>> {
-        let args = Command::from_json(&self.0);
-        
         Command::new(TermType::DbDrop)
-            .with_arg(args)
+            .with_arg(self.0)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, DbDropReturnType>(arg)

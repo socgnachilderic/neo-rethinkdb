@@ -1,24 +1,21 @@
-use std::borrow::Cow;
-
 use futures::Stream;
 use ql2::term::TermType;
 
 use crate::{Command, types::DbCreateReturnType};
 
-use super::{StaticString, run};
+use super::run;
 
-pub struct DbCreateBuilder(Cow<'static, str>);
+pub struct DbCreateBuilder(Command);
 
 impl DbCreateBuilder {
-    pub fn new(db_name: &'static str) -> Self {
-        DbCreateBuilder(db_name.static_string())
+    pub fn new(db_name: &str) -> Self {
+        let args = Command::from_json(db_name);
+        DbCreateBuilder(args)
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbCreateReturnType>> {
-        let args = Command::from_json(&self.0);
-        
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbCreateReturnType>> {        
         Command::new(TermType::DbCreate)
-            .with_arg(args)
+            .with_arg(self.0)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, DbCreateReturnType>(arg)

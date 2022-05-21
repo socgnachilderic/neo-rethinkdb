@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize, Serializer};
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct DbCreateReturnType {
-    pub config_changes: Vec<DbConfigChange>,
+    pub config_changes: Vec<ConfigChange>,
     pub dbs_created: u32,
 }
 
@@ -17,7 +17,7 @@ pub struct DbCreateReturnType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct DbDropReturnType {
-    pub config_changes: Vec<DbConfigChange>,
+    pub config_changes: Vec<ConfigChange>,
     pub tables_dropped: u32,
     pub dbs_dropped: u32,
 }
@@ -26,7 +26,7 @@ pub struct DbDropReturnType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct TableCreateReturnType {
-    pub config_changes: Vec<DbConfigChange>,
+    pub config_changes: Vec<ConfigChange>,
     pub tables_created: u32,
 }
 
@@ -34,20 +34,20 @@ pub struct TableCreateReturnType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct TableDropReturnType {
-    pub config_changes: Vec<DbConfigChange>,
+    pub config_changes: Vec<ConfigChange>,
     pub tables_dropped: u32,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct DbConfigChange {
-    pub new_val: Option<DbConfigChangeValue>,
-    pub old_val: Option<DbConfigChangeValue>,
+pub struct ConfigChange {
+    pub new_val: Option<ConfigChangeValue>,
+    pub old_val: Option<ConfigChangeValue>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct DbConfigChangeValue {
+pub struct ConfigChangeValue {
     pub id: Cow<'static, str>,
     pub name: Cow<'static, str>,
 
@@ -82,6 +82,14 @@ pub enum Replicas {
 pub enum ReturnChanges {
     Bool(bool),
     Always,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(rename_all = "lowercase")]
+pub enum IdentifierFormat {
+    Name,
+    Uuid,
 }
 
 impl Serialize for ReturnChanges {

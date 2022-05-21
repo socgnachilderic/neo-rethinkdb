@@ -1,17 +1,18 @@
-use std::borrow::Cow;
-
 use futures::Stream;
 use ql2::term::TermType;
 
 use crate::{Command, types::TableDropReturnType};
 
-use super::{StaticString, run};
+use super::run;
 
-pub struct TableDropBuilder(Cow<'static, str>, Option<Command>);
+pub struct TableDropBuilder(Command, Option<Command>);
 
 impl TableDropBuilder {
-    pub fn new(table_name: &'static str) -> Self {
-        TableDropBuilder(table_name.static_string(), None)
+    pub fn new(table_name: &str) -> Self {
+        let args = Command::from_json(table_name);
+        let command = Command::new(TermType::TableDrop)
+            .with_arg(args);
+        TableDropBuilder(command, None)
     }
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
@@ -20,9 +21,7 @@ impl TableDropBuilder {
     }
 
     pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<TableDropReturnType>> {
-        let args = Command::from_json(&self.0);
-        let mut cmd = Command::new(TermType::TableDrop)
-            .with_arg(args);
+        let mut cmd = self.0;
 
         if let Some(parent) = self.1 {
             cmd = cmd.with_parent(parent);
@@ -32,11 +31,5 @@ impl TableDropBuilder {
             .into_cmd();
 
         cmd.run::<_, TableDropReturnType>(arg)
-    }
-}
-
-impl Into<Command> for TableDropBuilder {
-    fn into(self) -> Command {
-        Command::from_json(self.0)
     }
 }

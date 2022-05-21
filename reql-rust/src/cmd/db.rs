@@ -11,7 +11,7 @@ pub struct DbBuilder(Command);
 
 impl DbBuilder {
     pub fn new(db_name: &str) -> Self {
-        let args = Command::from_json(&db_name);
+        let args = Command::from_json(db_name);
 
         Self(
             Command::new(TermType::Db)
@@ -46,7 +46,7 @@ impl DbBuilder {
     /// 
     /// See [r::table_create](crate::r::table_create) for more details.
     /// 
-    pub fn table_create(self, table_name: &'static str) -> TableCreateBuilder {
+    pub fn table_create(self, table_name: &str) -> TableCreateBuilder {
         TableCreateBuilder::new(table_name)._with_parent(self.0)
     }
 
@@ -73,7 +73,7 @@ impl DbBuilder {
     /// 
     /// See [r::table_create](crate::r::table_create) for more details.
     /// 
-    pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
+    pub fn table_drop(self, table_name: &str) -> TableDropBuilder {
         TableDropBuilder::new(table_name)._with_parent(self.0)
     }
 
