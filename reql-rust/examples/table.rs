@@ -10,7 +10,7 @@ pub async fn main() -> Result<()> {
     //     .run(&conn)
     //     .try_next().await?;
 
-    let result = r.table_drop("foo").run(&conn).try_next().await?;
+    let result = r.table_list().run(&conn).try_next().await?;
 
     dbg!(result);
     Ok(())

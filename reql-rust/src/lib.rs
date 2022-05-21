@@ -70,7 +70,7 @@ mod err;
 mod proto;
 mod constants;
 
-use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList, table_create::TableCreateBuilder, table_drop::TableDropBuilder};
+use cmd::{db_create::DbCreate, db_drop::DbDrop, db_list::DbList, table_create::TableCreateBuilder, table_drop::TableDropBuilder, table_list::TableListBuilder};
 use ql2::term::TermType;
 
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -523,6 +523,29 @@ impl r {
     /// ```
     pub fn table_drop(self, table_name: &'static str) -> TableDropBuilder {
         TableDropBuilder::new(table_name)
+    }
+
+    /// List all table names in a default database. The result is a list of strings.
+    /// 
+    /// # Example
+    /// 
+    /// List all tables of the default database (‘test’).
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn table_list(self) -> TableListBuilder {
+        TableListBuilder::new()
     }
 
     pub fn table(self, arg: impl cmd::table::Arg) -> Command {

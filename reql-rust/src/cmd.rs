@@ -173,6 +173,7 @@ pub use crate::proto::Arg;
 
 use self::table_create::TableCreateBuilder;
 use self::table_drop::TableDropBuilder;
+use self::table_list::TableListBuilder;
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
@@ -268,8 +269,27 @@ impl<'a> Command {
         TableDropBuilder::new(table_name)._with_parent(self)
     }
 
-    pub fn table_list(self) -> Self {
-        Self::new(TermType::TableList).with_parent(self)
+    /// List all table names in a default database. The result is a list of strings.
+    /// 
+    /// # Example
+    /// 
+    /// List all tables of the ‘marvel’ database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").table_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn table_list(self) -> TableListBuilder {
+        TableListBuilder::new()._with_parent(self)
     }
 
     pub fn table(self, table_name: impl table::Arg) -> Self {
