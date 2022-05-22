@@ -59,7 +59,7 @@
 //!
 //! ```
 //! # reql_rust::example(|r, conn| async_stream::stream! {
-//! r.table("games").changes(()).run(conn)
+//! r.table("games").changes().run(conn)
 //! # });
 //! ```
 //!
@@ -78,15 +78,20 @@
 //! {old_val: null, new_val: {id: 1}}
 //! ```
 
-use crate::{cmd, Command};
+use crate::Command;
+use futures::Stream;
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
+
+use super::run;
+
+pub struct ChangesBuilder(Command, ChangesOption, Option<Command>);
 
 /// Optional arguments to `changes`
 #[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct Options {
+pub struct ChangesOption {
     /// Controls how change notifications are batched
     #[serde(skip_serializing_if = "Option::is_none")]
     pub squash: Option<Squash>,
@@ -160,20 +165,63 @@ pub enum Squash {
     Float(f32),
 }
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<Options>;
-}
-
-impl Arg for () {
-    fn arg(self) -> cmd::Arg<Options> {
-        Command::new(TermType::Changes)
-            .mark_change_feed()
-            .into_arg()
+impl ChangesBuilder {
+    pub fn new() -> Self {
+        let command = Command::new(TermType::Changes)
+            .mark_change_feed();
+        
+        Self(command, ChangesOption::default(), None)
     }
-}
 
-impl Arg for Options {
-    fn arg(self) -> cmd::Arg<Options> {
-        ().arg().with_opts(self)
+    pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
+    where
+        A: run::Arg,
+        T: Unpin + DeserializeOwned, 
+    {
+        let mut cmd = self.0.with_opts(self.1);
+
+        if let Some(parent) = self.2 {
+            cmd = cmd.with_parent(parent);
+        }
+            
+        let cmd = cmd.into_arg::<()>()
+            .into_cmd();
+
+        cmd.run::<_, T>(arg)
+    }
+
+    pub fn with_squash(mut self, squash: Squash) -> Self {
+        self.1.squash = Some(squash);
+        self
+    }
+
+    pub fn with_changefeed_queue_size(mut self, changefeed_queue_size: u32) -> Self {
+        self.1.changefeed_queue_size = Some(changefeed_queue_size);
+        self
+    }
+
+    pub fn with_include_initial(mut self, include_initial: bool) -> Self {
+        self.1.include_initial = Some(include_initial);
+        self
+    }
+
+    pub fn with_include_states(mut self, include_states: bool) -> Self {
+        self.1.include_states = Some(include_states);
+        self
+    }
+
+    pub fn with_include_offsets(mut self, include_offsets: bool) -> Self {
+        self.1.include_offsets = Some(include_offsets);
+        self
+    }
+
+    pub fn with_include_types(mut self, include_types: bool) -> Self {
+        self.1.include_types = Some(include_types);
+        self
+    }
+
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.2 = Some(parent);
+        self
     }
 }

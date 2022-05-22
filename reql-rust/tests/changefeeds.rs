@@ -20,14 +20,14 @@ async fn changefeeds() -> reql_rust::Result<()> {
         .run(&conn)
         .try_next()
         .await;
-    let foo = r.table("foo").changes(()).run::<_, Value>(&conn);
+    let foo = r.table("foo").changes().run::<_, Value>(&conn);
 
     let _ = r
         .table_create("bar")
         .run(&conn)
         .try_next()
         .await;
-    let bar = r.table("bar").changes(()).run::<_, Value>(&conn);
+    let bar = r.table("bar").changes().run::<_, Value>(&conn);
 
     let mut list = select_all(vec![foo, bar]);
 
