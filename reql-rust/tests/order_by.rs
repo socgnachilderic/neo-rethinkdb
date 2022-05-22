@@ -1,5 +1,5 @@
-use futures::TryStreamExt;
 use reql_rust::r;
+use reql_rust::prelude::*;
 use serde_json::Value;
 
 #[tokio::test]

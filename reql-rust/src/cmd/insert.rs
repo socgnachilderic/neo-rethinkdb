@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn r_table_insert() {
         let query = r.table("foo").insert(Document { item: "bar" });
-        let serialised = cmd::serialise(&query);
+        let serialised = cmd::serialise(&query.into());
         let expected = r#"[56,[[15,["foo"]],{"item":"bar"}]]"#;
         assert_eq!(serialised, expected);
     }

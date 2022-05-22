@@ -4,7 +4,8 @@ use ql2::term::TermType;
 use super::{
     table_create::TableCreateBuilder,
     table_drop::TableDropBuilder,
-    table_list::TableListBuilder, table
+    table_list::TableListBuilder,
+    table::TableBuilder,
 };
 
 pub struct DbBuilder(Command);
@@ -100,8 +101,8 @@ impl DbBuilder {
         TableListBuilder::new()._with_parent(self.0)
     }
 
-    pub fn table(self, table_name: impl table::Arg) -> Command {
-        table_name.arg().into_cmd().with_parent(self.0)
+    pub fn table(self, table_name: &str) -> TableBuilder {
+        TableBuilder::new(table_name)._with_parent(self.0)
     }
 }
 
@@ -117,8 +118,8 @@ mod tests {
 
     #[test]
     fn r_db() {
-        let query = r.db("foo");
-        let serialised = cmd::serialise(&query.into());
+        let query = r.db("foo").into();
+        let serialised = cmd::serialise(&query);
         let expected = r#"[14,["foo"]]"#;
         assert_eq!(serialised, expected);
     }

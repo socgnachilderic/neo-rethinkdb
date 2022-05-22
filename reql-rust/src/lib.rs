@@ -70,10 +70,6 @@ pub mod prelude;
 mod proto;
 pub mod types;
 
-use cmd::{
-    db_create::DbCreateBuilder, db_drop::DbDropBuilder, db_list::DbListBuilder,
-    table_create::TableCreateBuilder, table_drop::TableDropBuilder, table_list::TableListBuilder, db::DbBuilder,
-};
 use ql2::term::TermType;
 
 pub use prelude::Func;
@@ -206,8 +202,8 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn db_create(self, db_name: &str) -> DbCreateBuilder {
-        DbCreateBuilder::new(db_name)
+    pub fn db_create(self, db_name: &str) -> cmd::db_create::DbCreateBuilder {
+        cmd::db_create::DbCreateBuilder::new(db_name)
     }
 
     /// Drop a database. The database, all its tables, and corresponding data will be deleted.
@@ -268,8 +264,8 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn db_drop(self, db_name: &str) -> DbDropBuilder {
-        DbDropBuilder::new(db_name)
+    pub fn db_drop(self, db_name: &str) -> cmd::db_drop::DbDropBuilder {
+        cmd::db_drop::DbDropBuilder::new(db_name)
     }
 
     /// List all database names in the cluster. The result is a list of strings.
@@ -292,8 +288,8 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    pub fn db_list(self) -> DbListBuilder {
-        DbListBuilder::new()
+    pub fn db_list(self) -> cmd::db_list::DbListBuilder {
+        cmd::db_list::DbListBuilder::new()
     }
 
     /// Reference a database
@@ -311,9 +307,8 @@ impl r {
     /// r.db("heroes").table("marvel").run(conn)
     /// # });
     /// ```
-    pub fn db(self, db_name: &str) -> DbBuilder {
-        // arg.arg().into_cmd()
-        DbBuilder::new(db_name)
+    pub fn db(self, db_name: &str) -> cmd::db::DbBuilder {
+        cmd::db::DbBuilder::new(db_name)
     }
 
     /// Create a table
@@ -459,8 +454,8 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    pub fn table_create(self, table_name: &str) -> TableCreateBuilder {
-        TableCreateBuilder::new(table_name)
+    pub fn table_create(self, table_name: &str) -> cmd::table_create::TableCreateBuilder {
+        cmd::table_create::TableCreateBuilder::new(table_name)
     }
 
     /// Drop a table from a default database. The table and all its data will be deleted.
@@ -538,8 +533,8 @@ impl r {
     ///     },
     /// )
     /// ```
-    pub fn table_drop(self, table_name: &str) -> TableDropBuilder {
-        TableDropBuilder::new(table_name)
+    pub fn table_drop(self, table_name: &str) -> cmd::table_drop::TableDropBuilder {
+        cmd::table_drop::TableDropBuilder::new(table_name)
     }
 
     /// List all table names in a default database. The result is a list of strings.
@@ -561,12 +556,12 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    pub fn table_list(self) -> TableListBuilder {
-        TableListBuilder::new()
+    pub fn table_list(self) -> cmd::table_list::TableListBuilder {
+        cmd::table_list::TableListBuilder::new()
     }
 
-    pub fn table(self, arg: impl cmd::table::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn table(self, table_name: &str) -> cmd::table::TableBuilder {
+        cmd::table::TableBuilder::new(table_name)
     }
 
     pub fn map(self, arg: impl cmd::map::Arg) -> Command {
@@ -653,8 +648,8 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn do_(self, arg: impl cmd::do_::Arg) -> Command {
-        arg.arg(None).into_cmd()
+    pub fn do_(self, func: Func) -> cmd::do_::DoBuilder {
+        cmd::do_::DoBuilder::new(func)
     }
 
     pub fn branch(self, arg: impl cmd::branch::Arg) -> Command {
