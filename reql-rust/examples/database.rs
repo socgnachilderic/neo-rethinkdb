@@ -2,7 +2,7 @@ use reql_rust::prelude::*;
 use reql_rust::{r, Result};
 
 #[tokio::main]
-pub async fn main() -> Result<()> {
+async fn main() -> Result<()> {
     let conn = r.connection().connect().await?;
 
     let result = r.db_list().run(&conn).try_next().await?;

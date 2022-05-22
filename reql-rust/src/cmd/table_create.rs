@@ -1,6 +1,6 @@
 use super::{StaticString, run};
 use crate::Command;
-use crate::types::{TableCreateReturnType, Durability, Replicas};
+use crate::types::{DbResponseType, Durability, Replicas};
 use futures::Stream;
 use ql2::term::TermType;
 use serde::{Serialize, Serializer};
@@ -26,7 +26,7 @@ impl TableCreateBuilder {
         Self(command, TableCreateOption::default(), None)
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<TableCreateReturnType>> {
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {
         let mut cmd = self.0.with_opts(self.1);
 
         if let Some(parent) = self.2 {
@@ -36,7 +36,7 @@ impl TableCreateBuilder {
         let cmd = cmd.into_arg::<()>()
             .into_cmd();
 
-        cmd.run::<_, TableCreateReturnType>(arg)
+        cmd.run::<_, DbResponseType>(arg)
     }
 
     /// The name of the primary key. The default primary key is id.

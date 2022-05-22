@@ -5,37 +5,37 @@ use std::{borrow::Cow, collections::HashMap};
 pub use reql_rust_types::*;
 use serde::{Deserialize, Serialize, Serializer};
 
-/// Structure of return data in `db_create` table
+/// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct DbCreateReturnType {
+pub struct DbResponseType {
     pub config_changes: Vec<ConfigChange>,
-    pub dbs_created: u32,
+    pub dbs_created: Option<u32>,
+    pub dbs_dropped: Option<u32>,
+    pub tables_created: Option<u32>,
+    pub tables_dropped: Option<u32>,
 }
 
-/// Structure of return data in `db_drop` table
+/// Structure of return data in `index` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct DbDropReturnType {
-    pub config_changes: Vec<ConfigChange>,
-    pub tables_dropped: u32,
-    pub dbs_dropped: u32,
+pub struct IndexResponseType {
+    pub created: Option<u32>,
+    pub dropped: Option<u32>,
+    pub renamed: Option<u8>,
 }
 
-/// Structure of return data in `table_create` table
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+/// Structure of return data in `index_status` table
+#[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
-pub struct TableCreateReturnType {
-    pub config_changes: Vec<ConfigChange>,
-    pub tables_created: u32,
-}
-
-/// Structure of return data in `table_drop` table
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
-pub struct TableDropReturnType {
-    pub config_changes: Vec<ConfigChange>,
-    pub tables_dropped: u32,
+pub struct IndexStatusResponseType {
+    pub geo: bool,
+    pub ready: bool,
+    pub multi: bool,
+    pub outdated: bool,
+    pub progress: Option<f64>,
+    pub index: Cow<'static, str>,
+    pub function: Binary,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

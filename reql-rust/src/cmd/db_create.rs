@@ -1,7 +1,8 @@
 use futures::Stream;
 use ql2::term::TermType;
 
-use crate::{Command, types::DbCreateReturnType};
+use crate::Command;
+use crate::types::DbResponseType;
 
 use super::run;
 
@@ -13,11 +14,11 @@ impl DbCreateBuilder {
         DbCreateBuilder(args)
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbCreateReturnType>> {        
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {        
         Command::new(TermType::DbCreate)
             .with_arg(self.0)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, DbCreateReturnType>(arg)
+            .run::<_, DbResponseType>(arg)
     }
 }

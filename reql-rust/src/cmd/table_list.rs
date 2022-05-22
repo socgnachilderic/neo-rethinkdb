@@ -33,4 +33,3 @@ impl TableListBuilder {
         cmd.run::<_, Vec<Cow<'static, str>>>(arg)
     }
 }
-

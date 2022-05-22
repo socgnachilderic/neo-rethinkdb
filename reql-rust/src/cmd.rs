@@ -209,28 +209,437 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_create(self, arg: impl index_create::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Create a new secondary index on a table. 
+    /// Secondary indexes improve the speed of many read queries at 
+    /// the slight cost of increased storage space and decreased write performance. 
+    /// For more information about secondary indexes, read the article 
+    /// “[Using secondary indexes in RethinkDB](https://rethinkdb.com/docs/secondary-indexes/python/).”
+    /// 
+    /// RethinkDB supports different types of secondary indexes:
+    /// 
+    /// - ***Simple indexes*** based on the value of a single field.
+    /// - ***Compound indexes*** based on multiple fields.
+    /// - ***Multi indexes*** based on arrays of values, 
+    /// created when passed `true` to the [with_multi](index_create::IndexCreateBuilder::with_multi) method.
+    /// - ***Geospatial indexes*** based on indexes of geometry objects, 
+    /// created when passed `true` to the [with_geo](index_create::IndexCreateBuilder::with_geo) method.
+    /// - Indexes based on ***arbitrary expressions***.
+    /// 
+    /// you can pass the [with_func](index_create::IndexCreateBuilder::with_func) 
+    /// method as a parameter to the `func!` macro to index nested fields
+    /// for more details, please refer to the [doc](https://rethinkdb.com/api/java/index_create)
+    /// 
+    /// If successful, `index_create` will return an object of the form `{"created": 1}`.
+    /// If an index by that name already exists on the table, a `ReqlRuntimeError` will be thrown.
+    /// 
+    /// ## Note
+    /// 
+    /// An index may not be immediately available after creation.
+    /// If your application needs to use indexes immediately after creation,
+    /// use the [index_wait](#method.index_wait) command to ensure the indexes are ready before use.
+    /// 
+    /// ## Example
+    /// 
+    /// Create a simple index based on the field `postId`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("postId")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a simple index based on the nested field `author > name`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("author_name")
+    ///         .with_func(func!(|row| row.bracket("author").bracket("name")))
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a geospatial index based on the field `location`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("places")
+    ///         .index_create("location")
+    ///         .with_geo(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// A geospatial index field should contain only geometry objects. It will work with geometry ReQL terms
+    /// ([get_intersecting](#method.get_intersecting) and [get_nearest](#method.get_nearest)) 
+    /// as well as index-specific terms ([index_status](#method.index_status), [index_wait](#method.index_wait), 
+    /// [index_drop](#method.index_drop) and [index_list](#method.index_list)). 
+    /// Using terms that rely on non-geometric ordering such as [get_all](#method.get_all),
+    /// [order_by](#method.order_by) and [between](#method.between) will result in an error.
+    /// 
+    /// ## Example
+    /// 
+    /// Create a compound index based on the fields `postId` and `date`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("postAndDate")
+    ///         .with_func(func!(|row| [row.clone().bracket("post_id"), row.bracket("date")]))
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a multi index based on the field `authors`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("posts")
+    ///         .index_create("authors")
+    ///         .with_multi(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a geospatial multi index based on the field `towers`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("networks")
+    ///         .index_create("towers")
+    ///         .with_geo(true)
+    ///         .with_multi(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_create(self, index_name: &str) -> index_create::IndexCreateBuilder {
+        index_create::IndexCreateBuilder::new(index_name)._with_parent(self)
     }
 
-    pub fn index_drop(self, arg: impl index_drop::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Delete a previously created secondary index of this table.
+    /// 
+    /// ## Example
+    /// 
+    /// Drop a secondary index named ‘code_name’.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("dc_universe")
+    ///         .index_drop("code_name")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_drop(self, index_name: &str) -> index_drop::IndexDropBuilder {
+        index_drop::IndexDropBuilder::new(index_name)._with_parent(self)
     }
 
-    pub fn index_list(self) -> Self {
-        Self::new(TermType::IndexList).with_parent(self)
+    /// List all the secondary indexes of this table.
+    /// 
+    /// ## Example
+    /// 
+    /// List the available secondary indexes for this table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("dc_universe")
+    ///         .index_list()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_list(self) -> index_list::IndexListBuilder {
+        index_list::IndexListBuilder::new()._with_parent(self)
     }
 
-    pub fn index_rename(self, arg: impl index_rename::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Rename an existing secondary index on a table. 
+    /// 
+    /// If the `overwrite` option is specified as `true`, a previously existing index with the new name will be deleted and the index will be renamed.
+    /// If `overwrite` is `false` (the default) an error will be raised if the new index name already exists.
+    /// 
+    /// The return value on success will be an object of the format `{"renamed": 1}`, or `{"renamed": 0}` if the old and new names are the same.
+    /// 
+    /// An error will be raised if the old index name does not exist, if the new index name is already in use and 
+    /// `overwrite` is `false`, or if either the old or new index name are the same as the primary key field name.
+    /// 
+    /// ## Example
+    /// 
+    /// Rename an index on the comments table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("comments")
+    ///         .index_rename("postId", "messageId")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Rename an index on the users table, overwriting any existing index with the new name.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("users")
+    ///         .index_rename("mail", "email")
+    ///         .with_overwrite(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_rename(self, old_index_name: &str, new_index_name: &str) -> index_rename::IndexRenameBuilder {
+        index_rename::IndexRenameBuilder::new(old_index_name, new_index_name)._with_parent(self)
     }
 
-    pub fn index_status(self, arg: impl index_status::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Get the status of the specified indexes on this table, or the status of all indexes on this table if no indexes are specified.
+    /// 
+    /// The result is an array where for each index, there will be an object like this one (shown as JSON):
+    /// 
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": true,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    /// 
+    /// or this one:
+    /// 
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": false,
+    ///     "progress": <float>,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Get the status of all the indexes on `test`
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Get the status of the `timestamp` index
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .with_one_index("timestamp")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Get the status of the `mail` and `author_name`` indexes
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .with_indexes(&vec!["mail", "author_name"])
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_status(self) -> index_status::IndexStatusBuilder {
+        index_status::IndexStatusBuilder::new()._with_parent(self)
     }
 
-    pub fn index_wait(self, arg: impl index_wait::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Wait for the specified indexes on this table to be ready, or for all indexes on this table to be ready if no indexes are specified.
+    /// 
+    /// The result is an array containing one object for each table index:
+    /// 
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": true,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    /// 
+    /// See the [index_status](#method.index_status) documentation for a description of the field values.
+    /// 
+    /// ## Example
+    /// 
+    /// Wait for all indexes on the table `test` to be ready
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Wait for `timestamp` index on the table `test` to be ready
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .with_one_index("timestamp")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Wait for `mail` and `author_name` indexes on the table `test` to be ready
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .with_indexes(&vec!["mail", "author_name"])
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_wait(self) -> index_wait::IndexWaitBuilder {
+        index_wait::IndexWaitBuilder::new()._with_parent(self)
     }
 
     pub fn set_write_hook(self, arg: impl set_write_hook::Arg) -> Self {
