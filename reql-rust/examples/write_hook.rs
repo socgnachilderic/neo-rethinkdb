@@ -7,9 +7,15 @@ async fn main() -> Result<()> {
     set_up(&conn).await?;
     conn.use_("marvel").await;
 
-    let result = r
-        .table("heroes")
+    /* let result = r.table("heroes")
         .set_write_hook(func!(|context, _, _| context.bracket("function")))
+        .run(&conn)
+        .try_next()
+        .await?;
+    dbg!(result); */
+
+    let result = r.table("heroes")
+        .get_write_hook()
         .run(&conn)
         .try_next()
         .await?;

@@ -72,12 +72,12 @@ impl TableBuilder {
     /// - ***Simple indexes*** based on the value of a single field.
     /// - ***Compound indexes*** based on multiple fields.
     /// - ***Multi indexes*** based on arrays of values,
-    /// created when passed `true` to the [with_multi](index_create::IndexCreateBuilder::with_multi) method.
+    /// created when passed `true` to the [with_multi](crate::cmd::index_create::IndexCreateBuilder::with_multi) method.
     /// - ***Geospatial indexes*** based on indexes of geometry objects,
-    /// created when passed `true` to the [with_geo](index_create::IndexCreateBuilder::with_geo) method.
+    /// created when passed `true` to the [with_geo](crate::cmd::index_create::IndexCreateBuilder::with_geo) method.
     /// - Indexes based on ***arbitrary expressions***.
     ///
-    /// you can pass the [with_func](index_create::IndexCreateBuilder::with_func)
+    /// you can pass the [with_func](crate::cmd::index_create::IndexCreateBuilder::with_func)
     /// method as a parameter to the `func!` macro to index nested fields
     /// for more details, please refer to the [doc](https://rethinkdb.com/api/java/index_create)
     ///
@@ -420,7 +420,8 @@ impl TableBuilder {
         super::index_status::IndexStatusBuilder::new()._with_parent(self.0)
     }
 
-    /// Wait for the specified indexes on this table to be ready, or for all indexes on this table to be ready if no indexes are specified.
+    /// Wait for the specified indexes on this table to be ready, 
+    /// or for all indexes on this table to be ready if no indexes are specified.
     ///
     /// The result is an array containing one object for each table index:
     ///
@@ -499,12 +500,78 @@ impl TableBuilder {
         super::index_wait::IndexWaitBuilder::new()._with_parent(self.0)
     }
 
+    /// Sets the write hook on a table or overwrites it if one already exists.
+    /// 
+    /// The `function` can be an anonymous function with the signature 
+    /// `(context: object, oldVal: object, newVal: object) -> object` or a binary
+    ///  representation obtained from the `function` field of [getWriteHook](#method.get_write_hook). 
+    /// The function must be deterministic, and so cannot use a subquery or the `r.js` command.
+    /// 
+    /// If successful, `set_write_hook` returns an object of the following form:
+    /// 
+    /// ## Return
+    /// 
+    /// ```text
+    /// {
+    ///     "function": <binary>,
+    ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a write hook that sets `modified_at` to the current time on each write operation.
+    /// 
+    /// ```ignore
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .set_write_hook(None)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn set_write_hook(self, func: Func) -> super::set_write_hook::SetWriteHookBuilder {
         super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.0)
     }
 
-    pub fn get_write_hook(self) -> Command {
-        Command::new(ql2::term::TermType::GetWriteHook)
+    /// Gets the write hook of this table. 
+    /// If a write hook exists, the result is an object of the following form:
+    /// 
+    /// ## Return
+    /// 
+    /// ```text
+    /// {
+    ///     "function": <binary>,
+    ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Get the write hook for the `comments` table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .get_write_hook()
+    ///         .run(&session)
+    ///         .try_next().await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn get_write_hook(self) -> super::get_write_hook::GetWriteBuilder {
+        super::get_write_hook::GetWriteBuilder::new()._with_parent(self.0)
     }
 
     /// Get a document by primary key.

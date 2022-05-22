@@ -38,6 +38,14 @@ pub struct IndexStatusResponseType {
     pub function: Binary,
 }
 
+/// Structure of return data in `index_status` table
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[non_exhaustive]
+pub struct WriteHookResponseType {
+    pub function: Binary,
+    pub query: Cow<'static, str>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct ConfigChange {
