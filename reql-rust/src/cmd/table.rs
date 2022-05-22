@@ -499,6 +499,14 @@ impl TableBuilder {
         super::index_wait::IndexWaitBuilder::new()._with_parent(self.0)
     }
 
+    pub fn set_write_hook(self, func: Func) -> super::set_write_hook::SetWriteHookBuilder {
+        super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.0)
+    }
+
+    pub fn get_write_hook(self) -> Command {
+        Command::new(ql2::term::TermType::GetWriteHook)
+    }
+
     /// Get a document by primary key.
     /// 
     /// If no document exists with that primary key, get will return `None`.

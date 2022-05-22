@@ -7,7 +7,7 @@ use serde::{Serialize, Serializer};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-pub struct TableCreateBuilder(Command, TableCreateOption, Option<Command>);
+pub struct TableCreateBuilder(Command, TableCreateOption);
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[non_exhaustive]
@@ -23,17 +23,11 @@ impl TableCreateBuilder {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::TableCreate).with_arg(args);
 
-        Self(command, TableCreateOption::default(), None)
+        Self(command, TableCreateOption::default())
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {
-        let mut cmd = self.0.with_opts(self.1);
-
-        if let Some(parent) = self.2 {
-            cmd = cmd.with_parent(parent);
-        }
-            
-        let cmd = cmd.into_arg::<()>()
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {       
+        let cmd = self.0.with_opts(self.1).into_arg::<()>()
             .into_cmd();
 
         cmd.run::<_, DbResponseType>(arg)
@@ -67,7 +61,7 @@ impl TableCreateBuilder {
     }
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.2 = Some(parent);
+        self.0 = self.0.with_parent(parent);
         self
     }
 }

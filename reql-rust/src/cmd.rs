@@ -205,14 +205,6 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn set_write_hook(self, arg: impl set_write_hook::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn get_write_hook(self) -> Self {
-        Self::new(TermType::GetWriteHook).with_parent(self)
-    }
-
     pub fn update(self, arg: impl update::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
