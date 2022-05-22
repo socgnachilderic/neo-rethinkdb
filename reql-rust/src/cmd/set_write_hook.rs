@@ -1,7 +1,7 @@
 use futures::Stream;
 use ql2::term::TermType;
 
-use crate::{cmd, Func, Command};
+use crate::{cmd, types::WriteHookResponseType, Command, Func};
 
 pub struct SetWriteHookBuilder(Command);
 
@@ -13,10 +13,13 @@ impl SetWriteHookBuilder {
         Self(command)
     }
 
-    pub fn run(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<serde_json::Value>> {       
+    pub fn run(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<WriteHookResponseType>> {
         let cmd = self.0.into_arg::<()>().into_cmd();
 
-        cmd.run::<_, serde_json::Value>(arg)
+        cmd.run::<_, WriteHookResponseType>(arg)
     }
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
