@@ -209,8 +209,163 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn index_create(self, arg: impl index_create::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    /// Create a new secondary index on a table. 
+    /// Secondary indexes improve the speed of many read queries at 
+    /// the slight cost of increased storage space and decreased write performance. 
+    /// For more information about secondary indexes, read the article 
+    /// “[Using secondary indexes in RethinkDB](https://rethinkdb.com/docs/secondary-indexes/python/).”
+    /// 
+    /// RethinkDB supports different types of secondary indexes:
+    /// 
+    /// - ***Simple indexes*** based on the value of a single field.
+    /// - ***Compound indexes*** based on multiple fields.
+    /// - ***Multi indexes*** based on arrays of values, 
+    /// created when passed `true` to the [with_multi](index_create::IndexCreateBuilder::with_multi) method.
+    /// - ***Geospatial indexes*** based on indexes of geometry objects, 
+    /// created when passed `true` to the [with_geo](index_create::IndexCreateBuilder::with_geo) method.
+    /// - Indexes based on ***arbitrary expressions***.
+    /// 
+    /// you can pass the [with_func](index_create::IndexCreateBuilder::with_func) 
+    /// method as a parameter to the `func!` macro to index nested fields
+    /// for more details, please refer to the [doc](https://rethinkdb.com/api/java/index_create)
+    /// 
+    /// If successful, `index_create` will return an object of the form `{"created": 1}`.
+    /// If an index by that name already exists on the table, a `ReqlRuntimeError` will be thrown.
+    /// 
+    /// ## Note
+    /// 
+    /// An index may not be immediately available after creation.
+    /// If your application needs to use indexes immediately after creation,
+    /// use the [index_wait](#method.index_wait) command to ensure the indexes are ready before use.
+    /// 
+    /// ## Example
+    /// 
+    /// Create a simple index based on the field `postId`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("postId")
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a simple index based on the nested field `author > name`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("author_name")
+    ///         .with_func(func!(|row| row.bracket("author").bracket("name")))
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a geospatial index based on the field `location`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("places")
+    ///         .index_create("location")
+    ///         .with_geo(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// A geospatial index field should contain only geometry objects. It will work with geometry ReQL terms
+    /// ([get_intersecting](#method.get_intersecting) and [get_nearest](#method.get_nearest)) 
+    /// as well as index-specific terms ([index_status](#method.index_status), [index_wait](#method.index_wait), 
+    /// [index_drop](#method.index_drop) and [index_list](#method.index_list)). 
+    /// Using terms that rely on non-geometric ordering such as [get_all](#method.get_all),
+    /// [order_by](#method.order_by) and [between](#method.between) will result in an error.
+    /// 
+    /// ## Example
+    /// 
+    /// Create a compound index based on the fields `postId` and `date`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("postAndDate")
+    ///         .with_func(func!(|row| [row.clone().bracket("post_id"), row.bracket("date")]))
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a multi index based on the field `authors`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("posts")
+    ///         .index_create("authors")
+    ///         .with_multi(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Create a geospatial multi index based on the field `towers`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("networks")
+    ///         .index_create("towers")
+    ///         .with_geo(true)
+    ///         .with_multi(true)
+    ///         .run(&session)
+    ///         .try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index_create(self, index_name: &str) -> index_create::IndexCreateBuilder {
+        index_create::IndexCreateBuilder::new(index_name)._with_parent(self)
     }
 
     /// Delete a previously created secondary index of this table.
@@ -423,7 +578,7 @@ impl<'a> Command {
     /// }
     /// ```
     /// 
-    /// See the [index_status](#index_status) documentation for a description of the field values.
+    /// See the [index_status](#method.index_status) documentation for a description of the field values.
     /// 
     /// ## Example
     /// 

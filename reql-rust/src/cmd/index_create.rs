@@ -1,86 +1,65 @@
-use super::args::Args;
-use crate::{cmd, Command, Func};
+use super::run;
+use crate::{Command, Func, types::IndexResponseType};
+use futures::Stream;
 use ql2::term::TermType;
-use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-#[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
-pub struct Options {
+pub struct IndexCreateBuilder(Command, IndexCreateOption, Option<Command>);
+
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
+pub struct IndexCreateOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multi: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub geo: Option<bool>,
 }
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<Options>;
-}
+impl IndexCreateBuilder {
+    pub fn new(index_name: &str) -> Self {
+        let args = Command::from_json(index_name);
+        let command = Command::new(TermType::IndexCreate).with_arg(args);
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<Options> {
-        Self::new(TermType::IndexCreate).with_arg(self).into_arg()
+        Self(command, IndexCreateOption::default(), None)
     }
-}
 
-impl<T> Arg for T
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        Command::from_json(self.into()).arg()
+    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<IndexResponseType>> {
+        let mut cmd = self.0.with_opts(self.1);
+
+        if let Some(parent) = self.2 {
+            cmd = cmd.with_parent(parent);
+        }
+            
+        let cmd = cmd.into_arg::<()>()
+            .into_cmd();
+
+        cmd.run::<_, IndexResponseType>(arg)
     }
-}
 
-impl<T> Arg for Args<(T, Func)>
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((name, Func(func))) = self;
-        name.arg().with_arg(func)
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.2 = Some(parent);
+        self
     }
-}
 
-impl<T, R> Arg for Args<(T, R)>
-where
-    T: Into<String>,
-    R: Into<Command>,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((name, query)) = self;
-        let func = Func::row(query);
-        Args((name, func)).arg()
+    pub fn with_func(mut self, func: Func) -> Self {
+        let Func(func) = func;
+        self.0 = self.0.with_arg(func);
+        self
     }
-}
 
-impl<T> Arg for Args<(T, Options)>
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((name, opts)) = self;
-        name.arg().with_opts(opts)
-    }
-}
 
-impl<T> Arg for Args<(T, Func, Options)>
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((name, Func(func), opts)) = self;
-        name.arg().with_arg(func).with_opts(opts)
-    }
-}
-
-impl<T, R> Arg for Args<(T, R, Options)>
-where
-    T: Into<String>,
-    R: Into<Command>,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((name, query, opts)) = self;
+    pub fn with_query(mut self, query: Command) -> Self {
         let Func(func) = Func::row(query);
-        name.arg().with_arg(func).with_opts(opts)
+        self.0 = self.0.with_arg(func);
+        self
+    }
+
+    pub fn with_multi(mut self, multi: bool) -> Self {
+        self.1.multi = Some(multi);
+        self
+    }
+
+    pub fn with_geo(mut self, geo: bool) -> Self {
+        self.1.geo = Some(geo);
+        self
     }
 }
