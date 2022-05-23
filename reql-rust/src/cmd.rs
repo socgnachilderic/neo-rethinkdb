@@ -205,10 +205,6 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn update(self, arg: impl update::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn replace(self, arg: impl replace::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

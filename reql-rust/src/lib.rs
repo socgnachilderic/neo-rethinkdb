@@ -274,7 +274,6 @@ impl r {
     ///
     /// ```
     /// use std::borrow::Cow;
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -300,9 +299,17 @@ impl r {
     /// Explicitly specify a database for a query.
     ///
     /// ```
-    /// # reql_rust::example(|r, conn| async_stream::stream! {
-    /// r.db("heroes").table("marvel").run(conn)
-    /// # });
+    /// use std::borrow::Cow;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _val = r.db("heroes")
+    ///         .table("marvel")
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
     /// ```
     pub fn db(self, db_name: &str) -> cmd::db::DbBuilder {
         cmd::db::DbBuilder::new(db_name)

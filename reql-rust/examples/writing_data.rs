@@ -1,5 +1,6 @@
-use reql_rust::{r, Result, Session};
+use reql_rust::{r, Result, Session, types::ReturnChanges};
 use serde::{Serialize, Deserialize};
+use serde_json::json;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Posts {
@@ -39,6 +40,12 @@ async fn main() -> Result<()> {
     
     let result = r.table("heroes")
         .insert(&posts)
+        .run(&conn).await?;
+    dbg!(result);
+
+    let result = r.table("heroes")
+        .update(&json!({ "status": "published" }))
+        .with_return_changes(ReturnChanges::Bool(true))
         .run(&conn).await?;
     dbg!(result);
 

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize, Serializer};
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct DbResponseType {
-    pub config_changes: Vec<ConfigChange>,
+    pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
     pub dbs_created: Option<u32>,
     pub dbs_dropped: Option<u32>,
     pub tables_created: Option<u32>,
@@ -20,7 +20,7 @@ pub struct DbResponseType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct WritingResponseType {
-    // pub changes: Option<Vec<WritingResponseChangesType<T>>>,
+    // pub changes: Option<Vec<ConfigChange<T>>>,
     pub deleted: Option<u32>,
     pub errors: Option<u32>,
     pub generated_keys: Option<Vec<Cow<'static, str>>>,
@@ -28,14 +28,6 @@ pub struct WritingResponseType {
     pub replaced: Option<u32>,
     pub skipped: Option<u32>,
     pub unchanged: Option<u32>,
-}
-
-/// Structure of return data in `db` table
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
-pub struct WritingResponseChangesType<T> {
-    pub new_val: Option<T>,
-    pub old_val: Option<T>,
 }
 
 /// Structure of return data in `index` table
@@ -70,9 +62,9 @@ pub struct WriteHookResponseType {
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct ConfigChange {
-    pub new_val: Option<ConfigChangeValue>,
-    pub old_val: Option<ConfigChangeValue>,
+pub struct ConfigChange<T> {
+    pub new_val: Option<T>,
+    pub old_val: Option<T>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

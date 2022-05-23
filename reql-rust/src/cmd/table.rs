@@ -1,12 +1,12 @@
 use crate::types::{IdentifierFormat, ReadMode};
 use crate::{Command, Func};
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
 
 use super::run;
 
-pub struct TableBuilder(Command, TableOption, Option<Command>);
+pub struct TableBuilder(Command, TableOption);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -22,23 +22,20 @@ impl TableBuilder {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::Table).with_arg(args);
 
-        Self(command, TableOption::default(), None)
+        Self(command, TableOption::default())
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<serde_json::Value>> {
-        let mut cmd = self.0.with_opts(self.1);
-
-        if let Some(parent) = self.2 {
-            cmd = cmd.with_parent(parent);
-        }
-
-        let cmd = cmd.into_arg::<()>().into_cmd();
-
-        cmd.run::<_, serde_json::Value>(arg)
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<serde_json::Value>> {
+        self.0.with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, serde_json::Value>(arg)
+            .try_next()
+            .await
     }
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.2 = Some(parent);
+        self.0 = self.0.with_parent(parent);
         self
     }
     pub fn with_read_mode(mut self, read_mode: ReadMode) -> Self {
@@ -584,35 +581,35 @@ impl TableBuilder {
         super::do_::DoBuilder::new(func)._with_parent(self.0)
     }
 
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Insert a document into the table `posts`.
-    /// 
+    ///
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
     /// use serde::Serialize;
-    /// 
+    ///
     /// #[derive(Serialize)]
     /// struct Posts<'a> {
     ///     id: u64,
     ///     title: &'a str,
     ///     content: &'a str,
     /// }
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     let post = Posts { id: 1, title: "Lorem ipsum", content: "Dolor sit amet" };
     ///     
     ///     r.table("heroes").insert(&post).run(&conn).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Return
-    /// 
+    ///
     /// ```text
     /// {
     ///    "deleted": 0,
@@ -623,34 +620,34 @@ impl TableBuilder {
     ///    "unchanged": 0
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Insert a document without a defined primary key into the table `posts` where the primary key is `id`.
-    /// 
+    ///
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
     /// use serde::Serialize;
-    /// 
+    ///
     /// #[derive(Serialize)]
     /// struct Posts<'a> {
     ///     title: &'a str,
     ///     content: &'a str,
     /// }
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     let post = Posts { title: "Lorem ipsum", content: "Dolor sit amet" };
     ///     
     ///     r.table("heroes").insert(&post).run(&conn).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Return
-    /// 
+    ///
     /// ```text
     /// {
     ///    "deleted": 0,
@@ -664,33 +661,37 @@ impl TableBuilder {
     ///    "unchanged": 0
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Insert multiple documents into the table `users`.
-    /// 
+    ///
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use serde::Serialize;
-    /// 
+    ///
     /// #[derive(Serialize)]
     /// struct Users<'a> {
     ///     id: &'a str,
     ///     email: &'a str,
     /// }
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     let user_1 = Users { id: "william", email: "william@rethinkdb.com" };
     ///     let user_2 = Users { id: "lara", email: "lara@rethinkdb.com" };
     ///     
     ///     r.table("heroes").insert(&vec![&user_1, &user_2]).run(&conn).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
     pub fn insert(self, document: &impl Serialize) -> super::insert::InsertBuilder {
         super::insert::InsertBuilder::new(document)._with_parent(self.0)
+    }
+
+    pub fn update(self, document: &impl Serialize) -> super::update::UpdateBuilder {
+        super::update::UpdateBuilder::new(document)._with_parent(self.0)
     }
 
     /// Orders the result based on the given column.

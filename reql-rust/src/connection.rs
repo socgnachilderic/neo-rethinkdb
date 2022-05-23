@@ -159,12 +159,11 @@ impl Session {
     ///
     /// ```
     /// use reql_rust::{r, Result};
-    /// use reql_rust::prelude::*;
     /// 
     /// async fn example() -> Result<()> {
     ///     let mut session = r.connection().connect().await?;
     ///     session.use_("marvel").await;
-    ///     r.table("heroes").run(&session).try_next().await?; // refers to r.db("marvel").table("heroes")
+    ///     r.table("heroes").run(&session).await?; // refers to r.db("marvel").table("heroes")
     ///     Ok(())
     ///}
     /// ```

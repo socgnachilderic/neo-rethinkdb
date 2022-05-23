@@ -1,10 +1,10 @@
 use crate::types::{Durability, ReturnChanges, WritingResponseType, Conflict};
-use crate::Command;
+use crate::{Command, Func};
 use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
 
-pub struct InsertBuilder(Command, InsertOption);
+pub struct InsertBuilder(Command, InsertOption, Option<Func>);
 
 // TODO finish this struct
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
@@ -27,16 +27,23 @@ impl InsertBuilder {
         let args = Command::from_json(document);
         let command = Command::new(TermType::Insert).with_arg(args);
 
-        Self(command, InsertOption::default())
+        Self(command, InsertOption::default(), None)
     }
 
     pub async fn run(
         self,
         arg: impl super::run::Arg,
     ) -> crate::Result<Option<WritingResponseType>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
+        let command = self.0;
+
+        let command = if let Some(Func(func)) = self.2 {
+            let args = func.with_opts(self.1);
+            command.with_arg(args)
+        } else {
+            command.with_opts(self.1)
+        };
+
+        command.into_arg::<()>()
             .into_cmd()
             .run::<_, WritingResponseType>(arg)
             .try_next()
@@ -63,11 +70,10 @@ impl InsertBuilder {
         self
     }
 
-    /* pub fn with_conflict_func(mut self, func: Func) -> Self {
-        let Func(func) = func;
-        self.1.conflict = func.to_json();
+    pub fn with_conflict_func(mut self, func: Func) -> Self {
+        self.2 = Some(func);
         self
-    } */
+    }
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
