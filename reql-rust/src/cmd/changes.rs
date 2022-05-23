@@ -57,7 +57,7 @@
 //!
 //! Start monitoring the changefeed in one client:
 //!
-//! ```
+//! ```ignore
 //! # reql_rust::example(|r, conn| async_stream::stream! {
 //! r.table("games").changes().run(conn)
 //! # });
@@ -65,7 +65,7 @@
 //!
 //! As these queries are performed in a second client
 //!
-//! ```
+//! ```ignore
 //! # use serde_json::json;
 //! # reql_rust::example(|r, conn| async_stream::stream! {
 //! r.table("games").insert(json!({"id": 1})).run(conn)

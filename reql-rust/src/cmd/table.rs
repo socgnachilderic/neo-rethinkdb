@@ -420,7 +420,7 @@ impl TableBuilder {
         super::index_status::IndexStatusBuilder::new()._with_parent(self.0)
     }
 
-    /// Wait for the specified indexes on this table to be ready, 
+    /// Wait for the specified indexes on this table to be ready,
     /// or for all indexes on this table to be ready if no indexes are specified.
     ///
     /// The result is an array containing one object for each table index:
@@ -501,27 +501,27 @@ impl TableBuilder {
     }
 
     /// Sets the write hook on a table or overwrites it if one already exists.
-    /// 
-    /// The `function` can be an anonymous function with the signature 
+    ///
+    /// The `function` can be an anonymous function with the signature
     /// `(context: object, oldVal: object, newVal: object) -> object` or a binary
-    ///  representation obtained from the `function` field of [getWriteHook](#method.get_write_hook). 
+    ///  representation obtained from the `function` field of [getWriteHook](#method.get_write_hook).
     /// The function must be deterministic, and so cannot use a subquery or the `r.js` command.
-    /// 
+    ///
     /// If successful, `set_write_hook` returns an object of the following form:
-    /// 
+    ///
     /// ## Return
-    /// 
+    ///
     /// ```text
     /// {
     ///     "function": <binary>,
     ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Create a write hook that sets `modified_at` to the current time on each write operation.
-    /// 
+    ///
     /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -540,22 +540,22 @@ impl TableBuilder {
         super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.0)
     }
 
-    /// Gets the write hook of this table. 
+    /// Gets the write hook of this table.
     /// If a write hook exists, the result is an object of the following form:
-    /// 
+    ///
     /// ## Return
-    /// 
+    ///
     /// ```text
     /// {
     ///     "function": <binary>,
     ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Get the write hook for the `comments` table.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -575,9 +575,9 @@ impl TableBuilder {
     }
 
     /// Get a document by primary key.
-    /// 
+    ///
     /// If no document exists with that primary key, get will return `None`.
-    /// 
+    ///
     /// ## Example
     ///
     /// Find a document by UUID.
@@ -604,9 +604,114 @@ impl TableBuilder {
         super::do_::DoBuilder::new(func)._with_parent(self.0)
     }
 
-    pub fn insert(self, arg: impl super::insert::Arg) -> Self {
-        // arg.arg().into_cmd().with_parent(self)
-        todo!()
+    /// 
+    /// ## Example
+    /// 
+    /// Insert a document into the table `posts`.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::Serialize;
+    /// 
+    /// #[derive(Serialize)]
+    /// struct Posts<'a> {
+    ///     id: u64,
+    ///     title: &'a str,
+    ///     content: &'a str,
+    /// }
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let post = Posts { id: 1, title: "Lorem ipsum", content: "Dolor sit amet" };
+    ///     
+    ///     r.table("heroes").insert(&post).run(&conn).try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Return
+    /// 
+    /// ```text
+    /// {
+    ///    "deleted": 0,
+    ///    "errors": 0,
+    ///    "inserted": 1,
+    ///    "replaced": 0,
+    ///    "skipped": 0,
+    ///    "unchanged": 0
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Insert a document without a defined primary key into the table `posts` where the primary key is `id`.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::Serialize;
+    /// 
+    /// #[derive(Serialize)]
+    /// struct Posts<'a> {
+    ///     title: &'a str,
+    ///     content: &'a str,
+    /// }
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let post = Posts { title: "Lorem ipsum", content: "Dolor sit amet" };
+    ///     
+    ///     r.table("heroes").insert(&post).run(&conn).try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Return
+    /// 
+    /// ```text
+    /// {
+    ///    "deleted": 0,
+    ///    "errors": 0,
+    ///    "generated_keys": [
+    ///        "dd782b64-70a7-43e4-b65e-dd14ae61d947"
+    ///    ],
+    ///    "inserted": 1,
+    ///    "replaced": 0,
+    ///    "skipped": 0,
+    ///    "unchanged": 0
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Insert multiple documents into the table `users`.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::Serialize;
+    /// 
+    /// #[derive(Serialize)]
+    /// struct Users<'a> {
+    ///     id: &'a str,
+    ///     email: &'a str,
+    /// }
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let user_1 = Users { id: "william", email: "william@rethinkdb.com" };
+    ///     let user_2 = Users { id: "lara", email: "lara@rethinkdb.com" };
+    ///     
+    ///     r.table("heroes").insert(&vec![&user_1, &user_2]).run(&conn).try_next().await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn insert(self, document: &impl Serialize) -> super::insert::InsertBuilder {
+        super::insert::InsertBuilder::new(document)._with_parent(self.0)
     }
 
     /// Orders the result based on the given column.

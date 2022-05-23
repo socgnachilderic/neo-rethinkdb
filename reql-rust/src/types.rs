@@ -16,6 +16,19 @@ pub struct DbResponseType {
     pub tables_dropped: Option<u32>,
 }
 
+/// Structure of return data in `db` table
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[non_exhaustive]
+pub struct WritingResponseType {
+    pub deleted: Option<u32>,
+    pub errors: Option<u32>,
+    pub generated_keys: Option<Vec<Cow<'static, str>>>,
+    pub inserted: Option<u32>,
+    pub replaced: Option<u32>,
+    pub skipped: Option<u32>,
+    pub unchanged: Option<u32>,
+}
+
 /// Structure of return data in `index` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
