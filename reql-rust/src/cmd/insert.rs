@@ -1,20 +1,25 @@
-use crate::types::{Durability, ReturnChanges, WritingResponseType};
+use crate::types::{Durability, ReturnChanges, WritingResponseType, Conflict};
 use crate::Command;
 use futures::TryStreamExt;
 use ql2::term::TermType;
-use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
 pub struct InsertBuilder(Command, InsertOption);
 
 // TODO finish this struct
-#[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct InsertOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub durability: Option<Durability>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub return_changes: Option<ReturnChanges>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub conflict: Option<Conflict>,
+    // #[serde(skip_serializing_if = "Option::is_none")]
+    // pub conflict_func: Command,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub ignore_write_hook: Option<bool>,
 }
 
 impl InsertBuilder {
@@ -47,6 +52,22 @@ impl InsertBuilder {
         self.1.return_changes = Some(return_changes);
         self
     }
+
+    pub fn with_ignore_write_hook(mut self, ignore_write_hook: bool) -> Self {
+        self.1.ignore_write_hook = Some(ignore_write_hook);
+        self
+    }
+
+    pub fn with_conflict(mut self, conflict: Conflict) -> Self {
+        self.1.conflict = Some(conflict);
+        self
+    }
+
+    /* pub fn with_conflict_func(mut self, func: Func) -> Self {
+        let Func(func) = func;
+        self.1.conflict = func.to_json();
+        self
+    } */
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);

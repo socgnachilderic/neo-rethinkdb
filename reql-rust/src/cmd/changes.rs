@@ -81,7 +81,6 @@
 use crate::Command;
 use futures::TryStreamExt;
 use ql2::term::TermType;
-use reql_rust_macros::CommandOptions;
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::run;
@@ -89,7 +88,7 @@ use super::run;
 pub struct ChangesBuilder(Command, ChangesOption);
 
 /// Optional arguments to `changes`
-#[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct ChangesOption {
     /// Controls how change notifications are batched

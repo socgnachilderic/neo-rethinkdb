@@ -2,14 +2,13 @@ use crate::types::{IdentifierFormat, ReadMode};
 use crate::{Command, Func};
 use futures::Stream;
 use ql2::term::TermType;
-use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
 use super::run;
 
 pub struct TableBuilder(Command, TableOption, Option<Command>);
 
-#[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct TableOption {
     #[serde(skip_serializing_if = "Option::is_none")]
