@@ -169,8 +169,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val: Option<DbResponseType> = r.db_create("superheroes")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -230,8 +229,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val = r.db_drop("superheroes")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -282,8 +280,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val = r.db_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -360,8 +357,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_create("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -427,8 +423,7 @@ impl r {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_create("dc_universe")
     ///         .with_primary_key("name")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -448,8 +443,7 @@ impl r {
     ///     let _ = r.table_create("dc_universe")
     ///         .with_shards(2)
     ///         .with_replicas(Replicas::Int(3))
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -480,8 +474,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_drop("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -550,8 +543,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }

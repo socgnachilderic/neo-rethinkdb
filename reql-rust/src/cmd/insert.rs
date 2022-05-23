@@ -1,6 +1,6 @@
 use crate::types::{Durability, ReturnChanges, WritingResponseType};
 use crate::Command;
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;
@@ -25,15 +25,17 @@ impl InsertBuilder {
         Self(command, InsertOption::default())
     }
 
-    pub fn run(
+    pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<WritingResponseType>> {
+    ) -> crate::Result<Option<WritingResponseType>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, WritingResponseType>(arg)
+            .try_next()
+            .await
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {

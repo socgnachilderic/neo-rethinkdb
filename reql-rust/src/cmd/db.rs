@@ -38,8 +38,7 @@ impl DbBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
     ///         .table_create("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     /// 
     ///     Ok(())
     /// }
@@ -65,8 +64,7 @@ impl DbBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
     ///         .table_drop("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     /// 
     ///     Ok(())
     /// }
@@ -91,8 +89,7 @@ impl DbBuilder {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("marvel").table_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     /// 
     ///     Ok(())
     /// }

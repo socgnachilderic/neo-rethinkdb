@@ -1,4 +1,4 @@
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 
 use crate::Command;
@@ -6,7 +6,7 @@ use crate::types::DbResponseType;
 
 use super::run;
 
-pub struct TableDropBuilder(Command, Option<Command>);
+pub struct TableDropBuilder(Command);
 
 impl TableDropBuilder {
     pub fn new(table_name: &str) -> Self {
@@ -14,24 +14,18 @@ impl TableDropBuilder {
         let command = Command::new(TermType::TableDrop)
             .with_arg(args);
 
-        TableDropBuilder(command, None)
+        TableDropBuilder(command)
     }
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.1 = Some(parent);
+        self.0 = self.0.with_parent(parent);
         self
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {
-        let mut cmd = self.0;
-
-        if let Some(parent) = self.1 {
-            cmd = cmd.with_parent(parent);
-        }
-            
-        let cmd = cmd.into_arg::<()>()
-            .into_cmd();
-
-        cmd.run::<_, DbResponseType>(arg)
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DbResponseType>> {
+        self.0.into_arg::<()>()
+            .into_cmd()
+            .run::<_, DbResponseType>(arg)
+            .try_next().await
     }
 }

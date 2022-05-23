@@ -10,14 +10,12 @@ async fn index_create() -> reql_rust::Result<()> {
     let _ = r
         .table_create("comments")
         .run(&conn)
-        .try_next()
         .await;
 
     let _ = r
         .table("comments")
         .index_drop("author_name")
         .run(&conn)
-        .try_next()
         .await;
 
     let _ = r
@@ -25,14 +23,12 @@ async fn index_create() -> reql_rust::Result<()> {
         .index_create("author_name")
         .with_func(func!(|doc| doc.bracket("author").bracket("name")))
         .run(&conn)
-        .try_next()
         .await?;
 
     let _ = r
         .table("comments")
         .index_drop("post_and_date")
         .run(&conn)
-        .try_next()
         .await;
 
     let _ = r
@@ -40,7 +36,6 @@ async fn index_create() -> reql_rust::Result<()> {
         .index_create("post_and_date")
         .with_func(func!(|doc| [doc.clone().bracket("post_id"), doc.bracket("date")]))
         .run(&conn)
-        .try_next()
         .await?;
 
     Ok(())

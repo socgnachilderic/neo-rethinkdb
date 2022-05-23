@@ -102,8 +102,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("comments")
     ///         .index_create("postId")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -122,8 +121,7 @@ impl TableBuilder {
     ///     let _ = r.table("comments")
     ///         .index_create("author_name")
     ///         .with_func(func!(|row| row.bracket("author").bracket("name")))
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -142,8 +140,7 @@ impl TableBuilder {
     ///     let _ = r.table("places")
     ///         .index_create("location")
     ///         .with_geo(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -169,8 +166,7 @@ impl TableBuilder {
     ///     let _ = r.table("comments")
     ///         .index_create("postAndDate")
     ///         .with_func(func!(|row| [row.clone().bracket("post_id"), row.bracket("date")]))
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -189,8 +185,7 @@ impl TableBuilder {
     ///     let _ = r.table("posts")
     ///         .index_create("authors")
     ///         .with_multi(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -210,8 +205,7 @@ impl TableBuilder {
     ///         .index_create("towers")
     ///         .with_geo(true)
     ///         .with_multi(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -235,8 +229,7 @@ impl TableBuilder {
     ///     let _ = r.db("heroes")
     ///         .table("dc_universe")
     ///         .index_drop("code_name")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -260,8 +253,7 @@ impl TableBuilder {
     ///     let _ = r.db("heroes")
     ///         .table("dc_universe")
     ///         .index_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -293,8 +285,7 @@ impl TableBuilder {
     ///     let _ = r.db("heroes")
     ///         .table("comments")
     ///         .index_rename("postId", "messageId")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -314,8 +305,7 @@ impl TableBuilder {
     ///         .table("users")
     ///         .index_rename("mail", "email")
     ///         .with_overwrite(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -370,8 +360,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("users")
     ///         .index_status()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -390,8 +379,7 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_status()
     ///         .with_one_index("timestamp")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -410,8 +398,7 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_status()
     ///         .with_indexes(&vec!["mail", "author_name"])
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -450,8 +437,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("users")
     ///         .index_wait()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -470,8 +456,7 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_wait()
     ///         .with_one_index("timestamp")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -490,8 +475,7 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_wait()
     ///         .with_indexes(&vec!["mail", "author_name"])
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -530,8 +514,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("comments")
     ///         .set_write_hook(None)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -564,8 +547,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("comments")
     ///         .get_write_hook()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -590,8 +572,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("posts")
     ///         .get("a9849eef-7176-4411-935b-79a6e3c56a74")
-    ///         .run::<_, serde_json::Value>(&session)
-    ///         .try_next().await?;
+    ///         .run::<_, serde_json::Value>(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -625,7 +606,7 @@ impl TableBuilder {
     ///     let mut conn = r.connection().connect().await?;
     ///     let post = Posts { id: 1, title: "Lorem ipsum", content: "Dolor sit amet" };
     ///     
-    ///     r.table("heroes").insert(&post).run(&conn).try_next().await?;
+    ///     r.table("heroes").insert(&post).run(&conn).await?;
     /// 
     ///     Ok(())
     /// }
@@ -663,7 +644,7 @@ impl TableBuilder {
     ///     let mut conn = r.connection().connect().await?;
     ///     let post = Posts { title: "Lorem ipsum", content: "Dolor sit amet" };
     ///     
-    ///     r.table("heroes").insert(&post).run(&conn).try_next().await?;
+    ///     r.table("heroes").insert(&post).run(&conn).await?;
     /// 
     ///     Ok(())
     /// }
@@ -691,7 +672,6 @@ impl TableBuilder {
     /// 
     /// ```
     /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
     /// use serde::Serialize;
     /// 
     /// #[derive(Serialize)]
@@ -705,7 +685,7 @@ impl TableBuilder {
     ///     let user_1 = Users { id: "william", email: "william@rethinkdb.com" };
     ///     let user_2 = Users { id: "lara", email: "lara@rethinkdb.com" };
     ///     
-    ///     r.table("heroes").insert(&vec![&user_1, &user_2]).run(&conn).try_next().await?;
+    ///     r.table("heroes").insert(&vec![&user_1, &user_2]).run(&conn).await?;
     /// 
     ///     Ok(())
     /// }

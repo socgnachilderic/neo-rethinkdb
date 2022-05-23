@@ -79,14 +79,14 @@
 //! ```
 
 use crate::Command;
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::run;
 
-pub struct ChangesBuilder(Command, ChangesOption, Option<Command>);
+pub struct ChangesBuilder(Command, ChangesOption);
 
 /// Optional arguments to `changes`
 #[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
@@ -170,24 +170,20 @@ impl ChangesBuilder {
         let command = Command::new(TermType::Changes)
             .mark_change_feed();
         
-        Self(command, ChangesOption::default(), None)
+        Self(command, ChangesOption::default())
     }
 
-    pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
+    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<T>>
     where
         A: run::Arg,
         T: Unpin + DeserializeOwned, 
     {
-        let mut cmd = self.0.with_opts(self.1);
-
-        if let Some(parent) = self.2 {
-            cmd = cmd.with_parent(parent);
-        }
-            
-        let cmd = cmd.into_arg::<()>()
-            .into_cmd();
-
-        cmd.run::<_, T>(arg)
+        self.0.with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, T>(arg)
+            .try_next()
+            .await
     }
 
     pub fn with_squash(mut self, squash: Squash) -> Self {
@@ -221,7 +217,7 @@ impl ChangesBuilder {
     }
 
     pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.2 = Some(parent);
+        self.0 = self.0.with_parent(parent);
         self
     }
 }
