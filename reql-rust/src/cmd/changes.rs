@@ -215,6 +215,7 @@ impl ChangesBuilder {
         self
     }
 
+    #[doc(hidden)]
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self

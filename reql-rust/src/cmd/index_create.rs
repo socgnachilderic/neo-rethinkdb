@@ -30,11 +30,6 @@ impl IndexCreateBuilder {
             .try_next().await
     }
 
-    pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-
     pub fn with_func(mut self, func: Func) -> Self {
         let Func(func) = func;
         self.0 = self.0.with_arg(func);
@@ -55,6 +50,12 @@ impl IndexCreateBuilder {
 
     pub fn with_geo(mut self, geo: bool) -> Self {
         self.1.geo = Some(geo);
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
         self
     }
 }

@@ -1,4 +1,5 @@
 use reql_rust::{r, Result, Session, types::ReturnChanges};
+use reql_rust::prelude::*;
 use serde::{Serialize, Deserialize};
 use serde_json::json;
 

@@ -15,15 +15,16 @@ impl IndexDropBuilder {
         IndexDropBuilder(command)
     }
 
-    pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-
     pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<IndexResponseType>> {
         self.0.into_arg::<()>()
             .into_cmd()
             .run::<_, IndexResponseType>(arg)
             .try_next().await
+    }
+
+    #[doc(hidden)]
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
+        self
     }
 }

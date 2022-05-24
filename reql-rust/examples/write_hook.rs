@@ -1,4 +1,5 @@
 use reql_rust::{r, Result, Session};
+use reql_rust::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {

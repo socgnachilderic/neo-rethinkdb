@@ -15,6 +15,7 @@ impl TableListBuilder {
         TableListBuilder(Command::new(TermType::TableList))
     }
 
+    #[doc(hidden)]
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self

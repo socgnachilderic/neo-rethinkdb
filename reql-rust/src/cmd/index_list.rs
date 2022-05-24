@@ -14,11 +14,6 @@ impl IndexListBuilder {
         IndexListBuilder(Command::new(TermType::IndexList))
     }
 
-    pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-
     pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Vec<Cow<'static, str>>>> {
         self.0
             .into_arg::<()>()
@@ -26,5 +21,11 @@ impl IndexListBuilder {
             .run::<_, Vec<Cow<'static, str>>>(arg)
             .try_next()
             .await
+    }
+
+    #[doc(hidden)]
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
+        self
     }
 }

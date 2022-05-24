@@ -20,14 +20,33 @@ pub struct DbResponseType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct WritingResponseType {
-    // pub changes: Option<Vec<ConfigChange<T>>>,
+    /* /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation. 
+    /// Each object will have two keys: {new_val: <new value>, old_val: <old value>}.
+    pub changes: Option<Vec<ConfigChange<T>>>, */
+
+
+    /// For an update operation.
+    /// For an insert operation.
     pub deleted: Option<u32>,
+    /// The number of errors encountered while performing the insert, update.
     pub errors: Option<u32>,
+    /// If errors were encountered, contains the text of the first error.
+    pub first_error: Option<u32>,
+    /// A list of generated primary keys for inserted documents whose primary keys were not specified (capped to 100,000).
     pub generated_keys: Option<Vec<Cow<'static, str>>>,
+    /// The number of documents successfully inserted.
     pub inserted: Option<u32>,
+
+    /// The number of documents updated when `conflict` is set to `"replace"` or `"update"`.
     pub replaced: Option<u32>,
+    /// The number of documents that were skipped because the document didn’t exist.
+    /// For an insert operation.
     pub skipped: Option<u32>,
+    /// The number of documents that would have been modified except the new value was the same as the old value.
+    /// The number of documents updated when `conflict` is set to `"replace"` or `"update"`.
     pub unchanged: Option<u32>,
+    /// If the field generated_keys is truncated, you will get the warning `“Too many generated keys (<X>), array truncated to 100000.”`.
+    pub warnings: Option<u32>,
 }
 
 /// Structure of return data in `index` table

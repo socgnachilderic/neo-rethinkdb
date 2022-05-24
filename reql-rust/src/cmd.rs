@@ -162,14 +162,745 @@ pub mod without;
 pub mod year;
 pub mod zip;
 
-use crate::Command;
+use crate::{Command, Func};
 use futures::stream::Stream;
 use ql2::term::TermType;
+use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::borrow::Cow;
 use std::str;
 
 pub use crate::proto::Arg;
+
+pub trait ReqlDbTableManipulatingOps: Into<Command> {
+    /// Create a table
+    ///
+    /// A RethinkDB table is a collection of JSON documents.
+    ///
+    /// ## Example
+    ///
+    /// Create a table named "dc_universe" with the default settings.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table_create("dc_universe")
+    ///         .run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// See [r::table_create](crate::r::table_create) for more details.
+    /// 
+    fn table_create(self, table_name: &str) -> table_create::TableCreateBuilder {
+        table_create::TableCreateBuilder::new(table_name)._with_parent(self.into())
+    }
+
+    /// Drop a table from a database. The table and all its data will be deleted.
+    /// 
+    /// ## Example
+    /// 
+    /// Drop a table named “dc_universe”.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table_drop("dc_universe")
+    ///         .run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// See [r::table_create](crate::r::table_create) for more details.
+    /// 
+    fn table_drop(self, table_name: &str) -> table_drop::TableDropBuilder {
+        table_drop::TableDropBuilder::new(table_name)._with_parent(self.into())
+    }
+
+    /// List all table names in a default database. The result is a list of strings.
+    /// 
+    /// # Example
+    /// 
+    /// List all tables of the ‘marvel’ database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").table_list()
+    ///         .run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    fn table_list(self) -> table_list::TableListBuilder {
+        table_list::TableListBuilder::new()._with_parent(self.into())
+    }
+}
+
+pub trait ReqlTableManipulatingOps: Into<Command> {
+    /// Create a new secondary index on a table.
+    /// Secondary indexes improve the speed of many read queries at
+    /// the slight cost of increased storage space and decreased write performance.
+    /// For more information about secondary indexes, read the article
+    /// “[Using secondary indexes in RethinkDB](https://rethinkdb.com/docs/secondary-indexes/python/).”
+    ///
+    /// RethinkDB supports different types of secondary indexes:
+    ///
+    /// - ***Simple indexes*** based on the value of a single field.
+    /// - ***Compound indexes*** based on multiple fields.
+    /// - ***Multi indexes*** based on arrays of values,
+    /// created when passed `true` to the [with_multi](crate::cmd::index_create::IndexCreateBuilder::with_multi) method.
+    /// - ***Geospatial indexes*** based on indexes of geometry objects,
+    /// created when passed `true` to the [with_geo](crate::cmd::index_create::IndexCreateBuilder::with_geo) method.
+    /// - Indexes based on ***arbitrary expressions***.
+    ///
+    /// you can pass the [with_func](crate::cmd::index_create::IndexCreateBuilder::with_func)
+    /// method as a parameter to the `func!` macro to index nested fields
+    /// for more details, please refer to the [doc](https://rethinkdb.com/api/java/index_create)
+    ///
+    /// If successful, `index_create` will return an object of the form `{"created": 1}`.
+    /// If an index by that name already exists on the table, a `ReqlRuntimeError` will be thrown.
+    ///
+    /// ## Note
+    ///
+    /// An index may not be immediately available after creation.
+    /// If your application needs to use indexes immediately after creation,
+    /// use the [index_wait](#method.index_wait) command to ensure the indexes are ready before use.
+    ///
+    /// ## Example
+    ///
+    /// Create a simple index based on the field `postId`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("postId")
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Create a simple index based on the nested field `author > name`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("author_name")
+    ///         .with_func(func!(|row| row.bracket("author").bracket("name")))
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Create a geospatial index based on the field `location`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("places")
+    ///         .index_create("location")
+    ///         .with_geo(true)
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// A geospatial index field should contain only geometry objects. It will work with geometry ReQL terms
+    /// ([get_intersecting](#method.get_intersecting) and [get_nearest](#method.get_nearest))
+    /// as well as index-specific terms ([index_status](#method.index_status), [index_wait](#method.index_wait),
+    /// [index_drop](#method.index_drop) and [index_list](#method.index_list)).
+    /// Using terms that rely on non-geometric ordering such as [get_all](#method.get_all),
+    /// [order_by](#method.order_by) and [between](#method.between) will result in an error.
+    ///
+    /// ## Example
+    ///
+    /// Create a compound index based on the fields `postId` and `date`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .index_create("postAndDate")
+    ///         .with_func(func!(|row| [row.clone().bracket("post_id"), row.bracket("date")]))
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Create a multi index based on the field `authors`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("posts")
+    ///         .index_create("authors")
+    ///         .with_multi(true)
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Create a geospatial multi index based on the field `towers`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("networks")
+    ///         .index_create("towers")
+    ///         .with_geo(true)
+    ///         .with_multi(true)
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn index_create(self, index_name: &str) -> index_create::IndexCreateBuilder {
+        index_create::IndexCreateBuilder::new(index_name)._with_parent(self.into())
+    }
+
+    /// Delete a previously created secondary index of this table.
+    ///
+    /// ## Example
+    ///
+    /// Drop a secondary index named ‘code_name’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("dc_universe")
+    ///         .index_drop("code_name")
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn index_drop(self, index_name: &str) -> index_drop::IndexDropBuilder {
+        index_drop::IndexDropBuilder::new(index_name)._with_parent(self.into())
+    }
+
+    /// List all the secondary indexes of this table.
+    ///
+    /// ## Example
+    ///
+    /// List the available secondary indexes for this table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("dc_universe")
+    ///         .index_list()
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn index_list(self) -> index_list::IndexListBuilder {
+        index_list::IndexListBuilder::new()._with_parent(self.into())
+    }
+
+    /// Rename an existing secondary index on a table.
+    ///
+    /// If the `overwrite` option is specified as `true`, a previously existing index with the new name will be deleted and the index will be renamed.
+    /// If `overwrite` is `false` (the default) an error will be raised if the new index name already exists.
+    ///
+    /// The return value on success will be an object of the format `{"renamed": 1}`, or `{"renamed": 0}` if the old and new names are the same.
+    ///
+    /// An error will be raised if the old index name does not exist, if the new index name is already in use and
+    /// `overwrite` is `false`, or if either the old or new index name are the same as the primary key field name.
+    ///
+    /// ## Example
+    ///
+    /// Rename an index on the comments table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("comments")
+    ///         .index_rename("postId", "messageId")
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Rename an index on the users table, overwriting any existing index with the new name.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table("users")
+    ///         .index_rename("mail", "email")
+    ///         .with_overwrite(true)
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn index_rename(
+        self,
+        old_index_name: &str,
+        new_index_name: &str,
+    ) -> index_rename::IndexRenameBuilder {
+        index_rename::IndexRenameBuilder::new(old_index_name, new_index_name)
+            ._with_parent(self.into())
+    }
+
+    /// Get the status of the specified indexes on this table, or the status of all indexes on this table if no indexes are specified.
+    ///
+    /// The result is an array where for each index, there will be an object like this one (shown as JSON):
+    ///
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": true,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    ///
+    /// or this one:
+    ///
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": false,
+    ///     "progress": <float>,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Get the status of all the indexes on `test`
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Get the status of the `timestamp` index
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .with_one_index("timestamp")
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Get the status of the `mail` and `author_name`` indexes
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_status()
+    ///         .with_indexes(&vec!["mail", "author_name"])
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn index_status(self) -> index_status::IndexStatusBuilder {
+        index_status::IndexStatusBuilder::new()._with_parent(self.into())
+    }
+
+    /// Wait for the specified indexes on this table to be ready,
+    /// or for all indexes on this table to be ready if no indexes are specified.
+    ///
+    /// The result is an array containing one object for each table index:
+    ///
+    /// ```text
+    /// {
+    ///     "index": <indexName>,
+    ///     "ready": true,
+    ///     "function": <binary>,
+    ///     "multi": <bool>,
+    ///     "geo": <bool>,
+    ///     "outdated": <bool>
+    /// }
+    /// ```
+    ///
+    /// See the [index_status](#method.index_status) documentation for a description of the field values.
+    ///
+    /// ## Example
+    ///
+    /// Wait for all indexes on the table `test` to be ready
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Wait for `timestamp` index on the table `test` to be ready
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .with_one_index("timestamp")
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Wait for `mail` and `author_name` indexes on the table `test` to be ready
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("users")
+    ///         .index_wait()
+    ///         .with_indexes(&vec!["mail", "author_name"])
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn index_wait(self) -> index_wait::IndexWaitBuilder {
+        index_wait::IndexWaitBuilder::new()._with_parent(self.into())
+    }
+
+    /// Sets the write hook on a table or overwrites it if one already exists.
+    ///
+    /// The `function` can be an anonymous function with the signature
+    /// `(context: object, oldVal: object, newVal: object) -> object` or a binary
+    ///  representation obtained from the `function` field of [getWriteHook](#method.get_write_hook).
+    /// The function must be deterministic, and so cannot use a subquery or the `r.js` command.
+    ///
+    /// If successful, `set_write_hook` returns an object of the following form:
+    ///
+    /// ## Return
+    ///
+    /// ```text
+    /// {
+    ///     "function": <binary>,
+    ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Create a write hook that sets `modified_at` to the current time on each write operation.
+    ///
+    /// ```ignore
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .set_write_hook(None)
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn set_write_hook(self, func: Func) -> set_write_hook::SetWriteHookBuilder {
+        set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.into())
+    }
+
+    /// Gets the write hook of this table.
+    /// If a write hook exists, the result is an object of the following form:
+    ///
+    /// ## Return
+    ///
+    /// ```text
+    /// {
+    ///     "function": <binary>,
+    ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Get the write hook for the `comments` table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments")
+    ///         .get_write_hook()
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn get_write_hook(self) -> get_write_hook::GetWriteBuilder {
+        get_write_hook::GetWriteBuilder::new()._with_parent(self.into())
+    }
+}
+
+pub trait ReqlTableWritingOps: Into<Command> {
+    ///
+    /// ## Example
+    ///
+    /// Insert a document into the table `posts`.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Posts<'a> {
+    ///     id: u64,
+    ///     title: &'a str,
+    ///     content: &'a str,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let post = Posts { id: 1, title: "Lorem ipsum", content: "Dolor sit amet" };
+    ///     
+    ///     r.table("heroes").insert(&post).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Return
+    ///
+    /// ```text
+    /// {
+    ///    "deleted": 0,
+    ///    "errors": 0,
+    ///    "inserted": 1,
+    ///    "replaced": 0,
+    ///    "skipped": 0,
+    ///    "unchanged": 0
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Insert a document without a defined primary key into the table `posts` where the primary key is `id`.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Posts<'a> {
+    ///     title: &'a str,
+    ///     content: &'a str,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let post = Posts { title: "Lorem ipsum", content: "Dolor sit amet" };
+    ///     
+    ///     r.table("heroes").insert(&post).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Return
+    ///
+    /// ```text
+    /// {
+    ///    "deleted": 0,
+    ///    "errors": 0,
+    ///    "generated_keys": [
+    ///        "dd782b64-70a7-43e4-b65e-dd14ae61d947"
+    ///    ],
+    ///    "inserted": 1,
+    ///    "replaced": 0,
+    ///    "skipped": 0,
+    ///    "unchanged": 0
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Insert multiple documents into the table `users`.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::Serialize;
+    ///
+    /// #[derive(Serialize)]
+    /// struct Users<'a> {
+    ///     id: &'a str,
+    ///     email: &'a str,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let user_1 = Users { id: "william", email: "william@rethinkdb.com" };
+    ///     let user_2 = Users { id: "lara", email: "lara@rethinkdb.com" };
+    ///     
+    ///     r.table("heroes").insert(&vec![&user_1, &user_2]).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn insert(self, document: &impl Serialize) -> insert::InsertBuilder {
+        insert::InsertBuilder::new(document)._with_parent(self.into())
+    }
+
+    /// Update JSON documents in a table. Accepts a JSON document, 
+    /// a ReQL expression, or a combination of the two.
+    /// 
+    /// You can use the following method to setting query:
+    /// 
+    /// * [with_durability(durability: reql_rust::types::Durability)](update::UpdateBuilder::with_durability)
+    /// possible values are `Durability::Hard` and `Durability::Soft`. This option will override the table or query’s durability setting (set in [run](run)). 
+    /// In soft durability mode RethinkDB will acknowledge the write immediately after receiving it, but before the write has been committed to disk.
+    /// * [with_return_changes(return_changes: reql_rust::types::ReturnChanges)](update::UpdateBuilder::with_return_changes) :
+    ///     - `ReturnChanges::Bool(true)` : return a `changes` array consisting of `old_val`/`new_val` objects describing the changes made, 
+    ///         only including the documents actually updated.
+    ///     - `ReturnChanges::Bool(false)` : do not return a `changes` array (the default).
+    ///     - `ReturnChanges::Always"` : behave as `ReturnChanges::Bool(true)`, 
+    ///         but include all documents the command tried to update whether or not the update was successful.
+    /// * [with_non_atomic(non_atomic: bool)](update::UpdateBuilder::with_non_atomic)
+    /// if set to `true`, executes the update and distributes the result to replicas in a non-atomic fashion. 
+    /// This flag is required to perform non-deterministic updates, such as those that require
+    /// * [with_ignore_write_hook(ignore_write_hook: bool)](update::UpdateBuilder::with_ignore_write_hook)
+    /// If `true`, and if the user has the config permission, ignores any [write hook](set_write_hook::SetWriteHookBuilder) when performing the update.
+    /// 
+    /// Update returns a struct [WritingResponseType](crate::types::WritingResponseType):
+    /// 
+    /// ## Example
+    /// 
+    /// Update the status of all posts to published.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes").insert(&json!({ "status": "published" })).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn update(self, document: &impl Serialize) -> update::UpdateBuilder {
+        update::UpdateBuilder::new(document)._with_parent(self.into())
+    }
+}
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
