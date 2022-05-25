@@ -1,4 +1,4 @@
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 
 use crate::Command;
@@ -14,12 +14,13 @@ impl DbDropBuilder {
         DbDropBuilder(args)
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DbResponseType>> {
         Command::new(TermType::DbDrop)
             .with_arg(self.0)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, DbResponseType>(arg)
+            .try_next().await
     }
 }
 

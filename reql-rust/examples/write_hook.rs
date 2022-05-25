@@ -17,7 +17,6 @@ async fn main() -> Result<()> {
     let result = r.table("heroes")
         .get_write_hook()
         .run(&conn)
-        .try_next()
         .await?;
     dbg!(result);
 
@@ -26,19 +25,18 @@ async fn main() -> Result<()> {
 }
 
 async fn set_up(conn: &Session) -> Result<()> {
-    r.db_create("marvel").run(conn).try_next().await?;
+    r.db_create("marvel").run(conn).await?;
     r.db("marvel")
         .table_create("heroes")
         .run(conn)
-        .try_next()
         .await?;
 
     Ok(())
 }
 
 async fn tear_down(conn: &Session) -> Result<()> {
-    r.table_drop("heroes").run(conn).try_next().await?;
-    r.db_drop("marvel").run(conn).try_next().await?;
+    r.table_drop("heroes").run(conn).await?;
+    r.db_drop("marvel").run(conn).await?;
 
     Ok(())
 }

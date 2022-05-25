@@ -1,10 +1,10 @@
 use super::run;
 use crate::{Command, Func, types::IndexResponseType};
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
 
-pub struct IndexCreateBuilder(Command, IndexCreateOption, Option<Command>);
+pub struct IndexCreateBuilder(Command, IndexCreateOption);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 pub struct IndexCreateOption {
@@ -19,25 +19,15 @@ impl IndexCreateBuilder {
         let args = Command::from_json(index_name);
         let command = Command::new(TermType::IndexCreate).with_arg(args);
 
-        Self(command, IndexCreateOption::default(), None)
+        Self(command, IndexCreateOption::default())
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<IndexResponseType>> {
-        let mut cmd = self.0.with_opts(self.1);
-
-        if let Some(parent) = self.2 {
-            cmd = cmd.with_parent(parent);
-        }
-            
-        let cmd = cmd.into_arg::<()>()
-            .into_cmd();
-
-        cmd.run::<_, IndexResponseType>(arg)
-    }
-
-    pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.2 = Some(parent);
-        self
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<IndexResponseType>> {
+        self.0.with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, IndexResponseType>(arg)
+            .try_next().await
     }
 
     pub fn with_func(mut self, func: Func) -> Self {
@@ -60,6 +50,12 @@ impl IndexCreateBuilder {
 
     pub fn with_geo(mut self, geo: bool) -> Self {
         self.1.geo = Some(geo);
+        self
+    }
+
+    #[doc(hidden)]
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
         self
     }
 }

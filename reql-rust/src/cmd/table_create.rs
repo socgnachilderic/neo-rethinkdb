@@ -1,7 +1,7 @@
 use super::{StaticString, run};
 use crate::Command;
 use crate::types::{DbResponseType, Durability, Replicas};
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::{Serialize, Serializer};
 use std::borrow::Cow;
@@ -26,11 +26,11 @@ impl TableCreateBuilder {
         Self(command, TableCreateOption::default())
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DbResponseType>> {       
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DbResponseType>> {       
         let cmd = self.0.with_opts(self.1).into_arg::<()>()
             .into_cmd();
 
-        cmd.run::<_, DbResponseType>(arg)
+        cmd.run::<_, DbResponseType>(arg).try_next().await
     }
 
     /// The name of the primary key. The default primary key is id.
@@ -60,6 +60,7 @@ impl TableCreateBuilder {
         self
     }
 
+    #[doc(hidden)]
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self

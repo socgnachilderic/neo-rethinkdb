@@ -162,14 +162,225 @@ pub mod without;
 pub mod year;
 pub mod zip;
 
-use crate::Command;
+use crate::{Command, Func};
 use futures::stream::Stream;
 use ql2::term::TermType;
+use serde::Serialize;
 use serde::de::DeserializeOwned;
 use std::borrow::Cow;
 use std::str;
 
 pub use crate::proto::Arg;
+
+pub trait TableAndSelectionOps: Into<Command> {
+    /// Turn a query into a changefeed, an infinite stream of objects
+    /// representing changes to the query’s results as they occur.
+    /// A changefeed may return changes to a table or an individual document (a “point” changefeed).
+    /// Commands such as filter or map may be used before the changes command to transform or filter the output,
+    /// and many commands that operate on sequences can be chained after changes.
+    fn changes(self) -> changes::ChangesBuilder {
+        changes::ChangesBuilder::new()._with_parent(self.into())
+    }
+
+    /// Update JSON documents in a table. Accepts a JSON document, 
+    /// a ReQL expression, or a combination of the two.
+    /// 
+    /// You can use the following method to setting query:
+    /// 
+    /// * [with_durability(durability: reql_rust::types::Durability)](update::UpdateBuilder::with_durability)
+    /// possible values are `Durability::Hard` and `Durability::Soft`. This option will override the table or query’s durability setting (set in [run](run)). 
+    /// In soft durability mode RethinkDB will acknowledge the write immediately after receiving it, but before the write has been committed to disk.
+    /// * [with_return_changes(return_changes: reql_rust::types::ReturnChanges)](update::UpdateBuilder::with_return_changes) :
+    ///     - `ReturnChanges::Bool(true)` : return a `changes` array consisting of `old_val`/`new_val` objects describing the changes made, 
+    ///         only including the documents actually updated.
+    ///     - `ReturnChanges::Bool(false)` : do not return a `changes` array (the default).
+    ///     - `ReturnChanges::Always"` : behave as `ReturnChanges::Bool(true)`, 
+    ///         but include all documents the command tried to update whether or not the update was successful.
+    /// * [with_non_atomic(non_atomic: bool)](update::UpdateBuilder::with_non_atomic)
+    /// if set to `true`, executes the update and distributes the result to replicas in a non-atomic fashion. 
+    /// This flag is required to perform non-deterministic updates, such as those that require
+    /// * [with_ignore_write_hook(ignore_write_hook: bool)](update::UpdateBuilder::with_ignore_write_hook)
+    /// If `true`, and if the user has the config permission, ignores any [write hook](set_write_hook::SetWriteHookBuilder) when performing the update.
+    /// 
+    /// Update returns a struct [WritingResponseType](crate::types::WritingResponseType):
+    /// 
+    /// ## Example
+    /// 
+    /// Update the status of all posts to published.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes").insert(&json!({ "status": "published" })).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn update<T>(self, document: &T) -> update::UpdateBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
+        update::UpdateBuilder::new(document)._with_parent(self.into())
+    }
+    
+    /// Update JSON documents in a table. Accepts a JSON document, 
+    /// a ReQL expression, or a combination of the two.
+    /// 
+    /// See [update](#method.update) for more information
+    /// 
+    /// ## Example
+    /// 
+    /// Remove the field `status` from all posts.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes")
+    ///         .update_by_func(func!(|post| post.without("status")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn update_by_func<T>(self, func: Func) -> update::UpdateBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
+        update::UpdateBuilder::new_by_func(func)._with_parent(self.into())
+    }
+
+    /// Replace documents in a table. Accepts a JSON document or a ReQL expression, 
+    /// and replaces the original document with the new one. 
+    /// The new document must have the same primary key as the original document.
+    /// 
+    /// The `replace` command can be used to both insert and delete documents. 
+    /// If the `“replaced”` document has a primary key that doesn’t exist in the table, 
+    /// the document will be inserted; if an existing document is replaced with `None`, 
+    /// the document will be deleted. Since `update`, `replace` and `replace_by_func` operations are performed atomically, 
+    /// this allows atomic inserts and deletes as well.
+    /// 
+    /// See [update](#method.update) for more informations to setting
+    /// 
+    /// Replace returns a struct [WritingResponseType](crate::types::WritingResponseType):
+    /// 
+    /// ## Example
+    /// 
+    /// Remove the field `status` from all posts.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes")
+    ///         .replace(&json!({ "id": 1; "status": "published"; }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn replace<T>(self, document: &T) -> replace::ReplaceBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
+        replace::ReplaceBuilder::new(document)._with_parent(self.into())
+    }
+
+    /// Replace documents in a table. Accepts a JSON document or a ReQL expression, 
+    /// and replaces the original document with the new one. 
+    /// 
+    /// See [replace](#method.replace) for more information
+    /// 
+    /// ## Example
+    /// 
+    /// Remove the field `status` from all posts.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes")
+    ///         .replace_by_func(func!(|post| post.without("status")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn replace_by_func<T>(self, func: Func) -> replace::ReplaceBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
+        replace::ReplaceBuilder::new_by_func(func)._with_parent(self.into())
+    }
+
+    /// Delete one or more documents from a table.
+    /// 
+    /// You can use the following method to setting query:
+    /// 
+    /// * [with_durability(durability: reql_rust::types::Durability)](update::UpdateBuilder::with_durability)
+    /// possible values are `Durability::Hard` and `Durability::Soft`. This option will override the table or query’s durability setting (set in [run](run)). 
+    /// In soft durability mode RethinkDB will acknowledge the write immediately after receiving it, but before the write has been committed to disk.
+    /// * [with_return_changes(return_changes: reql_rust::types::ReturnChanges)](update::UpdateBuilder::with_return_changes) :
+    ///     - `ReturnChanges::Bool(true)` : return a `changes` array consisting of `old_val`/`new_val` objects describing the changes made, 
+    ///         only including the documents actually updated.
+    ///     - `ReturnChanges::Bool(false)` : do not return a `changes` array (the default).
+    ///     - `ReturnChanges::Always"` : behave as `ReturnChanges::Bool(true)`, 
+    ///         but include all documents the command tried to update whether or not the update was successful.
+    /// * [with_ignore_write_hook(ignore_write_hook: bool)](update::UpdateBuilder::with_ignore_write_hook)
+    /// If `true`, and if the user has the config permission, ignores any [write hook](set_write_hook::SetWriteHookBuilder), 
+    /// which might have prohibited the deletion.
+    /// 
+    /// ## Example
+    /// 
+    /// Delete a single document from the table `heroes` .
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    /// use serde_json::json;
+    /// 
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Heroes {
+    ///     id: u64,
+    ///     name: String,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes").delete::<Heroes>().run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn delete<T>(self) -> delete::DeleteBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
+        delete::DeleteBuilder::new()._with_parent(self.into())
+    }
+}
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
@@ -205,22 +416,6 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn update(self, arg: impl update::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn replace(self, arg: impl replace::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn delete(self, arg: impl delete::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn sync(self) -> Self {
-        Self::new(TermType::Sync).with_parent(self)
-    }
-
     pub fn get_all(self, arg: impl get_all::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

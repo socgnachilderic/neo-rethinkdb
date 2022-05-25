@@ -1,23 +1,25 @@
 use std::borrow::Cow;
 
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 
 use crate::Command;
 
 use super::run;
 
-pub struct DbListBuilder;
+pub struct DbListBuilder(Command);
 
 impl DbListBuilder {
     pub fn new() -> Self {
-        Self
+        let command = Command::new(TermType::DbList);
+
+        Self(command)
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Vec<Cow<'static, str>>>> {        
-        Command::new(TermType::DbList)
-            .into_arg::<()>()
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Vec<Cow<'static, str>>>> {        
+        self.0.into_arg::<()>()
             .into_cmd()
             .run::<_, Vec<Cow<'static, str>>>(arg)
+            .try_next().await
     }
 }

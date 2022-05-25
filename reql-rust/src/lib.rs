@@ -169,8 +169,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val: Option<DbResponseType> = r.db_create("superheroes")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -230,8 +229,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val = r.db_drop("superheroes")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -276,14 +274,12 @@ impl r {
     ///
     /// ```
     /// use std::borrow::Cow;
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val = r.db_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -303,9 +299,17 @@ impl r {
     /// Explicitly specify a database for a query.
     ///
     /// ```
-    /// # reql_rust::example(|r, conn| async_stream::stream! {
-    /// r.db("heroes").table("marvel").run(conn)
-    /// # });
+    /// use std::borrow::Cow;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _val = r.db("heroes")
+    ///         .table("marvel")
+    ///         .run(&session).await?;
+    ///
+    ///     Ok(())
+    /// }
     /// ```
     pub fn db(self, db_name: &str) -> cmd::db::DbBuilder {
         cmd::db::DbBuilder::new(db_name)
@@ -360,8 +364,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_create("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -427,8 +430,7 @@ impl r {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_create("dc_universe")
     ///         .with_primary_key("name")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -448,8 +450,7 @@ impl r {
     ///     let _ = r.table_create("dc_universe")
     ///         .with_shards(2)
     ///         .with_replicas(Replicas::Int(3))
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -480,8 +481,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_drop("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -550,8 +550,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }

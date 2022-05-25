@@ -1,13 +1,6 @@
 use crate::Command;
 use ql2::term::TermType;
 
-use super::{
-    table_create::TableCreateBuilder,
-    table_drop::TableDropBuilder,
-    table_list::TableListBuilder,
-    table::TableBuilder,
-};
-
 pub struct DbBuilder(Command);
 
 impl DbBuilder {
@@ -38,8 +31,7 @@ impl DbBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
     ///         .table_create("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     /// 
     ///     Ok(())
     /// }
@@ -47,8 +39,8 @@ impl DbBuilder {
     /// 
     /// See [r::table_create](crate::r::table_create) for more details.
     /// 
-    pub fn table_create(self, table_name: &str) -> TableCreateBuilder {
-        TableCreateBuilder::new(table_name)._with_parent(self.0)
+    pub fn table_create(self, table_name: &str) -> super::table_create::TableCreateBuilder {
+        super::table_create::TableCreateBuilder::new(table_name)._with_parent(self.into())
     }
 
     /// Drop a table from a database. The table and all its data will be deleted.
@@ -65,8 +57,7 @@ impl DbBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
     ///         .table_drop("dc_universe")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     /// 
     ///     Ok(())
     /// }
@@ -74,8 +65,8 @@ impl DbBuilder {
     /// 
     /// See [r::table_create](crate::r::table_create) for more details.
     /// 
-    pub fn table_drop(self, table_name: &str) -> TableDropBuilder {
-        TableDropBuilder::new(table_name)._with_parent(self.0)
+    pub fn table_drop(self, table_name: &str) -> super::table_drop::TableDropBuilder {
+        super::table_drop::TableDropBuilder::new(table_name)._with_parent(self.into())
     }
 
     /// List all table names in a default database. The result is a list of strings.
@@ -91,18 +82,17 @@ impl DbBuilder {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("marvel").table_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     /// 
     ///     Ok(())
     /// }
     /// ```
-    pub fn table_list(self) -> TableListBuilder {
-        TableListBuilder::new()._with_parent(self.0)
+    pub fn table_list(self) -> super::table_list::TableListBuilder {
+        super::table_list::TableListBuilder::new()._with_parent(self.into())
     }
 
-    pub fn table(self, table_name: &str) -> TableBuilder {
-        TableBuilder::new(table_name)._with_parent(self.0)
+    pub fn table(self, table_name: &str) -> super::table::TableBuilder {
+        super::table::TableBuilder::new(table_name)._with_parent(self.0)
     }
 }
 

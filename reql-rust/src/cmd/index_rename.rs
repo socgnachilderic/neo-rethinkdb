@@ -1,4 +1,4 @@
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
 
@@ -7,7 +7,7 @@ use crate::types::IndexResponseType;
 
 use super::run;
 
-pub struct IndexRenameBuilder(Command, IndexRenameOption, Option<Command>);
+pub struct IndexRenameBuilder(Command, IndexRenameOption);
 
 #[derive(Debug, Default, Clone, PartialEq, Serialize)]
 #[non_exhaustive]
@@ -21,20 +21,16 @@ impl IndexRenameBuilder {
         let arg_2 = Command::from_json(new_index_name);
         let command = Command::new(TermType::IndexRename).with_arg(arg_1).with_arg(arg_2);
         
-        IndexRenameBuilder(command, Default::default(), None)
+        IndexRenameBuilder(command, Default::default())
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<IndexResponseType>> {        
-        let mut cmd = self.0.with_opts(self.1);
-
-        if let Some(parent) = self.2 {
-            cmd = cmd.with_parent(parent);
-        }
-            
-        let cmd = cmd.into_arg::<()>()
-            .into_cmd();
-
-        cmd.run::<_, IndexResponseType>(arg)
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<IndexResponseType>> {        
+        self.0.with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, IndexResponseType>(arg)
+            .try_next()
+            .await
     }
 
     pub fn with_overwrite(mut self, overwrite: bool) -> Self {
@@ -42,8 +38,9 @@ impl IndexRenameBuilder {
         self
     }
 
+    #[doc(hidden)]
     pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.2 = Some(parent);
+        self.0 = self.0.with_parent(parent);
         self
     }
 }

@@ -1,4 +1,3 @@
-use futures::TryStreamExt;
 use reql_rust::r;
 use serde_json::Value;
 
@@ -6,8 +5,8 @@ use serde_json::Value;
 async fn table() -> reql_rust::Result<()> {
     tracing_subscriber::fmt::init();
     let conn = r.connection().connect().await?;
-    let mut query = r.db("rethinkdb").table("users").run(&conn);
-    let user: Option<Value> = query.try_next().await?;
+    let query = r.db("rethinkdb").table("users").run(&conn);
+    let user: Option<Value> = query.await?;
     assert!(user.is_some());
     Ok(())
 }

@@ -1,15 +1,15 @@
 use crate::types::{IdentifierFormat, ReadMode};
 use crate::{Command, Func};
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
-use reql_rust_macros::CommandOptions;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
-use super::run;
+use super::{run, TableAndSelectionOps};
 
-pub struct TableBuilder(Command, TableOption, Option<Command>);
+pub struct TableBuilder(Command, TableOption);
 
-#[derive(Debug, Clone, Copy, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct TableOption {
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -23,23 +23,21 @@ impl TableBuilder {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::Table).with_arg(args);
 
-        Self(command, TableOption::default(), None)
+        Self(command, TableOption::default())
     }
 
-    pub fn run(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<serde_json::Value>> {
-        let mut cmd = self.0.with_opts(self.1);
-
-        if let Some(parent) = self.2 {
-            cmd = cmd.with_parent(parent);
-        }
-
-        let cmd = cmd.into_arg::<()>().into_cmd();
-
-        cmd.run::<_, serde_json::Value>(arg)
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<serde_json::Value>> {
+        self.0.with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, serde_json::Value>(arg)
+            .try_next()
+            .await
     }
 
+    #[doc(hidden)]
     pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.2 = Some(parent);
+        self.0 = self.0.with_parent(parent);
         self
     }
     pub fn with_read_mode(mut self, read_mode: ReadMode) -> Self {
@@ -50,15 +48,6 @@ impl TableBuilder {
     pub fn with_identifier_format(mut self, identifier_format: IdentifierFormat) -> Self {
         self.1.identifier_format = Some(identifier_format);
         self
-    }
-
-    /// Turn a query into a changefeed, an infinite stream of objects
-    /// representing changes to the query’s results as they occur.
-    /// A changefeed may return changes to a table or an individual document (a “point” changefeed).
-    /// Commands such as filter or map may be used before the changes command to transform or filter the output,
-    /// and many commands that operate on sequences can be chained after changes.
-    pub fn changes(self) -> super::changes::ChangesBuilder {
-        super::changes::ChangesBuilder::new()._with_parent(self.0)
     }
 
     /// Create a new secondary index on a table.
@@ -102,8 +91,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("comments")
     ///         .index_create("postId")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -122,8 +110,7 @@ impl TableBuilder {
     ///     let _ = r.table("comments")
     ///         .index_create("author_name")
     ///         .with_func(func!(|row| row.bracket("author").bracket("name")))
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -142,8 +129,7 @@ impl TableBuilder {
     ///     let _ = r.table("places")
     ///         .index_create("location")
     ///         .with_geo(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -169,8 +155,7 @@ impl TableBuilder {
     ///     let _ = r.table("comments")
     ///         .index_create("postAndDate")
     ///         .with_func(func!(|row| [row.clone().bracket("post_id"), row.bracket("date")]))
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -189,8 +174,7 @@ impl TableBuilder {
     ///     let _ = r.table("posts")
     ///         .index_create("authors")
     ///         .with_multi(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -210,14 +194,13 @@ impl TableBuilder {
     ///         .index_create("towers")
     ///         .with_geo(true)
     ///         .with_multi(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
     pub fn index_create(self, index_name: &str) -> super::index_create::IndexCreateBuilder {
-        super::index_create::IndexCreateBuilder::new(index_name)._with_parent(self.0)
+        super::index_create::IndexCreateBuilder::new(index_name)._with_parent(self.into())
     }
 
     /// Delete a previously created secondary index of this table.
@@ -235,14 +218,13 @@ impl TableBuilder {
     ///     let _ = r.db("heroes")
     ///         .table("dc_universe")
     ///         .index_drop("code_name")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
     pub fn index_drop(self, index_name: &str) -> super::index_drop::IndexDropBuilder {
-        super::index_drop::IndexDropBuilder::new(index_name)._with_parent(self.0)
+        super::index_drop::IndexDropBuilder::new(index_name)._with_parent(self.into())
     }
 
     /// List all the secondary indexes of this table.
@@ -260,14 +242,13 @@ impl TableBuilder {
     ///     let _ = r.db("heroes")
     ///         .table("dc_universe")
     ///         .index_list()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
     pub fn index_list(self) -> super::index_list::IndexListBuilder {
-        super::index_list::IndexListBuilder::new()._with_parent(self.0)
+        super::index_list::IndexListBuilder::new()._with_parent(self.into())
     }
 
     /// Rename an existing secondary index on a table.
@@ -293,8 +274,7 @@ impl TableBuilder {
     ///     let _ = r.db("heroes")
     ///         .table("comments")
     ///         .index_rename("postId", "messageId")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -314,8 +294,7 @@ impl TableBuilder {
     ///         .table("users")
     ///         .index_rename("mail", "email")
     ///         .with_overwrite(true)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -326,7 +305,7 @@ impl TableBuilder {
         new_index_name: &str,
     ) -> super::index_rename::IndexRenameBuilder {
         super::index_rename::IndexRenameBuilder::new(old_index_name, new_index_name)
-            ._with_parent(self.0)
+            ._with_parent(self.into())
     }
 
     /// Get the status of the specified indexes on this table, or the status of all indexes on this table if no indexes are specified.
@@ -370,8 +349,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("users")
     ///         .index_status()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -390,8 +368,7 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_status()
     ///         .with_one_index("timestamp")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -410,17 +387,16 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_status()
     ///         .with_indexes(&vec!["mail", "author_name"])
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
     pub fn index_status(self) -> super::index_status::IndexStatusBuilder {
-        super::index_status::IndexStatusBuilder::new()._with_parent(self.0)
+        super::index_status::IndexStatusBuilder::new()._with_parent(self.into())
     }
 
-    /// Wait for the specified indexes on this table to be ready, 
+    /// Wait for the specified indexes on this table to be ready,
     /// or for all indexes on this table to be ready if no indexes are specified.
     ///
     /// The result is an array containing one object for each table index:
@@ -450,8 +426,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("users")
     ///         .index_wait()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -470,8 +445,7 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_wait()
     ///         .with_one_index("timestamp")
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -490,38 +464,37 @@ impl TableBuilder {
     ///     let _ = r.table("users")
     ///         .index_wait()
     ///         .with_indexes(&vec!["mail", "author_name"])
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
     pub fn index_wait(self) -> super::index_wait::IndexWaitBuilder {
-        super::index_wait::IndexWaitBuilder::new()._with_parent(self.0)
+        super::index_wait::IndexWaitBuilder::new()._with_parent(self.into())
     }
 
     /// Sets the write hook on a table or overwrites it if one already exists.
-    /// 
-    /// The `function` can be an anonymous function with the signature 
+    ///
+    /// The `function` can be an anonymous function with the signature
     /// `(context: object, oldVal: object, newVal: object) -> object` or a binary
-    ///  representation obtained from the `function` field of [getWriteHook](#method.get_write_hook). 
+    ///  representation obtained from the `function` field of [getWriteHook](#method.get_write_hook).
     /// The function must be deterministic, and so cannot use a subquery or the `r.js` command.
-    /// 
+    ///
     /// If successful, `set_write_hook` returns an object of the following form:
-    /// 
+    ///
     /// ## Return
-    /// 
+    ///
     /// ```text
     /// {
     ///     "function": <binary>,
     ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Create a write hook that sets `modified_at` to the current time on each write operation.
-    /// 
+    ///
     /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -530,32 +503,31 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("comments")
     ///         .set_write_hook(None)
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
     pub fn set_write_hook(self, func: Func) -> super::set_write_hook::SetWriteHookBuilder {
-        super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.0)
+        super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.into())
     }
 
-    /// Gets the write hook of this table. 
+    /// Gets the write hook of this table.
     /// If a write hook exists, the result is an object of the following form:
-    /// 
+    ///
     /// ## Return
-    /// 
+    ///
     /// ```text
     /// {
     ///     "function": <binary>,
     ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Get the write hook for the `comments` table.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -564,20 +536,173 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("comments")
     ///         .get_write_hook()
-    ///         .run(&session)
-    ///         .try_next().await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
     pub fn get_write_hook(self) -> super::get_write_hook::GetWriteBuilder {
-        super::get_write_hook::GetWriteBuilder::new()._with_parent(self.0)
+        super::get_write_hook::GetWriteBuilder::new()._with_parent(self.into())
+    }
+
+    ///
+    /// ## Example
+    ///
+    /// Insert a document into the table `posts`.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Posts {
+    ///     id: u64,
+    ///     title: String,
+    ///     content: String,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let post = Posts { 
+    ///         id: 1,
+    ///         title: "Lorem ipsum".to_string(),
+    ///         content: "Dolor sit amet".to_string()
+    ///     };
+    ///     
+    ///     r.table("posts").insert(&post).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Return
+    ///
+    /// ```text
+    /// {
+    ///    "deleted": 0,
+    ///    "errors": 0,
+    ///    "inserted": 1,
+    ///    "replaced": 0,
+    ///    "skipped": 0,
+    ///    "unchanged": 0
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Insert a document without a defined primary key into the table `posts` where the primary key is `id`.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Posts {
+    ///     title: String,
+    ///     content: String,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let post = Posts {
+    ///         title: "Lorem ipsum".to_string(),
+    ///         content: "Dolor sit amet".to_string(),
+    ///     };
+    ///     
+    ///     r.table("posts").insert(&post).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Return
+    ///
+    /// ```text
+    /// {
+    ///    "deleted": 0,
+    ///    "errors": 0,
+    ///    "generated_keys": [
+    ///        "dd782b64-70a7-43e4-b65e-dd14ae61d947"
+    ///    ],
+    ///    "inserted": 1,
+    ///    "replaced": 0,
+    ///    "skipped": 0,
+    ///    "unchanged": 0
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Insert multiple documents into the table `users`.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: String,
+    ///     email: String,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let user_1 = Users {
+    ///         id: "william".to_string(),
+    ///         email: "william@rethinkdb.com".to_string()
+    ///     };
+    ///     let user_2 = Users {
+    ///         id: "lara".to_string(),
+    ///         email: "lara@rethinkdb.com".to_string()
+    ///     };
+    /// 
+    ///     let users = vec![user_1, user_2];
+    ///     
+    ///     r.table("posts").insert(&users).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn insert<T>(self, document: &T) -> super::insert::InsertBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
+        super::insert::InsertBuilder::new(document)._with_parent(self.into())
+    }
+
+    /// `sync` ensures that writes on a given table are written to permanent storage.
+    /// Queries that specify soft durability (durability='soft') do not give such guarantees, 
+    /// so `sync` can be used to ensure the state of these queries. 
+    /// A call to sync does not return until all previous writes to the table are persisted.
+    /// 
+    /// If successful, the operation returns an object: {"synced": 1}.
+    /// 
+    /// ## Example
+    /// 
+    /// After having updated multiple heroes with soft durability, 
+    /// we now want to wait until these changes are persisted.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table("comments").sync().run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn sync(self) -> super::sync::SyncBuilder {
+        super::sync::SyncBuilder::new()._with_parent(self.into())
     }
 
     /// Get a document by primary key.
-    /// 
+    ///
     /// If no document exists with that primary key, get will return `None`.
-    /// 
+    ///
     /// ## Example
     ///
     /// Find a document by UUID.
@@ -590,8 +715,7 @@ impl TableBuilder {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table("posts")
     ///         .get("a9849eef-7176-4411-935b-79a6e3c56a74")
-    ///         .run::<_, serde_json::Value>(&session)
-    ///         .try_next().await?;
+    ///         .run::<_, serde_json::Value>(&session).await?;
     ///
     ///     Ok(())
     /// }
@@ -602,11 +726,6 @@ impl TableBuilder {
 
     pub fn do_(self, func: Func) -> super::do_::DoBuilder {
         super::do_::DoBuilder::new(func)._with_parent(self.0)
-    }
-
-    pub fn insert(self, arg: impl super::insert::Arg) -> Self {
-        // arg.arg().into_cmd().with_parent(self)
-        todo!()
     }
 
     /// Orders the result based on the given column.
@@ -628,6 +747,8 @@ impl TableBuilder {
         todo!()
     }
 }
+
+impl TableAndSelectionOps for TableBuilder { }
 
 impl Into<Command> for TableBuilder {
     fn into(self) -> Command {

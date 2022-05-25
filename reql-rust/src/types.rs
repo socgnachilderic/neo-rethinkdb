@@ -9,11 +9,44 @@ use serde::{Deserialize, Serialize, Serializer};
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct DbResponseType {
-    pub config_changes: Vec<ConfigChange>,
+    pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
     pub dbs_created: Option<u32>,
     pub dbs_dropped: Option<u32>,
     pub tables_created: Option<u32>,
     pub tables_dropped: Option<u32>,
+}
+
+/// Structure of return data in `db` table
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[non_exhaustive]
+pub struct WritingResponseType<T> {
+    /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation. 
+    /// Each object will have two keys: {new_val: <new value>, old_val: <old value>}.
+    pub changes: Option<Vec<ConfigChange<T>>>,
+
+
+    /// For an update operation.
+    /// For an insert operation.
+    pub deleted: Option<u32>,
+    /// The number of errors encountered while performing the insert, update.
+    pub errors: Option<u32>,
+    /// If errors were encountered, contains the text of the first error.
+    pub first_error: Option<u32>,
+    /// A list of generated primary keys for inserted documents whose primary keys were not specified (capped to 100,000).
+    pub generated_keys: Option<Vec<Cow<'static, str>>>,
+    /// The number of documents successfully inserted.
+    pub inserted: Option<u32>,
+
+    /// The number of documents updated when `conflict` is set to `"replace"` or `"update"`.
+    pub replaced: Option<u32>,
+    /// The number of documents that were skipped because the document didn’t exist.
+    /// For an insert operation.
+    pub skipped: Option<u32>,
+    /// The number of documents that would have been modified except the new value was the same as the old value.
+    /// The number of documents updated when `conflict` is set to `"replace"` or `"update"`.
+    pub unchanged: Option<u32>,
+    /// If the field generated_keys is truncated, you will get the warning `“Too many generated keys (<X>), array truncated to 100000.”`.
+    pub warnings: Option<u32>,
 }
 
 /// Structure of return data in `index` table
@@ -46,11 +79,16 @@ pub struct WriteHookResponseType {
     pub query: Cow<'static, str>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SyncResponseType {
+    synced: Option<u8>
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct ConfigChange {
-    pub new_val: Option<ConfigChangeValue>,
-    pub old_val: Option<ConfigChangeValue>,
+pub struct ConfigChange<T> {
+    pub new_val: Option<T>,
+    pub old_val: Option<T>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -125,4 +163,12 @@ pub enum ReadMode {
     Single,
     Majority,
     Outdated,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum Conflict {
+    Error,
+    Replace,
+    Update,
 }

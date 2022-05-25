@@ -1,5 +1,5 @@
 use crate::Command;
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 
@@ -15,7 +15,7 @@ impl GetBuilder {
         Self(command)
     }
 
-    pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
+    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<T>>
     where
         A: run::Arg,
         T: Unpin + DeserializeOwned, 
@@ -23,9 +23,10 @@ impl GetBuilder {
         let cmd = self.0.into_arg::<()>()
             .into_cmd();
 
-        cmd.run::<_, T>(arg)
+        cmd.run::<_, T>(arg).try_next().await
     }
 
+    #[doc(hidden)]
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self

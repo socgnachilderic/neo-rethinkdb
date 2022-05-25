@@ -1,34 +1,30 @@
 use crate::prelude::Func;
 use crate::Command;
-use futures::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-pub struct DoBuilder(Command, Option<Command>);
+pub struct DoBuilder(Command);
 
 impl DoBuilder {
     pub fn new(func: Func) -> Self {
         let Func(func) = func;
         let command = Command::new(TermType::Funcall).with_arg(func);
 
-        Self(command, None)
+        Self(command)
     }
 
-    pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
+    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<T>>
     where
         A: super::run::Arg,
         T: Unpin + DeserializeOwned,
     {
-        let mut cmd = self.0;
-
-        if let Some(parent) = self.1 {
-            cmd = cmd.with_parent(parent);
-        }
-
-        let cmd = cmd.into_arg::<()>().into_cmd();
-
-        cmd.run::<_, T>(arg)
+        self.0.into_arg::<()>()
+            .into_cmd()
+            .run::<_, T>(arg)
+            .try_next()
+            .await
     }
 
     pub fn with_args<T: Serialize>(mut self, args: &[T]) -> Self {
@@ -40,8 +36,9 @@ impl DoBuilder {
         self
     }
 
+    #[doc(hidden)]
     pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.1 = Some(parent);
+        self.0 = self.0.with_parent(parent);
         self
     }
 }
