@@ -221,3 +221,9 @@ impl ChangesBuilder {
         self
     }
 }
+
+impl Into<Command> for ChangesBuilder {
+    fn into(self) -> Command {
+        self.0
+    }
+}

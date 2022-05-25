@@ -92,7 +92,6 @@ impl Into<Command> for InsertBuilder {
 #[cfg(test)]
 mod tests {
     use crate::{cmd, r};
-    use crate::prelude::ReqlTableWritingOps;
     use serde::Serialize;
 
     #[derive(Serialize)]

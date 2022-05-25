@@ -79,6 +79,11 @@ pub struct WriteHookResponseType {
     pub query: Cow<'static, str>,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct SyncResponseType {
+    synced: Option<u8>
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct ConfigChange<T> {
