@@ -996,6 +996,44 @@ pub trait ReqlTableWritingOps: Into<Command> {
     fn replace_by_func(self, func: Func) -> replace::ReplaceBuilder {
         replace::ReplaceBuilder::new_by_func(func)._with_parent(self.into())
     }
+
+    /// Delete one or more documents from a table.
+    /// 
+    /// You can use the following method to setting query:
+    /// 
+    /// * [with_durability(durability: reql_rust::types::Durability)](update::UpdateBuilder::with_durability)
+    /// possible values are `Durability::Hard` and `Durability::Soft`. This option will override the table or query’s durability setting (set in [run](run)). 
+    /// In soft durability mode RethinkDB will acknowledge the write immediately after receiving it, but before the write has been committed to disk.
+    /// * [with_return_changes(return_changes: reql_rust::types::ReturnChanges)](update::UpdateBuilder::with_return_changes) :
+    ///     - `ReturnChanges::Bool(true)` : return a `changes` array consisting of `old_val`/`new_val` objects describing the changes made, 
+    ///         only including the documents actually updated.
+    ///     - `ReturnChanges::Bool(false)` : do not return a `changes` array (the default).
+    ///     - `ReturnChanges::Always"` : behave as `ReturnChanges::Bool(true)`, 
+    ///         but include all documents the command tried to update whether or not the update was successful.
+    /// * [with_ignore_write_hook(ignore_write_hook: bool)](update::UpdateBuilder::with_ignore_write_hook)
+    /// If `true`, and if the user has the config permission, ignores any [write hook](set_write_hook::SetWriteHookBuilder), 
+    /// which might have prohibited the deletion.
+    /// 
+    /// ## Example
+    /// 
+    /// Delete a single document from the table `heroes` .
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes").delete().run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn delete(self) -> delete::DeleteBuilder {
+        delete::DeleteBuilder::new()._with_parent(self.into())
+    }
 }
 
 pub trait StaticString {
@@ -1032,10 +1070,6 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn delete(self, arg: impl delete::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn sync(self) -> Self {
         Self::new(TermType::Sync).with_parent(self)
     }

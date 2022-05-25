@@ -6,7 +6,6 @@ use serde::Serialize;
 
 pub struct ReplaceBuilder(Command, ReplaceOption);
 
-// TODO finish this struct
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct ReplaceOption {

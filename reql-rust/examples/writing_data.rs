@@ -56,6 +56,9 @@ async fn main() -> Result<()> {
         .run(&conn).await?;
     dbg!(result); */
 
+    let result = r.table("heroes").delete().run(&conn).await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())
