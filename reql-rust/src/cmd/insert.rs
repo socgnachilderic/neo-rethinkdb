@@ -24,7 +24,7 @@ pub struct InsertOption {
 }
 
 impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
-    pub fn new(document: &impl Serialize) -> Self {
+    pub fn new(document: impl Serialize) -> Self {
         let args = Command::from_json(document);
         let command = Command::new(TermType::Insert).with_arg(args);
 

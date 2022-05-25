@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn r_db_table_get_do() {
         let counter = crate::current_counter();
-        let query = r.db("mydb").table("table1").get("johndoe@example.com");
+        let query = r.db("mydb").table::<serde_json::Value>("table1").get("johndoe@example.com");
         // .do_(func!(|doc| r
         //     .db("mydb")
         //     .table("table2")

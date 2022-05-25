@@ -21,7 +21,7 @@ pub struct ReplaceOption {
 }
 
 impl<T: Unpin + DeserializeOwned> ReplaceBuilder<T> {
-    pub fn new(document: &impl Serialize) -> Self {
+    pub fn new(document: impl Serialize) -> Self {
         let args = Command::from_json(document);
         Self::constructor(args)
     }

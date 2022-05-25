@@ -8,7 +8,7 @@ async fn order_by() -> reql_rust::Result<()> {
     let conn = r.connection().connect().await?;
     let mut query = r
         .db("rethinkdb")
-        .table("server_status")
+        .table::<Value>("server_status")
         .order_by(r.args(("name", r.index(r.desc("id")))))
         .run(&conn);
     let user: Option<Value> = query.try_next().await?;

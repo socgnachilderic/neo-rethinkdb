@@ -1,5 +1,4 @@
 use reql_rust::{r, Result, Session};
-use reql_rust::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -14,7 +13,7 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result); */
 
-    let result = r.table("heroes")
+    let result = r.table::<serde_json::Value>("heroes")
         .get_write_hook()
         .run(&conn)
         .await?;

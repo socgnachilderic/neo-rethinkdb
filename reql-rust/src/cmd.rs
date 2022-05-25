@@ -173,12 +173,14 @@ use std::str;
 pub use crate::proto::Arg;
 
 pub trait TableAndSelectionOps: Into<Command> {
+    type Parent: Unpin + Serialize + DeserializeOwned;
+
     /// Turn a query into a changefeed, an infinite stream of objects
     /// representing changes to the query’s results as they occur.
     /// A changefeed may return changes to a table or an individual document (a “point” changefeed).
     /// Commands such as filter or map may be used before the changes command to transform or filter the output,
     /// and many commands that operate on sequences can be chained after changes.
-    fn changes(self) -> changes::ChangesBuilder {
+    fn changes(self) -> changes::ChangesBuilder<Self::Parent> {
         changes::ChangesBuilder::new()._with_parent(self.into())
     }
 
@@ -221,10 +223,7 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn update<T>(self, document: &T) -> update::UpdateBuilder<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned
-    {
+    fn update(self, document: impl Serialize) -> update::UpdateBuilder<Self::Parent> {
         update::UpdateBuilder::new(document)._with_parent(self.into())
     }
     
@@ -253,10 +252,7 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn update_by_func<T>(self, func: Func) -> update::UpdateBuilder<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned
-    {
+    fn update_by_func(self, func: Func) -> update::UpdateBuilder<Self::Parent> {
         update::UpdateBuilder::new_by_func(func)._with_parent(self.into())
     }
 
@@ -294,10 +290,7 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn replace<T>(self, document: &T) -> replace::ReplaceBuilder<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned
-    {
+    fn replace(self, document: impl Serialize) -> replace::ReplaceBuilder<Self::Parent> {
         replace::ReplaceBuilder::new(document)._with_parent(self.into())
     }
 
@@ -326,10 +319,7 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn replace_by_func<T>(self, func: Func) -> replace::ReplaceBuilder<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned
-    {
+    fn replace_by_func(self, func: Func) -> replace::ReplaceBuilder<Self::Parent> {
         replace::ReplaceBuilder::new_by_func(func)._with_parent(self.into())
     }
 
@@ -362,22 +352,19 @@ pub trait TableAndSelectionOps: Into<Command> {
     /// 
     /// #[derive(Serialize, Deserialize)]
     /// struct Heroes {
-    ///     id: u64,
+    ///     id: String,
     ///     name: String,
     /// }
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
-    ///     r.table("heroes").delete::<Heroes>().run(&conn).await?;
+    ///     r.table::<Heroes>("heroes").delete().run(&conn).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    fn delete<T>(self) -> delete::DeleteBuilder<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned
-    {
+    fn delete(self) -> delete::DeleteBuilder<Self::Parent> {
         delete::DeleteBuilder::new()._with_parent(self.into())
     }
 }

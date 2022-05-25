@@ -1,5 +1,6 @@
 use crate::Command;
 use ql2::term::TermType;
+use serde::{de::DeserializeOwned, Serialize};
 
 pub struct DbBuilder(Command);
 
@@ -105,13 +106,13 @@ impl DbBuilder {
     /// 
     /// #[derive(Serialize, Deserialize)]
     /// struct Marvel {
-    ///     id: u64,
+    ///     id: String,
     ///     name: String
     /// }
     /// 
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("marvel").run::<_, Marvel>(&session).await?;
+    ///     let _ = r.table::<Marvel>("marvel").run(&session).await?;
     /// 
     ///     Ok(())
     /// }
@@ -128,13 +129,13 @@ impl DbBuilder {
     /// 
     /// #[derive(Serialize, Deserialize)]
     /// struct Marvel {
-    ///     id: u64,
+    ///     id: String,
     ///     name: String
     /// }
     /// 
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.db("heroes").table("marvel").run::<_, Marvel>(&session).await?;
+    ///     let _ = r.db("heroes").table::<Marvel>("marvel").run(&session).await?;
     /// 
     ///     Ok(())
     /// }
@@ -165,21 +166,24 @@ impl DbBuilder {
     /// 
     /// #[derive(Serialize, Deserialize)]
     /// struct Marvel {
-    ///     id: u64,
+    ///     id: String,
     ///     name: String
     /// }
     /// 
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
-    ///         .table("marvel")
+    ///         .table::<Marvel>("marvel")
     ///         .with_read_mode(ReadMode::Outdated)
-    ///         .run::<_, Marvel>(&session).await?;
+    ///         .run(&session).await?;
     /// 
     ///     Ok(())
     /// }
     /// ```
-    pub fn table(self, table_name: &str) -> super::table::TableBuilder {
+    pub fn table<T>(self, table_name: &str) -> super::table::TableBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned,
+    {
         super::table::TableBuilder::new(table_name)._with_parent(self.0)
     }
 }
