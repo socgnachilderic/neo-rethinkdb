@@ -221,7 +221,10 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn update(self, document: &impl Serialize) -> update::UpdateBuilder {
+    fn update<T>(self, document: &T) -> update::UpdateBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
         update::UpdateBuilder::new(document)._with_parent(self.into())
     }
     
@@ -250,7 +253,10 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn update_by_func(self, func: Func) -> update::UpdateBuilder {
+    fn update_by_func<T>(self, func: Func) -> update::UpdateBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
         update::UpdateBuilder::new_by_func(func)._with_parent(self.into())
     }
 
@@ -288,7 +294,10 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn replace(self, document: &impl Serialize) -> replace::ReplaceBuilder {
+    fn replace<T>(self, document: &T) -> replace::ReplaceBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
         replace::ReplaceBuilder::new(document)._with_parent(self.into())
     }
 
@@ -317,7 +326,10 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn replace_by_func(self, func: Func) -> replace::ReplaceBuilder {
+    fn replace_by_func<T>(self, func: Func) -> replace::ReplaceBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
         replace::ReplaceBuilder::new_by_func(func)._with_parent(self.into())
     }
 
@@ -345,17 +357,27 @@ pub trait TableAndSelectionOps: Into<Command> {
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
     /// use serde_json::json;
+    /// 
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Heroes {
+    ///     id: u64,
+    ///     name: String,
+    /// }
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
-    ///     r.table("heroes").delete().run(&conn).await?;
+    ///     r.table("heroes").delete::<Heroes>().run(&conn).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    fn delete(self) -> delete::DeleteBuilder {
+    fn delete<T>(self) -> delete::DeleteBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
         delete::DeleteBuilder::new()._with_parent(self.into())
     }
 }

@@ -2,9 +2,10 @@ use crate::types::{Durability, ReturnChanges, WritingResponseType, Conflict};
 use crate::{Command, Func};
 use futures::TryStreamExt;
 use ql2::term::TermType;
+use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-pub struct InsertBuilder(Command, InsertOption, Option<Func>);
+pub struct InsertBuilder<T>(Command, InsertOption, Option<Func>, Option<T>);
 
 // TODO finish this struct
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
@@ -22,18 +23,18 @@ pub struct InsertOption {
     pub ignore_write_hook: Option<bool>,
 }
 
-impl InsertBuilder {
+impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
     pub fn new(document: &impl Serialize) -> Self {
         let args = Command::from_json(document);
         let command = Command::new(TermType::Insert).with_arg(args);
 
-        Self(command, InsertOption::default(), None)
+        Self(command, InsertOption::default(), None, None)
     }
 
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType>> {
+    ) -> crate::Result<Option<WritingResponseType<T>>> {
         let command = self.0;
 
         let command = if let Some(Func(func)) = self.2 {
@@ -45,7 +46,7 @@ impl InsertBuilder {
 
         command.into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType>(arg)
+            .run::<_, WritingResponseType<T>>(arg)
             .try_next()
             .await
     }
@@ -82,7 +83,7 @@ impl InsertBuilder {
     }
 }
 
-impl Into<Command> for InsertBuilder {
+impl<T> Into<Command> for InsertBuilder<T> {
     fn into(self) -> Command {
         self.0
     }
@@ -92,16 +93,20 @@ impl Into<Command> for InsertBuilder {
 #[cfg(test)]
 mod tests {
     use crate::{cmd, r};
-    use serde::Serialize;
+    use serde::{Serialize, Deserialize};
 
-    #[derive(Serialize)]
-    struct Document<'a> {
-        item: &'a str,
+    #[derive(Serialize, Deserialize)]
+    struct Document {
+        item: String,
     }
 
     #[test]
     fn r_table_insert() {
-        let query = r.table("foo").insert(&Document { item: "bar" });
+        let document = Document { 
+            item: "bar".to_string()
+        };
+
+        let query = r.table("foo").insert(&document);
         let serialised = cmd::serialise(&query.into());
         let expected = r#"[56,[[15,["foo"]],{"item":"bar"}]]"#;
         assert_eq!(serialised, expected);

@@ -3,6 +3,7 @@ use crate::{Command, Func};
 use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 use super::{run, TableAndSelectionOps};
 
@@ -552,20 +553,24 @@ impl TableBuilder {
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// use serde::Serialize;
+    /// use serde::{Serialize, Deserialize};
     ///
-    /// #[derive(Serialize)]
-    /// struct Posts<'a> {
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Posts {
     ///     id: u64,
-    ///     title: &'a str,
-    ///     content: &'a str,
+    ///     title: String,
+    ///     content: String,
     /// }
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
-    ///     let post = Posts { id: 1, title: "Lorem ipsum", content: "Dolor sit amet" };
+    ///     let post = Posts { 
+    ///         id: 1,
+    ///         title: "Lorem ipsum".to_string(),
+    ///         content: "Dolor sit amet".to_string()
+    ///     };
     ///     
-    ///     r.table("heroes").insert(&post).run(&conn).await?;
+    ///     r.table("posts").insert(&post).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -591,19 +596,22 @@ impl TableBuilder {
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// use serde::Serialize;
+    /// use serde::{Serialize, Deserialize};
     ///
-    /// #[derive(Serialize)]
-    /// struct Posts<'a> {
-    ///     title: &'a str,
-    ///     content: &'a str,
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Posts {
+    ///     title: String,
+    ///     content: String,
     /// }
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
-    ///     let post = Posts { title: "Lorem ipsum", content: "Dolor sit amet" };
+    ///     let post = Posts {
+    ///         title: "Lorem ipsum".to_string(),
+    ///         content: "Dolor sit amet".to_string(),
+    ///     };
     ///     
-    ///     r.table("heroes").insert(&post).run(&conn).await?;
+    ///     r.table("posts").insert(&post).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -632,25 +640,36 @@ impl TableBuilder {
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// use serde::Serialize;
+    /// use serde::{Serialize, Deserialize};
     ///
-    /// #[derive(Serialize)]
-    /// struct Users<'a> {
-    ///     id: &'a str,
-    ///     email: &'a str,
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: String,
+    ///     email: String,
     /// }
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
-    ///     let user_1 = Users { id: "william", email: "william@rethinkdb.com" };
-    ///     let user_2 = Users { id: "lara", email: "lara@rethinkdb.com" };
+    ///     let user_1 = Users {
+    ///         id: "william".to_string(),
+    ///         email: "william@rethinkdb.com".to_string()
+    ///     };
+    ///     let user_2 = Users {
+    ///         id: "lara".to_string(),
+    ///         email: "lara@rethinkdb.com".to_string()
+    ///     };
+    /// 
+    ///     let users = vec![user_1, user_2];
     ///     
-    ///     r.table("heroes").insert(&vec![&user_1, &user_2]).run(&conn).await?;
+    ///     r.table("posts").insert(&users).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(self, document: &impl Serialize) -> super::insert::InsertBuilder {
+    pub fn insert<T>(self, document: &T) -> super::insert::InsertBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
         super::insert::InsertBuilder::new(document)._with_parent(self.into())
     }
 

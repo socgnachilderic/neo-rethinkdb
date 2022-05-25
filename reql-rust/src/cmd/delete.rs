@@ -5,8 +5,9 @@ use crate::types::WritingResponseType;
 use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
-pub struct DeleteBuilder(Command, DeleteOption);
+pub struct DeleteBuilder<T>(Command, DeleteOption, Option<T>);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -19,21 +20,21 @@ pub struct DeleteOption {
     pub ignore_write_hook: Option<bool>,
 }
 
-impl DeleteBuilder {
+impl<T: Unpin + DeserializeOwned> DeleteBuilder<T> {
     pub fn new() -> Self {
         let command = Command::new(TermType::Delete);
-        Self(command, DeleteOption::default())
+        Self(command, DeleteOption::default(), None)
     }
 
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType>> {
+    ) -> crate::Result<Option<WritingResponseType<T>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType>(arg)
+            .run::<_, WritingResponseType<T>>(arg)
             .try_next()
             .await
     }
@@ -60,7 +61,7 @@ impl DeleteBuilder {
     }
 }
 
-impl Into<Command> for DeleteBuilder {
+impl<T> Into<Command> for DeleteBuilder<T> {
     fn into(self) -> Command {
         self.0
     }

@@ -19,10 +19,10 @@ pub struct DbResponseType {
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct WritingResponseType {
-    /* /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation. 
+pub struct WritingResponseType<T> {
+    /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation. 
     /// Each object will have two keys: {new_val: <new value>, old_val: <old value>}.
-    pub changes: Option<Vec<ConfigChange<T>>>, */
+    pub changes: Option<Vec<ConfigChange<T>>>,
 
 
     /// For an update operation.

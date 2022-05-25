@@ -3,8 +3,9 @@ use crate::{Command, Func};
 use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
-pub struct UpdateBuilder(Command, UpdateOption);
+pub struct UpdateBuilder<T>(Command, UpdateOption, Option<T>);
 
 // TODO finish this struct
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
@@ -20,7 +21,7 @@ pub struct UpdateOption {
     pub ignore_write_hook: Option<bool>,
 }
 
-impl UpdateBuilder {
+impl<T: Unpin + DeserializeOwned> UpdateBuilder<T> {
     pub fn new(document: &impl Serialize) -> Self {
         let args = Command::from_json(document);
         Self::constructor(args)
@@ -34,12 +35,12 @@ impl UpdateBuilder {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType>> {
+    ) -> crate::Result<Option<WritingResponseType<T>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType>(arg)
+            .run::<_, WritingResponseType<T>>(arg)
             .try_next()
             .await
     }
@@ -74,11 +75,11 @@ impl UpdateBuilder {
     fn constructor(arg: Command) -> Self {
         let command = Command::new(TermType::Update).with_arg(arg);
 
-        Self(command, UpdateOption::default())
+        Self(command, UpdateOption::default(), None)
     }
 }
 
-impl Into<Command> for UpdateBuilder {
+impl<T> Into<Command> for UpdateBuilder<T> {
     fn into(self) -> Command {
         self.0
     }

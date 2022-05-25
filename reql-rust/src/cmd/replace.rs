@@ -3,8 +3,9 @@ use crate::{Command, Func};
 use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
-pub struct ReplaceBuilder(Command, ReplaceOption);
+pub struct ReplaceBuilder<T>(Command, ReplaceOption, Option<T>);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -19,7 +20,7 @@ pub struct ReplaceOption {
     pub ignore_write_hook: Option<bool>,
 }
 
-impl ReplaceBuilder {
+impl<T: Unpin + DeserializeOwned> ReplaceBuilder<T> {
     pub fn new(document: &impl Serialize) -> Self {
         let args = Command::from_json(document);
         Self::constructor(args)
@@ -33,12 +34,12 @@ impl ReplaceBuilder {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType>> {
+    ) -> crate::Result<Option<WritingResponseType<T>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType>(arg)
+            .run::<_, WritingResponseType<T>>(arg)
             .try_next()
             .await
     }
@@ -73,11 +74,11 @@ impl ReplaceBuilder {
     fn constructor(arg: Command) -> Self {
         let command = Command::new(TermType::Replace).with_arg(arg);
 
-        Self(command, ReplaceOption::default())
+        Self(command, ReplaceOption::default(), None)
     }
 }
 
-impl Into<Command> for ReplaceBuilder {
+impl<T> Into<Command> for ReplaceBuilder<T> {
     fn into(self) -> Command {
         self.0
     }
