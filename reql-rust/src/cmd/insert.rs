@@ -34,7 +34,7 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType<T>>> {
+    ) -> crate::Result<Option<WritingResponseType<Vec<T>>>> {
         let command = self.0;
 
         let command = if let Some(Func(func)) = self.2 {
@@ -46,7 +46,7 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
 
         command.into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType<T>>(arg)
+            .run::<_, WritingResponseType<Vec<T>>>(arg)
             .try_next()
             .await
     }
@@ -106,7 +106,7 @@ mod tests {
             item: "bar".to_string()
         };
 
-        let query = r.table("foo").insert(&document);
+        let query = r.table::<Document>("foo").insert(&[document]);
         let serialised = cmd::serialise(&query.into());
         let expected = r#"[56,[[15,["foo"]],{"item":"bar"}]]"#;
         assert_eq!(serialised, expected);

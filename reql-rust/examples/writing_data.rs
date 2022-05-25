@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
     conn.use_("marvel").await;
     
     let result = r.table("posts")
-        .insert(&post_1)
+        .insert(&[post_1])
         .run(&conn).await?;
     dbg!(result);
     

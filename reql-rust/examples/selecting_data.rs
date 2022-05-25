@@ -1,5 +1,4 @@
 use reql_rust::{r, Result, Session};
-use reql_rust::prelude::*;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,13 +15,19 @@ async fn main() -> Result<()> {
     conn.use_("marvel").await;
     
     let result = r.db("marvel")
-        .table::<serde_json::Value>("posts")
+        .table::<Posts>("posts")
         .run(&conn).await?;
     dbg!(result);
     
     let result = r.table::<Posts>("posts")
         .get(2)
         // .changes()
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = r.table::<Posts>("posts")
+        .get_all(&["title"])
         .run(&conn)
         .await?;
     dbg!(result);
@@ -46,6 +51,10 @@ async fn set_up(conn: &Session) -> Result<()> {
         .table_create("posts")
         .run(conn)
         .await?;
+    r.db("marvel")
+        .table::<Posts>("posts")
+        .index_create("title")
+        .run(conn).await?;
     r.db("marvel")
         .table("posts")
         .insert(&posts)

@@ -570,7 +570,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         content: "Dolor sit amet".to_string()
     ///     };
     ///     
-    ///     r.table("posts").insert(&post).run(&conn).await?;
+    ///     r.table("posts").insert(&[post]).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -611,7 +611,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         content: "Dolor sit amet".to_string(),
     ///     };
     ///     
-    ///     r.table("posts").insert(&post).run(&conn).await?;
+    ///     r.table("posts").insert(&[post]).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -666,7 +666,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(self, document: &T) -> super::insert::InsertBuilder<T> {
+    pub fn insert(self, document: &[T]) -> super::insert::InsertBuilder<T> {
         super::insert::InsertBuilder::new(document)._with_parent(self.into())
     }
 
@@ -719,6 +719,72 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// ```
     pub fn get(self, primary_key: impl Serialize) -> super::get::GetBuilder<T> {
         super::get::GetBuilder::new(primary_key)._with_parent(self.into())
+    }
+
+    /// Get all documents where the given value matches the value of the requested index.
+    /// 
+    /// ## Example
+    /// 
+    /// Secondary index keys are not guaranteed to be unique so we cannot query via [get](#method.get) when using a secondary index.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<serde_json::Value>("posts")
+    ///         .get_all(&["man_of_steel"])
+    ///         .with_index("code_name")
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Without an index argument, we default to the primary index. 
+    /// While `get` will either return the document or `None` when no document with such a primary key value exists, 
+    /// this will return either a one or zero length stream.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<serde_json::Value>("posts")
+    ///         .get_all(&["superman"])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// You can get multiple documents in a single call to `get_all`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<serde_json::Value>("posts")
+    ///         .get_all(&["superman", "ant man"])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn get_all(self, index_keys: &[&str]) -> super::get_all::GetAllBuilder<T> {
+        assert!(index_keys.len() > 0);
+        super::get_all::GetAllBuilder::new(index_keys)._with_parent(self.into())
     }
 
     pub fn do_(self, func: Func) -> super::do_::DoBuilder {

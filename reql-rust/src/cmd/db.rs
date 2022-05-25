@@ -2,6 +2,7 @@ use crate::Command;
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
+#[derive(Debug, Clone)]
 pub struct DbBuilder(Command);
 
 impl DbBuilder {

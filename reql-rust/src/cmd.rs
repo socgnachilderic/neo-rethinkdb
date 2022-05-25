@@ -217,8 +217,9 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
+    ///     let updated_data = json!({ "status": "published" });
     ///     
-    ///     r.table("heroes").insert(&json!({ "status": "published" })).run(&conn).await?;
+    ///     r.table("heroes").insert(&[updated_data]).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -403,10 +404,6 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn get_all(self, arg: impl get_all::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn between(self, arg: impl between::Arg<'a>) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

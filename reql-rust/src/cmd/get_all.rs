@@ -1,74 +1,46 @@
-use super::args::Args;
-use crate::{cmd, Command};
+use super::StaticString;
+use crate::{Command, Result};
+use futures::TryStreamExt;
 use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 use std::borrow::Cow;
+
+pub struct GetAllBuilder<T>(Command, GetAllOption, Option<T>);
 
 #[derive(Debug, Clone, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct Options {
+pub struct GetAllOption {
     pub index: Option<Cow<'static, str>>,
 }
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<Options>;
-}
-
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<Options> {
-        Self::new(TermType::GetAll).with_arg(self).into_arg()
-    }
-}
-
-impl<T> Arg for T
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        Command::from_json(self.into()).arg()
-    }
-}
-
-impl Arg for Args<(&str, Options)> {
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((key, opts)) = self;
-        key.arg().with_opts(opts)
-    }
-}
-
-#[allow(array_into_iter)]
-#[allow(clippy::into_iter_on_ref)]
-impl<T, const N: usize> Arg for Args<[T; N]>
-where
-    T: Into<String> + Clone,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args(arr) = self;
-        let mut query = Command::new(TermType::GetAll);
-        // TODO get rid of the clone in Rust v1.53
-        for arg in arr.into_iter().cloned() {
-            let arg = Command::from_json(arg.into());
-            query = query.with_arg(arg);
+impl<T: Unpin + Serialize + DeserializeOwned> GetAllBuilder<T> {
+    pub fn new(index_keys: &[&str]) -> Self {
+        let mut command = Command::new(TermType::GetAll);
+        
+        for index_key in index_keys {
+            let args = Command::from_json(*index_key);
+            command = command.with_arg(args);
         }
-        query.into_arg()
-    }
-}
 
-#[allow(array_into_iter)]
-#[allow(clippy::into_iter_on_ref)]
-impl<T, const N: usize> Arg for Args<([T; N], Options)>
-where
-    T: Into<String> + Clone,
-{
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((arr, opts)) = self;
-        let mut query = Command::new(TermType::GetAll);
-        // TODO get rid of the clone in Rust v1.53
-        for arg in arr.into_iter().cloned() {
-            let arg = Command::from_json(arg.into());
-            query = query.with_arg(arg);
-        }
-        query.with_opts(opts).into_arg()
+        Self(command, GetAllOption::default(), None)
+    }
+
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Option<T>>> {
+        let command = self.0.with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd();
+        
+        command.run::<_, Option<T>>(arg).try_next().await
+    }
+
+    pub fn with_index(mut self, index: &'static str) -> Self {
+        self.1.index = Some(index.static_string());
+        self
+    }
+
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
+        self
     }
 }
