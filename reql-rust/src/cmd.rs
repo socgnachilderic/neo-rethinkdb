@@ -900,6 +900,73 @@ pub trait ReqlTableWritingOps: Into<Command> {
     fn update(self, document: &impl Serialize) -> update::UpdateBuilder {
         update::UpdateBuilder::new(document)._with_parent(self.into())
     }
+
+    /// Replace documents in a table. Accepts a JSON document or a ReQL expression, 
+    /// and replaces the original document with the new one. 
+    /// The new document must have the same primary key as the original document.
+    /// 
+    /// The `replace` command can be used to both insert and delete documents. 
+    /// If the `“replaced”` document has a primary key that doesn’t exist in the table, 
+    /// the document will be inserted; if an existing document is replaced with `None`, 
+    /// the document will be deleted. Since `update`, `replace` and `replace_by_func` operations are performed atomically, 
+    /// this allows atomic inserts and deletes as well.
+    /// 
+    /// See [update](#method.update) for more informations to setting
+    /// 
+    /// Replace returns a struct [WritingResponseType](crate::types::WritingResponseType):
+    /// 
+    /// ## Example
+    /// 
+    /// Remove the field `status` from all posts.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes")
+    ///         .replace(&json!({ "id": 1; "status": "published"; }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn replace(self, document: &impl Serialize) -> replace::ReplaceBuilder {
+        replace::ReplaceBuilder::new(document)._with_parent(self.into())
+    }
+
+    /// Replace documents in a table. Accepts a JSON document or a ReQL expression, 
+    /// and replaces the original document with the new one. 
+    /// 
+    /// See [replace](#method.replace) for more information
+    /// 
+    /// ## Example
+    /// 
+    /// Remove the field `status` from all posts.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes")
+    ///         .replace_by_func(func!(|post| post.without("status")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn replace_by_func(self, func: Func) -> replace::ReplaceBuilder {
+        replace::ReplaceBuilder::new_by_func(func)._with_parent(self.into())
+    }
 }
 
 pub trait StaticString {
@@ -936,10 +1003,6 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn replace(self, arg: impl replace::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn delete(self, arg: impl delete::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

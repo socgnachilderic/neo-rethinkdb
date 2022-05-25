@@ -50,6 +50,12 @@ async fn main() -> Result<()> {
         .run(&conn).await?;
     dbg!(result);
 
+    /* let result = r.table("heroes")
+        .replace_by_func(func!(|post| post.without("status")))
+        .with_return_changes(ReturnChanges::Bool(true))
+        .run(&conn).await?;
+    dbg!(result); */
+
     tear_down(&conn).await?;
 
     Ok(())
