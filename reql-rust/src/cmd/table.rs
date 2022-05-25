@@ -26,11 +26,15 @@ impl TableBuilder {
         Self(command, TableOption::default())
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<serde_json::Value>> {
+    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<T>>
+    where
+        A: run::Arg,
+        T: Unpin + DeserializeOwned,
+    {
         self.0.with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, serde_json::Value>(arg)
+            .run::<_, T>(arg)
             .try_next()
             .await
     }

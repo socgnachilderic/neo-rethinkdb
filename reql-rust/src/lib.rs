@@ -306,7 +306,7 @@ impl r {
     ///     let session = r.connection().connect().await?;
     ///     let _val = r.db("heroes")
     ///         .table("marvel")
-    ///         .run(&session).await?;
+    ///         .run::<_, serde_json::Value>(&session).await?;
     ///
     ///     Ok(())
     /// }
