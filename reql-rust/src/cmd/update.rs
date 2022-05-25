@@ -1,5 +1,5 @@
 use crate::types::{Durability, ReturnChanges, WritingResponseType};
-use crate::Command;
+use crate::{Command, Func};
 use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::Serialize;
@@ -23,9 +23,12 @@ pub struct UpdateOption {
 impl UpdateBuilder {
     pub fn new(document: &impl Serialize) -> Self {
         let args = Command::from_json(document);
-        let command = Command::new(TermType::Update).with_arg(args);
+        Self::constructor(args)
+    }
 
-        Self(command, UpdateOption::default())
+    pub fn new_by_func(func: Func) -> Self {
+        let Func(func) = func;
+        Self::constructor(func)
     }
 
     pub async fn run(
@@ -65,6 +68,13 @@ impl UpdateBuilder {
     pub fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+
+    #[doc(hidden)]
+    fn constructor(arg: Command) -> Self {
+        let command = Command::new(TermType::Update).with_arg(arg);
+
+        Self(command, UpdateOption::default())
     }
 }
 

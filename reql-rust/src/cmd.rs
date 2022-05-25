@@ -900,6 +900,35 @@ pub trait ReqlTableWritingOps: Into<Command> {
     fn update(self, document: &impl Serialize) -> update::UpdateBuilder {
         update::UpdateBuilder::new(document)._with_parent(self.into())
     }
+    
+    /// Update JSON documents in a table. Accepts a JSON document, 
+    /// a ReQL expression, or a combination of the two.
+    /// 
+    /// See [update](#method.update) for more information
+    /// 
+    /// ## Example
+    /// 
+    /// Remove the field `status` from all posts.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table("heroes")
+    ///         .update_by_func(func!(|post| post.without("status")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn update_by_func(self, func: Func) -> update::UpdateBuilder {
+        update::UpdateBuilder::new_by_func(func)._with_parent(self.into())
+    }
 
     /// Replace documents in a table. Accepts a JSON document or a ReQL expression, 
     /// and replaces the original document with the new one. 
