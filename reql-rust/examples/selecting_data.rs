@@ -26,8 +26,14 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
-    let result = r.table::<Posts>("posts")
+    /* let result = r.table::<Posts>("posts")
         .get_all(&["title"])
+        .run(&conn)
+        .await?;
+    dbg!(result); */
+
+    let result = r.table::<Posts>("posts")
+        .between(6, 10)
         .run(&conn)
         .await?;
     dbg!(result);

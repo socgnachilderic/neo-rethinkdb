@@ -787,6 +787,22 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         super::get_all::GetAllBuilder::new(index_keys)._with_parent(self.into())
     }
 
+    /// Get all documents between two keys. Accepts three options methods: 
+    /// [with_index](super::between::BetweenBuilder::with_index), 
+    /// [with_left_bound](super::between::BetweenBuilder::with_left_bound), and 
+    /// [with_right_bound](super::between::BetweenBuilder::with_right_bound). 
+    /// If `index` is set to the name of a secondary index, `between` will return all documents where that 
+    /// index’s value is in the specified range (it uses the primary key by default). 
+    /// `left_bound` or `right_bound` may be set to `open` or `closed` to indicate whether or not 
+    /// to include that endpoint of the range (by default, `left_bound` is closed and `right_bound` is open).
+    pub fn between(
+        self, 
+        lower_key: impl Serialize, 
+        upper_key: impl Serialize
+    ) -> super::between::BetweenBuilder<T> {
+        super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.into())
+    }
+
     pub fn do_(self, func: Func) -> super::do_::DoBuilder {
         super::do_::DoBuilder::new(func)._with_parent(self.0)
     }
