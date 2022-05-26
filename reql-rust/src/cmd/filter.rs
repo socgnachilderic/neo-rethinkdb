@@ -25,16 +25,16 @@ impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
         Self(command, FilterOption::default(), None)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Vec<T>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<T>> {
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<Vec<T>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, T>(arg)
+            .run::<_, Vec<T>>(arg)
     }
 
     pub fn with_default(mut self, default: bool) -> Self {

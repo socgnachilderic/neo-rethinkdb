@@ -30,17 +30,17 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         Self(command, TableOption::default(), None)
     }
 
-    pub async fn run(&self, arg: impl run::Arg) -> crate::Result<Option<T>> {
+    pub async fn run(&self, arg: impl run::Arg) -> crate::Result<Option<Vec<T>>> {
         self.make_query(arg)
             .try_next()
             .await
     }
     
-    pub fn make_query(&self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<T>> {
+    pub fn make_query(&self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Vec<T>>> {
         self.get_parent().with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, T>(arg)
+            .run::<_, Vec<T>>(arg)
     }
 
     pub fn with_read_mode(mut self, read_mode: ReadMode) -> Self {
