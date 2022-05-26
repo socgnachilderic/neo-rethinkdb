@@ -1,15 +1,16 @@
 use crate::types::IndexStatusResponseType;
 use crate::Command;
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
 use super::run;
 
-pub struct IndexStatusBuilder(Command);
+#[derive(Debug, Clone)]
+pub struct IndexStatusBuilder(pub(crate) Command);
 
 impl IndexStatusBuilder {
     /// Get all indexes of table
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let command = Command::new(TermType::IndexStatus);
 
         IndexStatusBuilder(command)
@@ -19,12 +20,17 @@ impl IndexStatusBuilder {
         self,
         arg: impl run::Arg,
     ) -> crate::Result<Option<Vec<IndexStatusResponseType>>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(
+        self,
+        arg: impl run::Arg,
+    ) -> impl Stream<Item = crate::Result<Vec<IndexStatusResponseType>>> {
         self.0
             .into_arg::<()>()
             .into_cmd()
             .run::<_, Vec<IndexStatusResponseType>>(arg)
-            .try_next()
-            .await
     }
 
     /// Get one index of table
@@ -46,7 +52,7 @@ impl IndexStatusBuilder {
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }

@@ -1,17 +1,21 @@
 use crate::types::{IdentifierFormat, ReadMode};
 use crate::{Command, Func};
-use futures::TryStreamExt;
+use futures::{TryStreamExt, Stream};
 use ql2::term::TermType;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use super::{run, TableAndSelectionOps};
 
-pub struct TableBuilder<T>(Command, TableOption, Option<T>);
+#[derive(Debug, Clone)]
+pub struct TableBuilder<T>(
+    pub(crate) Command, 
+    pub(crate) TableOption, 
+    pub(crate) Option<T>);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct TableOption {
+pub(crate) struct TableOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read_mode: Option<ReadMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -19,7 +23,7 @@ pub struct TableOption {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
-    pub fn new(table_name: &str) -> Self {
+    pub(crate) fn new(table_name: &str) -> Self {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::Table).with_arg(args);
 
@@ -27,19 +31,18 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     }
 
     pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<T>> {
+        self.make_query(arg)
+            .try_next()
+            .await
+    }
+    
+    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<T>> {
         self.0.with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, T>(arg)
-            .try_next()
-            .await
     }
 
-    #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
     pub fn with_read_mode(mut self, read_mode: ReadMode) -> Self {
         self.1.read_mode = Some(read_mode);
         self
@@ -47,6 +50,12 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
 
     pub fn with_identifier_format(mut self, identifier_format: IdentifierFormat) -> Self {
         self.1.identifier_format = Some(identifier_format);
+        self
+    }
+
+    #[doc(hidden)]
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
         self
     }
 

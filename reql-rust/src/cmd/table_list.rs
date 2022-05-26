@@ -1,30 +1,38 @@
-
 use std::borrow::Cow;
 
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
 use crate::Command;
 
-use super::run;
-
-pub struct TableListBuilder(Command);
+#[derive(Debug, Clone)]
+pub struct TableListBuilder(pub(crate) Command);
 
 impl TableListBuilder {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         TableListBuilder(Command::new(TermType::TableList))
     }
 
-    #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+    pub async fn run(
+        self,
+        arg: impl super::run::Arg,
+    ) -> crate::Result<Option<Vec<Cow<'static, str>>>> {
+        self.make_query(arg).try_next().await
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Vec<Cow<'static, str>>>> {        
-        self.0.into_arg::<()>()
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<Vec<Cow<'static, str>>>> {
+        self.0
+            .into_arg::<()>()
             .into_cmd()
             .run::<_, Vec<Cow<'static, str>>>(arg)
-            .try_next().await
+    }
+
+    #[doc(hidden)]
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
+        self
     }
 }

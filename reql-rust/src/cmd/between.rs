@@ -1,13 +1,17 @@
 use std::borrow::Cow;
 
 use super::{args::Args, StaticString};
-use crate::{cmd, Command, Result};
-use futures::TryStreamExt;
+use crate::{cmd, Command, Result, types::Status};
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 
 #[derive(Debug, Clone)]
-pub struct BetweenBuilder<T>(Command, BetweenOption, Option<T>);
+pub struct BetweenBuilder<T>(
+    pub(crate) Command,
+    pub(crate) BetweenOption,
+    pub(crate) Option<T>
+);
 
 #[derive(Debug, Clone, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
@@ -20,32 +24,32 @@ pub struct BetweenOption {
     pub right_bound: Option<Status>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-#[non_exhaustive]
-pub enum Status {
-    Open,
-    Closed,
-}
-
 impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
-    pub fn new(lower_key: impl Serialize, upper_key: impl Serialize) -> Self {
+    pub(crate) fn new(lower_key: impl Serialize, upper_key: impl Serialize) -> Self {
         let arg_lower_key = Command::from_json(lower_key);
         let arg_upper_key = Command::from_json(upper_key);
         let command = Command::new(TermType::Between)
             .with_arg(arg_lower_key)
             .with_arg(arg_upper_key);
-        
+
         Self(command, BetweenOption::default(), None)
     }
 
     pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<serde_json::Value>> {
-        self.0.with_opts(self.1)
+        self.make_query(arg)
+            .try_next()
+            .await
+    }
+
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = Result<serde_json::Value>> {
+        self.0
+            .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, serde_json::Value>(arg)
-            .try_next()
-            .await
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {
@@ -63,7 +67,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
         self
     }
 
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    #[doc(hidden)]
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }

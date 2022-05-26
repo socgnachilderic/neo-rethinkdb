@@ -1,16 +1,22 @@
-use crate::types::{Durability, ReturnChanges, WritingResponseType, Conflict};
+use crate::types::{Conflict, Durability, ReturnChanges, WritingResponseType};
 use crate::{Command, Func};
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-pub struct InsertBuilder<T>(Command, InsertOption, Option<Func>, Option<T>);
+#[derive(Debug)]
+pub struct InsertBuilder<T>(
+    pub(crate) Command,
+    pub(crate) InsertOption,
+    pub(crate) Option<Func>,
+    pub(crate) Option<T>,
+);
 
 // TODO finish this struct
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct InsertOption {
+pub(crate) struct InsertOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub durability: Option<Durability>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -24,7 +30,7 @@ pub struct InsertOption {
 }
 
 impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
-    pub fn new(document: impl Serialize) -> Self {
+    pub(crate) fn new(document: impl Serialize) -> Self {
         let args = Command::from_json(document);
         let command = Command::new(TermType::Insert).with_arg(args);
 
@@ -35,6 +41,13 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
         self,
         arg: impl super::run::Arg,
     ) -> crate::Result<Option<WritingResponseType<Vec<T>>>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<WritingResponseType<Vec<T>>>> {
         let command = self.0;
 
         let command = if let Some(Func(func)) = self.2 {
@@ -44,11 +57,10 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
             command.with_opts(self.1)
         };
 
-        command.into_arg::<()>()
+        command
+            .into_arg::<()>()
             .into_cmd()
             .run::<_, WritingResponseType<Vec<T>>>(arg)
-            .try_next()
-            .await
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {
@@ -77,7 +89,7 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }
@@ -89,11 +101,10 @@ impl<T> Into<Command> for InsertBuilder<T> {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use crate::{cmd, r};
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
 
     #[derive(Serialize, Deserialize)]
     struct Document {
@@ -102,8 +113,8 @@ mod tests {
 
     #[test]
     fn r_table_insert() {
-        let document = Document { 
-            item: "bar".to_string()
+        let document = Document {
+            item: "bar".to_string(),
         };
 
         let query = r.table::<Document>("foo").insert(&[document]);

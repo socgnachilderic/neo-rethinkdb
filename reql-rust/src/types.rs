@@ -172,3 +172,30 @@ pub enum Conflict {
     Replace,
     Update,
 }
+
+/// Controls how change notifications are batched
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(untagged)]
+pub enum Squash {
+    /// `true`: When multiple changes to the same document occur before a
+    /// batch of notifications is sent, the changes are "squashed" into one
+    /// change. The client receives a notification that will bring it fully
+    /// up to date with the server.
+    /// `false`: All changes will be sent to the client verbatim. This is
+    /// the default.
+    Bool(bool),
+    /// `n`: A numeric value (floating point). Similar to `true`, but the
+    /// server will wait `n` seconds to respond in order to squash as many
+    /// changes together as possible, reducing network traffic. The first
+    /// batch will always be returned immediately.
+    Float(f32),
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "lowercase")]
+#[non_exhaustive]
+pub enum Status {
+    Open,
+    Closed,
+}

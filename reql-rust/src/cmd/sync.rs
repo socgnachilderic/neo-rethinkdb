@@ -1,30 +1,34 @@
 use crate::{types::SyncResponseType, Command};
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-pub struct SyncBuilder(Command);
+
+#[derive(Debug, Clone)]
+pub struct SyncBuilder(pub(crate) Command);
 
 impl SyncBuilder {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let command = Command::new(TermType::Sync);
 
         Self(command)
     }
 
-    pub async fn run(
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<SyncResponseType>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<SyncResponseType>> {
+    ) -> impl Stream<Item = crate::Result<SyncResponseType>> {
         self.0
             .into_arg::<()>()
             .into_cmd()
             .run::<_, SyncResponseType>(arg)
-            .try_next().await
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }
 }
-
