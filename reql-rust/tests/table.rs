@@ -5,8 +5,7 @@ use serde_json::Value;
 async fn table() -> reql_rust::Result<()> {
     tracing_subscriber::fmt::init();
     let conn = r.connection().connect().await?;
-    let query = r.db("rethinkdb").table("users").run(&conn);
-    let user: Option<Value> = query.await?;
+    let user = r.db("rethinkdb").table::<Value>("users").run(&conn).await?;
     assert!(user.is_some());
     Ok(())
 }

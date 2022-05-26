@@ -1,16 +1,21 @@
 use crate::types::{Durability, ReturnChanges, WritingResponseType};
 use crate::{Command, Func};
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-pub struct UpdateBuilder<T>(Command, UpdateOption, Option<T>);
+#[derive(Debug, Clone)]
+pub struct UpdateBuilder<T>(
+    pub(crate) Command,
+    pub(crate) UpdateOption,
+    pub(crate) Option<T>,
+);
 
 // TODO finish this struct
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct UpdateOption {
+pub(crate) struct UpdateOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub durability: Option<Durability>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -22,12 +27,12 @@ pub struct UpdateOption {
 }
 
 impl<T: Unpin + DeserializeOwned> UpdateBuilder<T> {
-    pub fn new(document: impl Serialize) -> Self {
+    pub(crate) fn new(document: impl Serialize) -> Self {
         let args = Command::from_json(document);
         Self::constructor(args)
     }
 
-    pub fn new_by_func(func: Func) -> Self {
+    pub(crate) fn new_by_func(func: Func) -> Self {
         let Func(func) = func;
         Self::constructor(func)
     }
@@ -36,13 +41,18 @@ impl<T: Unpin + DeserializeOwned> UpdateBuilder<T> {
         self,
         arg: impl super::run::Arg,
     ) -> crate::Result<Option<WritingResponseType<T>>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<WritingResponseType<T>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, WritingResponseType<T>>(arg)
-            .try_next()
-            .await
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {
@@ -66,7 +76,7 @@ impl<T: Unpin + DeserializeOwned> UpdateBuilder<T> {
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }

@@ -3,10 +3,10 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 #[derive(Debug, Clone)]
-pub struct DbBuilder(Command);
+pub struct DbBuilder(pub(crate) Command);
 
 impl DbBuilder {
-    pub fn new(db_name: &str) -> Self {
+    pub(crate) fn new(db_name: &str) -> Self {
         let args = Command::from_json(db_name);
 
         Self(
@@ -152,7 +152,7 @@ impl DbBuilder {
     ///     - `ReadMode::Outdated` : will return values that are in memory on an arbitrarily-selected replica. This is the fastest but least consistent.
     /// * [with_identifier_format(identifier_format: reql_rust::types::IdentifierFormat)](super::table::TableBuilder::with_identifier_format) :
     ///     - `IdentifierFormat::Name`
-    ///     - `IdentifierFormat::Uuid` : then (system tables)[https://rethinkdb.com/docs/system-tables/] will refer to servers,
+    ///     - `IdentifierFormat::Uuid` : then [system tables](https://rethinkdb.com/docs/system-tables/) will refer to servers,
     ///         databases and tables by UUID rather than name. (This only has an effect when used with system tables.)
     /// 
     /// ## Example

@@ -1,17 +1,18 @@
-use super::{StaticString, run};
-use crate::Command;
+use super::{run, StaticString};
 use crate::types::{DbResponseType, Durability, Replicas};
-use futures::TryStreamExt;
+use crate::Command;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Serialize, Serializer};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-pub struct TableCreateBuilder(Command, TableCreateOption);
+#[derive(Debug, Clone)]
+pub struct TableCreateBuilder(pub(crate) Command, pub(crate) TableCreateOption);
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[non_exhaustive]
-pub struct TableCreateOption {
+pub(crate) struct TableCreateOption {
     pub primary_key: Option<Cow<'static, str>>,
     pub durability: Option<Durability>,
     pub shards: Option<u8>,
@@ -19,18 +20,26 @@ pub struct TableCreateOption {
 }
 
 impl TableCreateBuilder {
-    pub fn new(table_name: &str) -> Self {
+    pub(crate) fn new(table_name: &str) -> Self {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::TableCreate).with_arg(args);
 
         Self(command, TableCreateOption::default())
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DbResponseType>> {       
-        let cmd = self.0.with_opts(self.1).into_arg::<()>()
-            .into_cmd();
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DbResponseType>> {
+        self.make_query(arg).try_next().await
+    }
 
-        cmd.run::<_, DbResponseType>(arg).try_next().await
+    pub fn make_query(
+        self,
+        arg: impl run::Arg,
+    ) -> impl Stream<Item = crate::Result<DbResponseType>> {
+        self.0
+            .with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, DbResponseType>(arg)
     }
 
     /// The name of the primary key. The default primary key is id.
@@ -39,8 +48,8 @@ impl TableCreateBuilder {
         self
     }
 
-    /// If set to `soft`, writes will be acknowledged by the server immediately and flushed to disk in 
-    /// the background. The default is `hard`: acknowledgment of writes happens after data has been 
+    /// If set to `soft`, writes will be acknowledged by the server immediately and flushed to disk in
+    /// the background. The default is `hard`: acknowledgment of writes happens after data has been
     pub fn with_durability(mut self, durability: Durability) -> Self {
         self.1.durability = Some(durability);
         self
@@ -61,7 +70,7 @@ impl TableCreateBuilder {
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }

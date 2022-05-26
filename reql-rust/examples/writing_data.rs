@@ -1,6 +1,7 @@
-use reql_rust::{r, Result, Session, types::ReturnChanges};
+use reql_rust::cmd::table::TableBuilder;
 use reql_rust::prelude::*;
-use serde::{Serialize, Deserialize};
+use reql_rust::{r, types::ReturnChanges, Result, Session};
+use serde::{Deserialize, Serialize};
 use serde_json::json;
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -11,7 +12,9 @@ struct Posts {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    let mut conn = r.connection().connect().await?;
+    let conn = r.connection().connect().await?;
+    let my_table = set_up(&conn).await?;
+
     let post_1 = Posts {
         title: "Lorem ipsum".to_string(),
         content: "Dolor sit amet".to_string(),
@@ -28,39 +31,30 @@ async fn main() -> Result<()> {
     };
 
     let posts = vec![post_2, post_3];
-    
-    set_up(&conn).await?;
-    conn.use_("marvel").await;
-    
-    let result = r.table("posts")
-        .insert(&[post_1])
-        .run(&conn).await?;
-    dbg!(result);
-    
-    let result = r.table("posts")
-        .insert(&posts)
-        .run(&conn).await?;
+
+    let result = my_table.insert(&[post_1]).run(&conn).await?;
     dbg!(result);
 
-    let result = r.table::<Posts>("posts")
+    let result = my_table.insert(&posts).run(&conn).await?;
+    dbg!(result);
+
+    let result = my_table
         .update(&json!({ "status": "published" }))
         .with_return_changes(ReturnChanges::Bool(true))
-        .run(&conn).await?;
+        .run(&conn)
+        .await?;
     dbg!(result);
 
-    /* let result = r.table("heroes")
+    /* let result = my_table
         .replace_by_func(func!(|post| post.without("status")))
         .with_return_changes(ReturnChanges::Bool(true))
         .run(&conn).await?;
     dbg!(result); */
 
-    let result = r.table::<Posts>("posts")
-        .delete()
-        .run(&conn)
-        .await?;
+    let result = my_table.delete().run(&conn).await?;
     dbg!(result);
 
-    let result = r.table::<Posts>("posts").sync().run(&conn).await?;
+    let result = my_table.sync().run(&conn).await?;
     dbg!(result);
 
     tear_down(&conn).await?;
@@ -68,17 +62,15 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn set_up(conn: &Session) -> Result<()> {
+async fn set_up(conn: &Session) -> Result<TableBuilder<Posts>> {
+    let my_table = r.db("marvel").table::<Posts>("posts");
     r.db_create("marvel").run(conn).await?;
-    r.db("marvel")
-        .table_create("posts")
-        .run(conn).await?;
+    r.db("marvel").table_create("posts").run(conn).await?;
 
-    Ok(())
+    Ok(my_table)
 }
 
 async fn tear_down(conn: &Session) -> Result<()> {
-    r.table_drop("posts").run(conn).await?;
     r.db_drop("marvel").run(conn).await?;
 
     Ok(())

@@ -143,14 +143,20 @@ where
         }
         let noreply = opts.noreply.unwrap_or_default();
         let mut payload = Payload(QueryType::Start, Some(Query(&query)), opts);
+        
         loop {
             let (response_type, resp) = conn.request(&payload, noreply).await?;
             trace!("yielding response; token: {}", conn.token);
+
             match response_type {
-                ResponseType::SuccessAtom | ResponseType::SuccessSequence | ResponseType::ServerInfo => {
+                ResponseType::SuccessAtom | ResponseType::ServerInfo => {
                     for val in serde_json::from_value::<Vec<T>>(resp.r)? {
                         yield val;
                     }
+                    break;
+                }
+                ResponseType::SuccessSequence => {
+                    yield serde_json::from_value::<T>(resp.r)?;
                     break;
                 }
                 ResponseType::SuccessPartial => {

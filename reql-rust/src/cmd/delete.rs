@@ -1,17 +1,23 @@
-use crate::Command;
 use crate::types::Durability;
 use crate::types::ReturnChanges;
 use crate::types::WritingResponseType;
+use crate::Command;
+use futures::Stream;
 use futures::TryStreamExt;
 use ql2::term::TermType;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-pub struct DeleteBuilder<T>(Command, DeleteOption, Option<T>);
+#[derive(Debug, Clone)]
+pub struct DeleteBuilder<T>(
+    pub(crate) Command,
+    pub(crate) DeleteOption,
+    pub(crate) Option<T>,
+);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct DeleteOption {
+pub(crate) struct DeleteOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub durability: Option<Durability>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -21,7 +27,7 @@ pub struct DeleteOption {
 }
 
 impl<T: Unpin + DeserializeOwned> DeleteBuilder<T> {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         let command = Command::new(TermType::Delete);
         Self(command, DeleteOption::default(), None)
     }
@@ -30,13 +36,18 @@ impl<T: Unpin + DeserializeOwned> DeleteBuilder<T> {
         self,
         arg: impl super::run::Arg,
     ) -> crate::Result<Option<WritingResponseType<T>>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<WritingResponseType<T>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, WritingResponseType<T>>(arg)
-            .try_next()
-            .await
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {
@@ -55,7 +66,7 @@ impl<T: Unpin + DeserializeOwned> DeleteBuilder<T> {
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }

@@ -1,17 +1,21 @@
 use crate::types::{IdentifierFormat, ReadMode};
 use crate::{Command, Func};
-use futures::TryStreamExt;
+use futures::{TryStreamExt, Stream};
 use ql2::term::TermType;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use super::{run, TableAndSelectionOps};
 
-pub struct TableBuilder<T>(Command, TableOption, Option<T>);
+#[derive(Debug, Clone)]
+pub struct TableBuilder<T>(
+    pub(crate) Command, 
+    pub(crate) TableOption, 
+    pub(crate) Option<T>);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct TableOption {
+pub(crate) struct TableOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read_mode: Option<ReadMode>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -19,27 +23,26 @@ pub struct TableOption {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
-    pub fn new(table_name: &str) -> Self {
+    pub(crate) fn new(table_name: &str) -> Self {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::Table).with_arg(args);
 
         Self(command, TableOption::default(), None)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<T>> {
-        self.0.with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+    pub async fn run(&self, arg: impl run::Arg) -> crate::Result<Option<Vec<T>>> {
+        self.make_query(arg)
             .try_next()
             .await
     }
-
-    #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+    
+    pub fn make_query(&self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Vec<T>>> {
+        self.get_parent().with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, Vec<T>>(arg)
     }
+
     pub fn with_read_mode(mut self, read_mode: ReadMode) -> Self {
         self.1.read_mode = Some(read_mode);
         self
@@ -47,6 +50,12 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
 
     pub fn with_identifier_format(mut self, identifier_format: IdentifierFormat) -> Self {
         self.1.identifier_format = Some(identifier_format);
+        self
+    }
+
+    #[doc(hidden)]
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
         self
     }
 
@@ -199,8 +208,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn index_create(self, index_name: &str) -> super::index_create::IndexCreateBuilder {
-        super::index_create::IndexCreateBuilder::new(index_name)._with_parent(self.into())
+    pub fn index_create(&self, index_name: &str) -> super::index_create::IndexCreateBuilder {
+        super::index_create::IndexCreateBuilder::new(index_name)._with_parent(self.get_parent())
     }
 
     /// Delete a previously created secondary index of this table.
@@ -223,8 +232,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn index_drop(self, index_name: &str) -> super::index_drop::IndexDropBuilder {
-        super::index_drop::IndexDropBuilder::new(index_name)._with_parent(self.into())
+    pub fn index_drop(&self, index_name: &str) -> super::index_drop::IndexDropBuilder {
+        super::index_drop::IndexDropBuilder::new(index_name)._with_parent(self.get_parent())
     }
 
     /// List all the secondary indexes of this table.
@@ -247,8 +256,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn index_list(self) -> super::index_list::IndexListBuilder {
-        super::index_list::IndexListBuilder::new()._with_parent(self.into())
+    pub fn index_list(&self) -> super::index_list::IndexListBuilder {
+        super::index_list::IndexListBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Rename an existing secondary index on a table.
@@ -300,12 +309,12 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// }
     /// ```
     pub fn index_rename(
-        self,
+        &self,
         old_index_name: &str,
         new_index_name: &str,
     ) -> super::index_rename::IndexRenameBuilder {
         super::index_rename::IndexRenameBuilder::new(old_index_name, new_index_name)
-            ._with_parent(self.into())
+            ._with_parent(self.get_parent())
     }
 
     /// Get the status of the specified indexes on this table, or the status of all indexes on this table if no indexes are specified.
@@ -392,8 +401,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn index_status(self) -> super::index_status::IndexStatusBuilder {
-        super::index_status::IndexStatusBuilder::new()._with_parent(self.into())
+    pub fn index_status(&self) -> super::index_status::IndexStatusBuilder {
+        super::index_status::IndexStatusBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Wait for the specified indexes on this table to be ready,
@@ -469,8 +478,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn index_wait(self) -> super::index_wait::IndexWaitBuilder {
-        super::index_wait::IndexWaitBuilder::new()._with_parent(self.into())
+    pub fn index_wait(&self) -> super::index_wait::IndexWaitBuilder {
+        super::index_wait::IndexWaitBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Sets the write hook on a table or overwrites it if one already exists.
@@ -508,8 +517,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn set_write_hook(self, func: Func) -> super::set_write_hook::SetWriteHookBuilder {
-        super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.into())
+    pub fn set_write_hook(&self, func: Func) -> super::set_write_hook::SetWriteHookBuilder {
+        super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.get_parent())
     }
 
     /// Gets the write hook of this table.
@@ -541,8 +550,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn get_write_hook(self) -> super::get_write_hook::GetWriteBuilder {
-        super::get_write_hook::GetWriteBuilder::new()._with_parent(self.into())
+    pub fn get_write_hook(&self) -> super::get_write_hook::GetWriteBuilder {
+        super::get_write_hook::GetWriteBuilder::new()._with_parent(self.get_parent())
     }
 
     ///
@@ -666,8 +675,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(self, document: &[T]) -> super::insert::InsertBuilder<T> {
-        super::insert::InsertBuilder::new(document)._with_parent(self.into())
+    pub fn insert(&self, document: &[T]) -> super::insert::InsertBuilder<T> {
+        super::insert::InsertBuilder::new(document)._with_parent(self.get_parent())
     }
 
     /// `sync` ensures that writes on a given table are written to permanent storage.
@@ -692,8 +701,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn sync(self) -> super::sync::SyncBuilder {
-        super::sync::SyncBuilder::new()._with_parent(self.into())
+    pub fn sync(&self) -> super::sync::SyncBuilder {
+        super::sync::SyncBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Get a document by primary key.
@@ -717,8 +726,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn get(self, primary_key: impl Serialize) -> super::get::GetBuilder<T> {
-        super::get::GetBuilder::new(primary_key)._with_parent(self.into())
+    pub fn get(&self, primary_key: impl Serialize) -> super::get::GetBuilder<T> {
+        super::get::GetBuilder::new(primary_key)._with_parent(self.get_parent())
     }
 
     /// Get all documents where the given value matches the value of the requested index.
@@ -782,9 +791,9 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn get_all(self, index_keys: &[&str]) -> super::get_all::GetAllBuilder<T> {
+    pub fn get_all(&self, index_keys: &[&str]) -> super::get_all::GetAllBuilder<T> {
         assert!(index_keys.len() > 0);
-        super::get_all::GetAllBuilder::new(index_keys)._with_parent(self.into())
+        super::get_all::GetAllBuilder::new(index_keys)._with_parent(self.get_parent())
     }
 
     /// Get all documents between two keys. Accepts three options methods: 
@@ -796,23 +805,23 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// `left_bound` or `right_bound` may be set to `open` or `closed` to indicate whether or not 
     /// to include that endpoint of the range (by default, `left_bound` is closed and `right_bound` is open).
     pub fn between(
-        self, 
+        &self, 
         lower_key: impl Serialize, 
         upper_key: impl Serialize
     ) -> super::between::BetweenBuilder<T> {
-        super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.into())
+        super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.get_parent())
     }
 
     /// Return all the elements in a sequence for which the given predicate is true. 
     /// The return value of `filter` will be the same as the input (sequence, stream, or array). 
     /// Documents can be filtered in a variety of ways—ranges, nested values, boolean conditions, 
     /// and the results of anonymous functions.
-    pub fn filter(self, func: Func) -> super::filter::FilterBuilder<T> {
-        super::filter::FilterBuilder::new(func)._with_parent(self.into())
+    pub fn filter(&self, func: Func) -> super::filter::FilterBuilder<T> {
+        super::filter::FilterBuilder::new(func)._with_parent(self.get_parent())
     }
 
-    pub fn do_(self, func: Func) -> super::do_::DoBuilder {
-        super::do_::DoBuilder::new(func)._with_parent(self.0)
+    pub fn do_(&self, func: Func) -> super::do_::DoBuilder {
+        super::do_::DoBuilder::new(func)._with_parent(self.get_parent())
     }
 
     /// Orders the result based on the given column.
@@ -829,7 +838,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     // # });
     // ```
     ///
-    pub fn order_by(self, arg: impl super::order_by::Arg) -> Command {
+    pub fn order_by(&self, arg: impl super::order_by::Arg) -> Command {
         // arg.arg().into_cmd().with_parent(self)
         todo!()
     }
@@ -837,6 +846,10 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for TableBuilder<T> {
     type Parent = T;
+
+    fn get_parent(&self) -> Command {
+        self.0.clone()
+    }
 }
 
 impl<T> Into<Command> for TableBuilder<T> {

@@ -1,29 +1,31 @@
 use crate::Command;
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use super::{run, TableAndSelectionOps};
 
-pub struct GetBuilder<T>(Command, Option<T>);
+#[derive(Debug, Clone)]
+pub struct GetBuilder<T>(pub(crate) Command, pub(crate) Option<T>);
 
 impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
-    pub fn new(primary_key: impl Serialize) -> Self {
+    pub(crate) fn new(primary_key: impl Serialize) -> Self {
         let args = Command::from_json(primary_key);
         let command = Command::new(TermType::Get).with_arg(args);
 
         Self(command, None)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Option<T>>> {            
-        let cmd = self.0.into_arg::<()>()
-            .into_cmd();
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Option<T>>> {
+        self.make_query(arg).try_next().await
+    }
 
-        cmd.run::<_, Option<T>>(arg).try_next().await
+    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Option<T>>> {
+        self.0.into_arg::<()>().into_cmd().run::<_, Option<T>>(arg)
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }
@@ -31,6 +33,10 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for GetBuilder<T> {
     type Parent = T;
+
+    fn get_parent(&self) -> Command {
+        self.0.clone()
+    }
 }
 
 impl<T> Into<Command> for GetBuilder<T> {

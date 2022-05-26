@@ -78,19 +78,24 @@
 //! {old_val: null, new_val: {id: 1}}
 //! ```
 
-use crate::Command;
-use futures::TryStreamExt;
+use crate::{Command, types::Squash};
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 
 use super::run;
 
-pub struct ChangesBuilder<T>(Command, ChangesOption, Option<T>);
+#[derive(Debug, Clone)]
+pub struct ChangesBuilder<T>(
+    pub(crate) Command, 
+    pub(crate) ChangesOption, 
+    pub(crate) Option<T>
+);
 
 /// Optional arguments to `changes`
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub struct ChangesOption {
+pub(crate) struct ChangesOption {
     /// Controls how change notifications are batched
     #[serde(skip_serializing_if = "Option::is_none")]
     pub squash: Option<Squash>,
@@ -145,40 +150,23 @@ pub struct ChangesOption {
     pub include_types: Option<bool>,
 }
 
-/// Controls how change notifications are batched
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-#[serde(untagged)]
-pub enum Squash {
-    /// `true`: When multiple changes to the same document occur before a
-    /// batch of notifications is sent, the changes are "squashed" into one
-    /// change. The client receives a notification that will bring it fully
-    /// up to date with the server.
-    /// `false`: All changes will be sent to the client verbatim. This is
-    /// the default.
-    Bool(bool),
-    /// `n`: A numeric value (floating point). Similar to `true`, but the
-    /// server will wait `n` seconds to respond in order to squash as many
-    /// changes together as possible, reducing network traffic. The first
-    /// batch will always be returned immediately.
-    Float(f32),
-}
-
 impl<T: Unpin + Serialize + DeserializeOwned> ChangesBuilder<T> {
-    pub fn new() -> Self {
-        let command = Command::new(TermType::Changes)
-            .mark_change_feed();
-        
+    pub(crate) fn new() -> Self {
+        let command = Command::new(TermType::Changes).mark_change_feed();
+
         Self(command, ChangesOption::default(), None)
     }
 
     pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<T>> {
-        self.0.with_opts(self.1)
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.0
+            .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, T>(arg)
-            .try_next()
-            .await
     }
 
     pub fn with_squash(mut self, squash: Squash) -> Self {
@@ -212,7 +200,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ChangesBuilder<T> {
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }

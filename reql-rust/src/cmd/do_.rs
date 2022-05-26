@@ -1,14 +1,15 @@
 use crate::prelude::Func;
 use crate::Command;
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-pub struct DoBuilder(Command);
+#[derive(Debug, Clone)]
+pub struct DoBuilder(pub(crate) Command);
 
 impl DoBuilder {
-    pub fn new(func: Func) -> Self {
+    pub(crate) fn new(func: Func) -> Self {
         let Func(func) = func;
         let command = Command::new(TermType::Funcall).with_arg(func);
 
@@ -20,11 +21,15 @@ impl DoBuilder {
         A: super::run::Arg,
         T: Unpin + DeserializeOwned,
     {
-        self.0.into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
-            .try_next()
-            .await
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
+    where
+        A: super::run::Arg,
+        T: Unpin + DeserializeOwned,
+    {
+        self.0.into_arg::<()>().into_cmd().run::<_, T>(arg)
     }
 
     pub fn with_args<T: Serialize>(mut self, args: &[T]) -> Self {
@@ -37,7 +42,7 @@ impl DoBuilder {
     }
 
     #[doc(hidden)]
-    pub fn _with_parent(mut self, parent: Command) -> Self {
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
     }
@@ -70,7 +75,10 @@ mod tests {
     #[test]
     fn r_db_table_get_do() {
         let counter = crate::current_counter();
-        let query = r.db("mydb").table::<serde_json::Value>("table1").get("johndoe@example.com");
+        let query = r
+            .db("mydb")
+            .table::<serde_json::Value>("table1")
+            .get("johndoe@example.com");
         // .do_(func!(|doc| r
         //     .db("mydb")
         //     .table("table2")
