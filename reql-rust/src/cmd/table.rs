@@ -878,12 +878,12 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         super::inner_join::InnerJoinBuilder::new(other_table, func)._with_parent(self.0.clone())
     }
 
-    /// Returns a left outer join of two sequences. 
-    /// The returned sequence represents a union of the left-hand sequence and the right-hand sequence: 
-    /// all documents in the left-hand sequence will be returned, 
-    /// each matched with a document in the right-hand sequence if one satisfies the predicate condition. 
+    /// Returns a left outer join of two sequences.
+    /// The returned sequence represents a union of the left-hand sequence and the right-hand sequence:
+    /// all documents in the left-hand sequence will be returned,
+    /// each matched with a document in the right-hand sequence if one satisfies the predicate condition.
     /// In most cases, you will want to follow the join with [zip](super::JoinOps::zip) to combine the left and right results.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -923,6 +923,126 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         func: Func,
     ) -> super::outer_join::OuterJoinBuilder<A, T> {
         super::outer_join::OuterJoinBuilder::new(other_table, func)._with_parent(self.0.clone())
+    }
+
+    /// Join tables using a field or function on the left-hand sequence matching primary keys or secondary indexes on the right-hand table. 
+    /// `eq_join` is more efficient than other ReQL join types, and operates much faster. 
+    /// Documents in the result set consist of pairs of left-hand and right-hand documents, 
+    /// matched when the field on the left-hand side exists and is non-null and an entry 
+    /// with that field’s value exists in the specified index on the right-hand side.
+    /// 
+    /// The result set of `eq_join` is a stream or array of objects. 
+    /// Each object in the returned set will be an object of the form { "left": <left-document>, "right": <right-document> }, 
+    /// where the values of left and right will be the joined documents. 
+    /// Use the [zip](super::JoinOps::zip) command to merge the left and right fields together.
+    /// 
+    /// The results from `eq_join` are, by default, not ordered. Providing [with_ordered(true)](super::eq_join::EqJoinBuilder::with_ordered) 
+    /// will cause `eq_join` to order the output based on the left side input stream. 
+    /// (If there are multiple matches on the right side for a document on the left side, 
+    /// their order is not guaranteed even if ordered is true.) Requiring ordered results can significantly slow down `eq_join`, 
+    /// and in many circumstances this ordering will not be required. 
+    /// (See the first example, in which ordered results are obtained by using `order_by` after `eq_join`.)
+    /// 
+    /// ## Example
+    /// 
+    /// Match posts with the users they’ve posted against one another.
+    /// 
+    /// Join these tables using `user_id` on the users table and `id` on the posts table:
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// use serde_json:: Value;
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .eq_join(
+    ///             "user_id",
+    ///             &r.table::<Users>("users"),
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn eq_join<A: Unpin + Serialize + DeserializeOwned>(
+        self,
+        left_field: &str,
+        right_table: &TableBuilder<A>,
+    ) -> super::eq_join::EqJoinBuilder<A, T> {
+        super::eq_join::EqJoinBuilder::new(left_field, right_table)._with_parent(self.0.clone())
+    }
+
+    /// Join tables using a field or function on the left-hand sequence matching primary keys or secondary indexes on the right-hand table. 
+    /// `eq_join` is more efficient than other ReQL join types, and operates much faster. 
+    /// Documents in the result set consist of pairs of left-hand and right-hand documents, 
+    /// matched when the field on the left-hand side exists and is non-null and an entry 
+    /// with that field’s value exists in the specified index on the right-hand side.
+    /// 
+    /// See [eq_join](#method.eq_join) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// Match posts with the users they’ve posted against one another.
+    /// 
+    /// Join these tables using `user_id` on the users table and `id` on the posts table:
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// use serde_json:: Value;
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .eq_join_by_func(
+    ///             func!(|row| row.bracket("user_id")),
+    ///             &r.table::<Users>("users"),
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn eq_join_by_func<A: Unpin + Serialize + DeserializeOwned>(
+        self,
+        func: Func,
+        right_table: &TableBuilder<A>,
+    ) -> super::eq_join::EqJoinBuilder<A, T> {
+        super::eq_join::EqJoinBuilder::new_by_func(func, right_table)._with_parent(self.0.clone())
     }
 
     pub fn do_(&self, func: Func) -> super::do_::DoBuilder {

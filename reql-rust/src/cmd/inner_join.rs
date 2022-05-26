@@ -6,7 +6,12 @@ use crate::{types::JoinResponseType, Command, Func};
 
 use super::{run, table::TableBuilder, JoinOps};
 
-pub struct InnerJoinBuilder<A, T>(pub(crate) Command, Option<A>, Option<T>);
+#[derive(Debug, Clone)]
+pub struct InnerJoinBuilder<A, T>(
+    pub(crate) Command, 
+    pub(crate) Option<A>, 
+    pub(crate) Option<T>
+);
 
 impl<A, T> InnerJoinBuilder<A, T>
 where

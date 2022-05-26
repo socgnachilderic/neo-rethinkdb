@@ -64,6 +64,13 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    let result = post_table
+        .eq_join("user_id", &user_table)
+        .with_ordered(true)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())
