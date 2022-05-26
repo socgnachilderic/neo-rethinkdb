@@ -1,17 +1,18 @@
 use crate::types::{IdentifierFormat, ReadMode};
 use crate::{Command, Func};
-use futures::{TryStreamExt, Stream};
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-use super::{run, TableAndSelectionOps};
+use super::{run, TableAndSelectionOps, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct TableBuilder<T>(
-    pub(crate) Command, 
-    pub(crate) TableOption, 
-    pub(crate) Option<T>);
+    pub(crate) Command,
+    pub(crate) TableOption,
+    pub(crate) Option<T>,
+);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -31,13 +32,12 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     }
 
     pub async fn run(&self, arg: impl run::Arg) -> crate::Result<Option<Vec<T>>> {
-        self.make_query(arg)
-            .try_next()
-            .await
+        self.make_query(arg).try_next().await
     }
-    
+
     pub fn make_query(&self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Vec<T>>> {
-        self.get_parent().with_opts(self.1)
+        self.get_parent()
+            .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
             .run::<_, Vec<T>>(arg)
@@ -573,7 +573,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
-    ///     let post = Posts { 
+    ///     let post = Posts {
     ///         id: "1".to_string(),
     ///         title: "Lorem ipsum".to_string(),
     ///         content: "Dolor sit amet".to_string()
@@ -667,7 +667,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         id: "lara".to_string(),
     ///         email: "lara@rethinkdb.com".to_string()
     ///     };
-    /// 
+    ///
     ///     let users = vec![user_1, user_2];
     ///     
     ///     r.table("posts").insert(&users).run(&conn).await?;
@@ -680,24 +680,24 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     }
 
     /// `sync` ensures that writes on a given table are written to permanent storage.
-    /// Queries that specify soft durability (durability='soft') do not give such guarantees, 
-    /// so `sync` can be used to ensure the state of these queries. 
+    /// Queries that specify soft durability (durability='soft') do not give such guarantees,
+    /// so `sync` can be used to ensure the state of these queries.
     /// A call to sync does not return until all previous writes to the table are persisted.
-    /// 
+    ///
     /// If successful, the operation returns an object: {"synced": 1}.
-    /// 
+    ///
     /// ## Example
-    /// 
-    /// After having updated multiple heroes with soft durability, 
+    ///
+    /// After having updated multiple heroes with soft durability,
     /// we now want to wait until these changes are persisted.
-    /// 
+    ///
     /// ```
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<serde_json::Value>("comments").sync().run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
@@ -731,11 +731,11 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     }
 
     /// Get all documents where the given value matches the value of the requested index.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Secondary index keys are not guaranteed to be unique so we cannot query via [get](#method.get) when using a secondary index.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -751,13 +751,13 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
-    /// Without an index argument, we default to the primary index. 
-    /// While `get` will either return the document or `None` when no document with such a primary key value exists, 
+    ///
+    /// Without an index argument, we default to the primary index.
+    /// While `get` will either return the document or `None` when no document with such a primary key value exists,
     /// this will return either a one or zero length stream.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -772,11 +772,11 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// You can get multiple documents in a single call to `get_all`.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
@@ -796,28 +796,249 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         super::get_all::GetAllBuilder::new(index_keys)._with_parent(self.get_parent())
     }
 
-    /// Get all documents between two keys. Accepts three options methods: 
-    /// [with_index](super::between::BetweenBuilder::with_index), 
-    /// [with_left_bound](super::between::BetweenBuilder::with_left_bound), and 
-    /// [with_right_bound](super::between::BetweenBuilder::with_right_bound). 
-    /// If `index` is set to the name of a secondary index, `between` will return all documents where that 
-    /// index’s value is in the specified range (it uses the primary key by default). 
-    /// `left_bound` or `right_bound` may be set to `open` or `closed` to indicate whether or not 
+    /// Get all documents between two keys. Accepts three options methods:
+    /// [with_index](super::between::BetweenBuilder::with_index),
+    /// [with_left_bound](super::between::BetweenBuilder::with_left_bound), and
+    /// [with_right_bound](super::between::BetweenBuilder::with_right_bound).
+    /// If `index` is set to the name of a secondary index, `between` will return all documents where that
+    /// index’s value is in the specified range (it uses the primary key by default).
+    /// `left_bound` or `right_bound` may be set to `open` or `closed` to indicate whether or not
     /// to include that endpoint of the range (by default, `left_bound` is closed and `right_bound` is open).
     pub fn between(
-        &self, 
-        lower_key: impl Serialize, 
-        upper_key: impl Serialize
+        &self,
+        lower_key: impl Serialize,
+        upper_key: impl Serialize,
     ) -> super::between::BetweenBuilder<T> {
         super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.get_parent())
     }
 
-    /// Return all the elements in a sequence for which the given predicate is true. 
-    /// The return value of `filter` will be the same as the input (sequence, stream, or array). 
-    /// Documents can be filtered in a variety of ways—ranges, nested values, boolean conditions, 
+    /// Return all the elements in a sequence for which the given predicate is true.
+    /// The return value of `filter` will be the same as the input (sequence, stream, or array).
+    /// Documents can be filtered in a variety of ways—ranges, nested values, boolean conditions,
     /// and the results of anonymous functions.
     pub fn filter(&self, func: Func) -> super::filter::FilterBuilder<T> {
         super::filter::FilterBuilder::new(func)._with_parent(self.get_parent())
+    }
+
+    /// Returns an inner join of two sequences.
+    ///
+    /// The returned sequence represents an intersection of the left-hand sequence and the right-hand sequence:
+    /// each row of the left-hand sequence will be compared with
+    /// each row of the right-hand sequence  to find all pairs of rows which satisfy the predicate.
+    /// Each matched pair of rows of both sequences are combined  into a result row.
+    /// In most cases, you will want to follow the join with [zip](super::JoinOps::zip) to combine the left and right results.
+    ///
+    /// ```text
+    /// Note that inner_join is slower and much less efficient than using eq_join or concat_map with get_all.
+    /// You should avoid using inner_join in commands when possible.
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Return a list of all matchups between Marvel and DC heroes in which the DC hero could beat the Marvel hero in a fight.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .inner_join(
+    ///             &r.table::<Users>("users"),
+    ///             func!(|post, _user| post.bracket("user_id").eq(1)),
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn inner_join<A: Unpin + Serialize + DeserializeOwned>(
+        &self,
+        other_table: &TableBuilder<A>,
+        func: Func,
+    ) -> super::inner_join::InnerJoinBuilder<A, T> {
+        super::inner_join::InnerJoinBuilder::new(other_table, func)._with_parent(self.0.clone())
+    }
+
+    /// Returns a left outer join of two sequences.
+    /// The returned sequence represents a union of the left-hand sequence and the right-hand sequence:
+    /// all documents in the left-hand sequence will be returned,
+    /// each matched with a document in the right-hand sequence if one satisfies the predicate condition.
+    /// In most cases, you will want to follow the join with [zip](super::JoinOps::zip) to combine the left and right results.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .outer_join(
+    ///             &r.table::<Users>("users"),
+    ///             func!(|post, _user| post.bracket("user_id").eq(1)),
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn outer_join<A: Unpin + Serialize + DeserializeOwned>(
+        &self,
+        other_table: &TableBuilder<A>,
+        func: Func,
+    ) -> super::outer_join::OuterJoinBuilder<A, T> {
+        super::outer_join::OuterJoinBuilder::new(other_table, func)._with_parent(self.0.clone())
+    }
+
+    /// Join tables using a field or function on the left-hand sequence matching primary keys or secondary indexes on the right-hand table. 
+    /// `eq_join` is more efficient than other ReQL join types, and operates much faster. 
+    /// Documents in the result set consist of pairs of left-hand and right-hand documents, 
+    /// matched when the field on the left-hand side exists and is non-null and an entry 
+    /// with that field’s value exists in the specified index on the right-hand side.
+    /// 
+    /// The result set of `eq_join` is a stream or array of objects. 
+    /// Each object in the returned set will be an object of the form { "left": <left-document>, "right": <right-document> }, 
+    /// where the values of left and right will be the joined documents. 
+    /// Use the [zip](super::JoinOps::zip) command to merge the left and right fields together.
+    /// 
+    /// The results from `eq_join` are, by default, not ordered. Providing [with_ordered(true)](super::eq_join::EqJoinBuilder::with_ordered) 
+    /// will cause `eq_join` to order the output based on the left side input stream. 
+    /// (If there are multiple matches on the right side for a document on the left side, 
+    /// their order is not guaranteed even if ordered is true.) Requiring ordered results can significantly slow down `eq_join`, 
+    /// and in many circumstances this ordering will not be required. 
+    /// (See the first example, in which ordered results are obtained by using `order_by` after `eq_join`.)
+    /// 
+    /// ## Example
+    /// 
+    /// Match posts with the users they’ve posted against one another.
+    /// 
+    /// Join these tables using `user_id` on the users table and `id` on the posts table:
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .eq_join(
+    ///             "user_id",
+    ///             &r.table::<Users>("users"),
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn eq_join<A: Unpin + Serialize + DeserializeOwned>(
+        self,
+        left_field: &str,
+        right_table: &TableBuilder<A>,
+    ) -> super::eq_join::EqJoinBuilder<A, T> {
+        super::eq_join::EqJoinBuilder::new(left_field, right_table)._with_parent(self.0.clone())
+    }
+
+    /// Join tables using a field or function on the left-hand sequence matching primary keys or secondary indexes on the right-hand table. 
+    /// `eq_join` is more efficient than other ReQL join types, and operates much faster. 
+    /// Documents in the result set consist of pairs of left-hand and right-hand documents, 
+    /// matched when the field on the left-hand side exists and is non-null and an entry 
+    /// with that field’s value exists in the specified index on the right-hand side.
+    /// 
+    /// See [eq_join](#method.eq_join) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// Match posts with the users they’ve posted against one another.
+    /// 
+    /// Join these tables using `user_id` on the users table and `id` on the posts table:
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .eq_join_by_func(
+    ///             func!(|row| row.bracket("user_id")),
+    ///             &r.table::<Users>("users"),
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn eq_join_by_func<A: Unpin + Serialize + DeserializeOwned>(
+        self,
+        func: Func,
+        right_table: &TableBuilder<A>,
+    ) -> super::eq_join::EqJoinBuilder<A, T> {
+        super::eq_join::EqJoinBuilder::new_by_func(func, right_table)._with_parent(self.0.clone())
     }
 
     pub fn do_(&self, func: Func) -> super::do_::DoBuilder {
@@ -846,7 +1067,9 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for TableBuilder<T> {
     type Parent = T;
+}
 
+impl<T: Unpin + Serialize + DeserializeOwned> SuperOps for TableBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

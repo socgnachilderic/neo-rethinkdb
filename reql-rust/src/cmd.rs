@@ -172,10 +172,12 @@ use std::str;
 
 pub use crate::proto::Arg;
 
-pub trait TableAndSelectionOps: Into<Command> {
-    type Parent: Unpin + Serialize + DeserializeOwned;
-
+pub trait SuperOps {
     fn get_parent(&self) -> Command;
+}
+
+pub trait TableAndSelectionOps: SuperOps {
+    type Parent: Unpin + Serialize + DeserializeOwned;
 
     /// Turn a query into a changefeed, an infinite stream of objects
     /// representing changes to the query’s results as they occur.
@@ -372,6 +374,43 @@ pub trait TableAndSelectionOps: Into<Command> {
     }
 }
 
+pub trait JoinOps: DocManipulationOps {
+
+    /// Used to ‘zip’ up the result of a join by merging the ‘right’ fields into ‘left’ fields of each member of the sequence.
+    /// 
+    /// ## Example
+    /// 
+    /// ‘zips up’ the sequence by merging the left and right fields produced by a join.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// use serde_json::Value;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("marvel")
+    ///         .eq_join(
+    ///             "main_dc_collaborator",
+    ///             &r.table::<Value>("dc"),
+    ///         )
+    ///         .zip()
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn zip(&self) -> zip::ZipBuilder {
+        zip::ZipBuilder::new()._with_parent(self.get_parent())
+    }
+}
+
+pub trait DocManipulationOps: SuperOps {
+    
+}
+
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
 }
@@ -397,27 +436,7 @@ impl StaticString for &Cow<'static, str> {
     }
 }
 
-// for debug purposes only
-fn bytes_to_string(bytes: &[u8]) -> String {
-    if let Ok(string) = str::from_utf8(bytes) {
-        return string.to_owned();
-    }
-    format!("{:?}", bytes)
-}
-
 impl<'a> Command {
-    pub fn inner_join(self, arg: impl inner_join::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn outer_join(self, arg: impl outer_join::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn eq_join(self, arg: impl eq_join::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn zip(self) -> Self {
         Self::new(TermType::Zip).with_parent(self)
     }
@@ -842,6 +861,14 @@ impl<'a> Command {
     {
         Box::pin(run::new(self, arg))
     }
+}
+
+// for debug purposes only
+fn bytes_to_string(bytes: &[u8]) -> String {
+    if let Ok(string) = str::from_utf8(bytes) {
+        return string.to_owned();
+    }
+    format!("{:?}", bytes)
 }
 
 #[cfg(test)]

@@ -84,6 +84,12 @@ pub struct SyncResponseType {
     synced: Option<u8>
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JoinResponseType<L, R> {
+    left: Option<L>,
+    right: Option<R>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct ConfigChange<T> {

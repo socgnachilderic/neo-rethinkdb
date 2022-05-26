@@ -3,7 +3,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use super::{run, TableAndSelectionOps};
+use super::{run, TableAndSelectionOps, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct GetBuilder<T>(pub(crate) Command, pub(crate) Option<T>);
@@ -33,7 +33,9 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for GetBuilder<T> {
     type Parent = T;
+}
 
+impl<T> SuperOps for GetBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }
