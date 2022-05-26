@@ -172,7 +172,7 @@ use std::str;
 
 pub use crate::proto::Arg;
 
-pub trait TableAndSelectionOps: Into<Command> {
+pub trait TableAndSelectionOps {
     type Parent: Unpin + Serialize + DeserializeOwned;
 
     fn get_parent(&self) -> Command;
@@ -372,6 +372,12 @@ pub trait TableAndSelectionOps: Into<Command> {
     }
 }
 
+pub trait JoinOps {
+    fn zip() {
+        todo!()
+    }
+}
+
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
 }
@@ -397,19 +403,7 @@ impl StaticString for &Cow<'static, str> {
     }
 }
 
-// for debug purposes only
-fn bytes_to_string(bytes: &[u8]) -> String {
-    if let Ok(string) = str::from_utf8(bytes) {
-        return string.to_owned();
-    }
-    format!("{:?}", bytes)
-}
-
 impl<'a> Command {
-    pub fn inner_join(self, arg: impl inner_join::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn outer_join(self, arg: impl outer_join::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
@@ -842,6 +836,14 @@ impl<'a> Command {
     {
         Box::pin(run::new(self, arg))
     }
+}
+
+// for debug purposes only
+fn bytes_to_string(bytes: &[u8]) -> String {
+    if let Ok(string) = str::from_utf8(bytes) {
+        return string.to_owned();
+    }
+    format!("{:?}", bytes)
 }
 
 #[cfg(test)]
