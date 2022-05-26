@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use super::{run, TableAndSelectionOps};
+use super::{run, TableAndSelectionOps, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct TableBuilder<T>(
@@ -841,7 +841,6 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// use serde_json:: Value;
     ///
     /// #[derive(Debug, Serialize, Deserialize)]
     /// struct Users {
@@ -888,7 +887,6 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// use serde_json:: Value;
     ///
     /// #[derive(Debug, Serialize, Deserialize)]
     /// struct Users {
@@ -953,7 +951,6 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// use serde_json:: Value;
     ///
     /// #[derive(Debug, Serialize, Deserialize)]
     /// struct Users {
@@ -1008,7 +1005,6 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// use serde_json:: Value;
     ///
     /// #[derive(Debug, Serialize, Deserialize)]
     /// struct Users {
@@ -1071,7 +1067,9 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for TableBuilder<T> {
     type Parent = T;
+}
 
+impl<T: Unpin + Serialize + DeserializeOwned> SuperOps for TableBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

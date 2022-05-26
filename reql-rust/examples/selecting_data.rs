@@ -60,6 +60,7 @@ async fn main() -> Result<()> {
             &user_table,
             func!(|post, _user| post.bracket("user_id").eq(1)),
         )
+        .zip()
         .run(&conn)
         .await?;
     dbg!(result);

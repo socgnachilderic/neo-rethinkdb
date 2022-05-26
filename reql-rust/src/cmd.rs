@@ -172,10 +172,12 @@ use std::str;
 
 pub use crate::proto::Arg;
 
-pub trait TableAndSelectionOps {
-    type Parent: Unpin + Serialize + DeserializeOwned;
-
+pub trait SuperOps {
     fn get_parent(&self) -> Command;
+}
+
+pub trait TableAndSelectionOps: SuperOps {
+    type Parent: Unpin + Serialize + DeserializeOwned;
 
     /// Turn a query into a changefeed, an infinite stream of objects
     /// representing changes to the query’s results as they occur.
@@ -372,10 +374,41 @@ pub trait TableAndSelectionOps {
     }
 }
 
-pub trait JoinOps {
-    fn zip() {
-        todo!()
+pub trait JoinOps: DocManipulationOps {
+
+    /// Used to ‘zip’ up the result of a join by merging the ‘right’ fields into ‘left’ fields of each member of the sequence.
+    /// 
+    /// ## Example
+    /// 
+    /// ‘zips up’ the sequence by merging the left and right fields produced by a join.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// use serde_json::Value;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("marvel")
+    ///         .eq_join(
+    ///             "main_dc_collaborator",
+    ///             &r.table::<Value>("dc"),
+    ///         )
+    ///         .zip()
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn zip(&self) -> zip::ZipBuilder {
+        zip::ZipBuilder::new()._with_parent(self.get_parent())
     }
+}
+
+pub trait DocManipulationOps: SuperOps {
+    
 }
 
 pub trait StaticString {

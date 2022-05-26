@@ -4,7 +4,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{types::JoinResponseType, Command, Func};
 
-use super::{run, table::TableBuilder, JoinOps};
+use super::{run, table::TableBuilder, JoinOps, DocManipulationOps, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct EqJoinBuilder<A, T>(
@@ -73,3 +73,11 @@ where
 }
 
 impl<A, T> JoinOps for EqJoinBuilder<A, T> {}
+
+impl<A, T> DocManipulationOps for EqJoinBuilder<A, T> {}
+
+impl<A, T> SuperOps for EqJoinBuilder<A, T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
+    }
+}

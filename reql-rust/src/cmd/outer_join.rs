@@ -4,7 +4,7 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{types::JoinResponseType, Command, Func};
 
-use super::{run, table::TableBuilder, JoinOps};
+use super::{run, table::TableBuilder, JoinOps, DocManipulationOps, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct OuterJoinBuilder<A, T>(
@@ -51,3 +51,11 @@ where
 }
 
 impl<A, T> JoinOps for OuterJoinBuilder<A, T> { }
+
+impl<A, T> DocManipulationOps for OuterJoinBuilder<A, T> {}
+
+impl<A, T> SuperOps for OuterJoinBuilder<A, T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
+    }
+}
