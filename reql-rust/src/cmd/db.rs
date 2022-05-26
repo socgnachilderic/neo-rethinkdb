@@ -1,6 +1,8 @@
 use crate::Command;
 use ql2::term::TermType;
+use serde::{de::DeserializeOwned, Serialize};
 
+#[derive(Debug, Clone)]
 pub struct DbBuilder(Command);
 
 impl DbBuilder {
@@ -91,7 +93,98 @@ impl DbBuilder {
         super::table_list::TableListBuilder::new()._with_parent(self.into())
     }
 
-    pub fn table(self, table_name: &str) -> super::table::TableBuilder {
+    /// Return all documents in a table. Other commands may be chained after `table` to return a subset of documents 
+    /// (such as [get](super::get::GetBuilder) and [filter](super::filter::FilterBuilder)) or perform further processing.
+    /// 
+    /// ## Example
+    /// 
+    /// Return all documents in the table ‘marvel’ of the default database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Marvel {
+    ///     id: String,
+    ///     name: String
+    /// }
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Marvel>("marvel").run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Return all documents in the table ‘marvel’ of the database ‘heroes’.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Marvel {
+    ///     id: String,
+    ///     name: String
+    /// }
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes").table::<Marvel>("marvel").run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// There are two methods that may be used to setting.
+    /// 
+    /// * [with_read_mode(read_mode: reql_rust::types::ReadMode)](super::table::TableBuilder::with_read_mode) :
+    /// One of three possible values affecting the consistency guarantee for the table read:
+    ///     - `ReadMode::Single` : returns values that are in memory (but not necessarily written to disk) on the primary replica. This is the default.
+    ///     - `ReadMode::Majority` : will only return values that are safely committed on disk on a majority of replicas. This requires sending a message 
+    ///         to every replica on each read, so it is the slowest but most consistent.
+    ///     - `ReadMode::Outdated` : will return values that are in memory on an arbitrarily-selected replica. This is the fastest but least consistent.
+    /// * [with_identifier_format(identifier_format: reql_rust::types::IdentifierFormat)](super::table::TableBuilder::with_identifier_format) :
+    ///     - `IdentifierFormat::Name`
+    ///     - `IdentifierFormat::Uuid` : then (system tables)[https://rethinkdb.com/docs/system-tables/] will refer to servers,
+    ///         databases and tables by UUID rather than name. (This only has an effect when used with system tables.)
+    /// 
+    /// ## Example
+    /// 
+    /// Allow potentially out-of-date data in exchange for faster reads.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::ReadMode;
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// #[derive(Serialize, Deserialize)]
+    /// struct Marvel {
+    ///     id: String,
+    ///     name: String
+    /// }
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("heroes")
+    ///         .table::<Marvel>("marvel")
+    ///         .with_read_mode(ReadMode::Outdated)
+    ///         .run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn table<T>(self, table_name: &str) -> super::table::TableBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned,
+    {
         super::table::TableBuilder::new(table_name)._with_parent(self.0)
     }
 }

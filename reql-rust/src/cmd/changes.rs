@@ -85,7 +85,7 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use super::run;
 
-pub struct ChangesBuilder(Command, ChangesOption);
+pub struct ChangesBuilder<T>(Command, ChangesOption, Option<T>);
 
 /// Optional arguments to `changes`
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
@@ -164,19 +164,15 @@ pub enum Squash {
     Float(f32),
 }
 
-impl ChangesBuilder {
+impl<T: Unpin + Serialize + DeserializeOwned> ChangesBuilder<T> {
     pub fn new() -> Self {
         let command = Command::new(TermType::Changes)
             .mark_change_feed();
         
-        Self(command, ChangesOption::default())
+        Self(command, ChangesOption::default(), None)
     }
 
-    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<T>>
-    where
-        A: run::Arg,
-        T: Unpin + DeserializeOwned, 
-    {
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<T>> {
         self.0.with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
@@ -222,7 +218,7 @@ impl ChangesBuilder {
     }
 }
 
-impl Into<Command> for ChangesBuilder {
+impl<T> Into<Command> for ChangesBuilder<T> {
     fn into(self) -> Command {
         self.0
     }

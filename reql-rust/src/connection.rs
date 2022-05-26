@@ -163,7 +163,7 @@ impl Session {
     /// async fn example() -> Result<()> {
     ///     let mut session = r.connection().connect().await?;
     ///     session.use_("marvel").await;
-    ///     r.table("heroes").run(&session).await?; // refers to r.db("marvel").table("heroes")
+    ///     r.table::<serde_json::Value>("heroes").run(&session).await?; // refers to r.db("marvel").table("heroes")
     ///     Ok(())
     ///}
     /// ```

@@ -5,7 +5,6 @@ use serde_json::json;
 
 #[derive(Serialize, Deserialize, Debug)]
 struct Posts {
-    // id: u64,
     title: String,
     content: String,
 }
@@ -14,7 +13,6 @@ struct Posts {
 async fn main() -> Result<()> {
     let mut conn = r.connection().connect().await?;
     let post_1 = Posts {
-        // id: 1,
         title: "Lorem ipsum".to_string(),
         content: "Dolor sit amet".to_string(),
     };
@@ -35,7 +33,7 @@ async fn main() -> Result<()> {
     conn.use_("marvel").await;
     
     let result = r.table("posts")
-        .insert(&post_1)
+        .insert(&[post_1])
         .run(&conn).await?;
     dbg!(result);
     
@@ -44,7 +42,7 @@ async fn main() -> Result<()> {
         .run(&conn).await?;
     dbg!(result);
 
-    let result = r.table("posts")
+    let result = r.table::<Posts>("posts")
         .update(&json!({ "status": "published" }))
         .with_return_changes(ReturnChanges::Bool(true))
         .run(&conn).await?;
@@ -56,13 +54,13 @@ async fn main() -> Result<()> {
         .run(&conn).await?;
     dbg!(result); */
 
-    let result = r.table("posts")
-        .delete::<Posts>()
+    let result = r.table::<Posts>("posts")
+        .delete()
         .run(&conn)
         .await?;
     dbg!(result);
 
-    let result = r.table("posts").sync().run(&conn).await?;
+    let result = r.table::<Posts>("posts").sync().run(&conn).await?;
     dbg!(result);
 
     tear_down(&conn).await?;

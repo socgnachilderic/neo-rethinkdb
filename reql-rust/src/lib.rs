@@ -73,6 +73,7 @@ pub mod types;
 use ql2::term::TermType;
 
 pub use prelude::Func;
+use serde::{de::DeserializeOwned, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub use connection::*;
@@ -305,7 +306,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _val = r.db("heroes")
-    ///         .table("marvel")
+    ///         .table::<serde_json::Value>("marvel")
     ///         .run(&session).await?;
     ///
     ///     Ok(())
@@ -559,7 +560,10 @@ impl r {
         cmd::table_list::TableListBuilder::new()
     }
 
-    pub fn table(self, table_name: &str) -> cmd::table::TableBuilder {
+    pub fn table<T>(self, table_name: &str) -> cmd::table::TableBuilder<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned
+    {
         cmd::table::TableBuilder::new(table_name)
     }
 

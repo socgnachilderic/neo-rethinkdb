@@ -22,7 +22,7 @@ pub struct UpdateOption {
 }
 
 impl<T: Unpin + DeserializeOwned> UpdateBuilder<T> {
-    pub fn new(document: &impl Serialize) -> Self {
+    pub fn new(document: impl Serialize) -> Self {
         let args = Command::from_json(document);
         Self::constructor(args)
     }

@@ -8,14 +8,14 @@ async fn main() -> Result<()> {
     set_up(&conn).await?;
     conn.use_("marvel").await;
     
-    let result = r.table("heroes")
+    let result = r.table::<serde_json::Value>("heroes")
         .index_create("mail")
         .run(&conn)
         .await?;
     dbg!(result);
 
     let result = r
-        .table("heroes")
+        .table::<serde_json::Value>("heroes")
         .index_create("author_name")
         .with_func(func!(|row| row.bracket("author").bracket("name")))
         .with_geo(true)
@@ -25,7 +25,7 @@ async fn main() -> Result<()> {
     dbg!(result);
 
     let result = r
-        .table("heroes")
+        .table::<serde_json::Value>("heroes")
         .index_status()
         .with_indexes(&vec!["author_name", "mail"])
         .run(&conn)
@@ -33,7 +33,7 @@ async fn main() -> Result<()> {
     dbg!(result);
 
     let result = r
-        .table("heroes")
+        .table::<serde_json::Value>("heroes")
         .index_wait()
         .with_one_index("mail")
         .run(&conn)
@@ -41,17 +41,17 @@ async fn main() -> Result<()> {
     dbg!(result);
 
     let result = r
-        .table("heroes")
+        .table::<serde_json::Value>("heroes")
         .index_rename("author_name", "code_name")
         .run(&conn)
         .await?;
     dbg!(result);
 
-    let result = r.table("heroes").index_list().run(&conn).await?;
+    let result = r.table::<serde_json::Value>("heroes").index_list().run(&conn).await?;
     dbg!(result);
 
     let result = r
-        .table("heroes")
+        .table::<serde_json::Value>("heroes")
         .index_drop("code_name")
         .run(&conn)
         .await?;
@@ -73,7 +73,7 @@ async fn set_up(conn: &Session) -> Result<()> {
 }
 
 async fn tear_down(conn: &Session) -> Result<()> {
-    r.table("heroes")
+    r.table::<serde_json::Value>("heroes")
         .index_drop("mail")
         .run(conn)
         .await?;

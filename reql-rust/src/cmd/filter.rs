@@ -1,45 +1,48 @@
-use super::args::Args;
-use crate::{cmd, Command, Func};
+use crate::{Command, Func, Result};
+use futures::TryStreamExt;
 use ql2::term::TermType;
-use reql_rust_macros::CommandOptions;
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 
-#[derive(
-    Debug, Clone, Copy, CommandOptions, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash,
-)]
+#[derive(Debug, Clone)]
+pub struct FilterBuilder<T>(Command, FilterOption, Option<T>);
+
+#[derive(Debug, Clone, Copy, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct Options {
+pub struct FilterOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default: Option<bool>,
 }
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<Options>;
-}
+impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
+    pub fn new(func: Func) -> Self {
+        let Func(func) = func;
+        let command = Command::new(TermType::Filter).with_arg(func);
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<Options> {
-        Self::new(TermType::Filter).with_arg(self).into_arg()
+        Self(command, FilterOption::default(), None)
+    }
+
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
+        self.0.with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, T>(arg)
+            .try_next()
+            .await
+    }
+
+    pub fn with_default(mut self, default: bool) -> Self {
+        self.1.default = Some(default);
+        self
+    }
+
+    pub fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
+        self
     }
 }
 
-impl Arg for Args<(Command, Options)> {
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((arg, opts)) = self;
-        arg.arg().with_opts(opts)
-    }
-}
-
-impl Arg for Func {
-    fn arg(self) -> cmd::Arg<Options> {
-        let Func(arg) = self;
-        arg.arg()
-    }
-}
-
-impl Arg for Args<(Func, Options)> {
-    fn arg(self) -> cmd::Arg<Options> {
-        let Args((Func(arg), opts)) = self;
-        arg.arg().with_opts(opts)
+impl<T> Into<Command> for FilterBuilder<T> {
+    fn into(self) -> Command {
+        self.0
     }
 }

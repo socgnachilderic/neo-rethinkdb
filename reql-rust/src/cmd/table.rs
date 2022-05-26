@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 
 use super::{run, TableAndSelectionOps};
 
-pub struct TableBuilder(Command, TableOption);
+pub struct TableBuilder<T>(Command, TableOption, Option<T>);
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -18,19 +18,19 @@ pub struct TableOption {
     pub identifier_format: Option<IdentifierFormat>,
 }
 
-impl TableBuilder {
+impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     pub fn new(table_name: &str) -> Self {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::Table).with_arg(args);
 
-        Self(command, TableOption::default())
+        Self(command, TableOption::default(), None)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<serde_json::Value>> {
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<T>> {
         self.0.with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, serde_json::Value>(arg)
+            .run::<_, T>(arg)
             .try_next()
             .await
     }
@@ -89,7 +89,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("comments")
+    ///     let _ = r.table::<serde_json::Value>("comments")
     ///         .index_create("postId")
     ///         .run(&session).await?;
     ///
@@ -107,7 +107,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("comments")
+    ///     let _ = r.table::<serde_json::Value>("comments")
     ///         .index_create("author_name")
     ///         .with_func(func!(|row| row.bracket("author").bracket("name")))
     ///         .run(&session).await?;
@@ -126,7 +126,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("places")
+    ///     let _ = r.table::<serde_json::Value>("places")
     ///         .index_create("location")
     ///         .with_geo(true)
     ///         .run(&session).await?;
@@ -152,7 +152,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("comments")
+    ///     let _ = r.table::<serde_json::Value>("comments")
     ///         .index_create("postAndDate")
     ///         .with_func(func!(|row| [row.clone().bracket("post_id"), row.bracket("date")]))
     ///         .run(&session).await?;
@@ -171,7 +171,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("posts")
+    ///     let _ = r.table::<serde_json::Value>("posts")
     ///         .index_create("authors")
     ///         .with_multi(true)
     ///         .run(&session).await?;
@@ -190,7 +190,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("networks")
+    ///     let _ = r.table::<serde_json::Value>("networks")
     ///         .index_create("towers")
     ///         .with_geo(true)
     ///         .with_multi(true)
@@ -216,7 +216,7 @@ impl TableBuilder {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
-    ///         .table("dc_universe")
+    ///         .table::<serde_json::Value>("dc_universe")
     ///         .index_drop("code_name")
     ///         .run(&session).await?;
     ///
@@ -240,7 +240,7 @@ impl TableBuilder {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
-    ///         .table("dc_universe")
+    ///         .table::<serde_json::Value>("dc_universe")
     ///         .index_list()
     ///         .run(&session).await?;
     ///
@@ -272,7 +272,7 @@ impl TableBuilder {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
-    ///         .table("comments")
+    ///         .table::<serde_json::Value>("comments")
     ///         .index_rename("postId", "messageId")
     ///         .run(&session).await?;
     ///
@@ -291,7 +291,7 @@ impl TableBuilder {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
-    ///         .table("users")
+    ///         .table::<serde_json::Value>("users")
     ///         .index_rename("mail", "email")
     ///         .with_overwrite(true)
     ///         .run(&session).await?;
@@ -347,7 +347,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("users")
+    ///     let _ = r.table::<serde_json::Value>("users")
     ///         .index_status()
     ///         .run(&session).await?;
     ///
@@ -365,7 +365,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("users")
+    ///     let _ = r.table::<serde_json::Value>("users")
     ///         .index_status()
     ///         .with_one_index("timestamp")
     ///         .run(&session).await?;
@@ -384,7 +384,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("users")
+    ///     let _ = r.table::<serde_json::Value>("users")
     ///         .index_status()
     ///         .with_indexes(&vec!["mail", "author_name"])
     ///         .run(&session).await?;
@@ -424,7 +424,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("users")
+    ///     let _ = r.table::<serde_json::Value>("users")
     ///         .index_wait()
     ///         .run(&session).await?;
     ///
@@ -442,7 +442,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("users")
+    ///     let _ = r.table::<serde_json::Value>("users")
     ///         .index_wait()
     ///         .with_one_index("timestamp")
     ///         .run(&session).await?;
@@ -461,7 +461,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("users")
+    ///     let _ = r.table::<serde_json::Value>("users")
     ///         .index_wait()
     ///         .with_indexes(&vec!["mail", "author_name"])
     ///         .run(&session).await?;
@@ -534,7 +534,7 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("comments")
+    ///     let _ = r.table::<serde_json::Value>("comments")
     ///         .get_write_hook()
     ///         .run(&session).await?;
     ///
@@ -557,7 +557,7 @@ impl TableBuilder {
     ///
     /// #[derive(Serialize, Deserialize)]
     /// struct Posts {
-    ///     id: u64,
+    ///     id: String,
     ///     title: String,
     ///     content: String,
     /// }
@@ -565,12 +565,12 @@ impl TableBuilder {
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     let post = Posts { 
-    ///         id: 1,
+    ///         id: "1".to_string(),
     ///         title: "Lorem ipsum".to_string(),
     ///         content: "Dolor sit amet".to_string()
     ///     };
     ///     
-    ///     r.table("posts").insert(&post).run(&conn).await?;
+    ///     r.table("posts").insert(&[post]).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -611,7 +611,7 @@ impl TableBuilder {
     ///         content: "Dolor sit amet".to_string(),
     ///     };
     ///     
-    ///     r.table("posts").insert(&post).run(&conn).await?;
+    ///     r.table("posts").insert(&[post]).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -666,10 +666,7 @@ impl TableBuilder {
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert<T>(self, document: &T) -> super::insert::InsertBuilder<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned
-    {
+    pub fn insert(self, document: &[T]) -> super::insert::InsertBuilder<T> {
         super::insert::InsertBuilder::new(document)._with_parent(self.into())
     }
 
@@ -690,7 +687,7 @@ impl TableBuilder {
     /// 
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("comments").sync().run(&session).await?;
+    ///     let _ = r.table::<serde_json::Value>("comments").sync().run(&session).await?;
     /// 
     ///     Ok(())
     /// }
@@ -713,15 +710,105 @@ impl TableBuilder {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table("posts")
+    ///     let _ = r.table::<serde_json::Value>("posts")
     ///         .get("a9849eef-7176-4411-935b-79a6e3c56a74")
-    ///         .run::<_, serde_json::Value>(&session).await?;
+    ///         .run(&session).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn get(self, primary_key: &str) -> super::get::GetBuilder {
-        super::get::GetBuilder::new(primary_key)
+    pub fn get(self, primary_key: impl Serialize) -> super::get::GetBuilder<T> {
+        super::get::GetBuilder::new(primary_key)._with_parent(self.into())
+    }
+
+    /// Get all documents where the given value matches the value of the requested index.
+    /// 
+    /// ## Example
+    /// 
+    /// Secondary index keys are not guaranteed to be unique so we cannot query via [get](#method.get) when using a secondary index.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<serde_json::Value>("posts")
+    ///         .get_all(&["man_of_steel"])
+    ///         .with_index("code_name")
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Without an index argument, we default to the primary index. 
+    /// While `get` will either return the document or `None` when no document with such a primary key value exists, 
+    /// this will return either a one or zero length stream.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<serde_json::Value>("posts")
+    ///         .get_all(&["superman"])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// You can get multiple documents in a single call to `get_all`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<serde_json::Value>("posts")
+    ///         .get_all(&["superman", "ant man"])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn get_all(self, index_keys: &[&str]) -> super::get_all::GetAllBuilder<T> {
+        assert!(index_keys.len() > 0);
+        super::get_all::GetAllBuilder::new(index_keys)._with_parent(self.into())
+    }
+
+    /// Get all documents between two keys. Accepts three options methods: 
+    /// [with_index](super::between::BetweenBuilder::with_index), 
+    /// [with_left_bound](super::between::BetweenBuilder::with_left_bound), and 
+    /// [with_right_bound](super::between::BetweenBuilder::with_right_bound). 
+    /// If `index` is set to the name of a secondary index, `between` will return all documents where that 
+    /// index’s value is in the specified range (it uses the primary key by default). 
+    /// `left_bound` or `right_bound` may be set to `open` or `closed` to indicate whether or not 
+    /// to include that endpoint of the range (by default, `left_bound` is closed and `right_bound` is open).
+    pub fn between(
+        self, 
+        lower_key: impl Serialize, 
+        upper_key: impl Serialize
+    ) -> super::between::BetweenBuilder<T> {
+        super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.into())
+    }
+
+    /// Return all the elements in a sequence for which the given predicate is true. 
+    /// The return value of `filter` will be the same as the input (sequence, stream, or array). 
+    /// Documents can be filtered in a variety of ways—ranges, nested values, boolean conditions, 
+    /// and the results of anonymous functions.
+    pub fn filter(self, func: Func) -> super::filter::FilterBuilder<T> {
+        super::filter::FilterBuilder::new(func)._with_parent(self.into())
     }
 
     pub fn do_(self, func: Func) -> super::do_::DoBuilder {
@@ -748,9 +835,11 @@ impl TableBuilder {
     }
 }
 
-impl TableAndSelectionOps for TableBuilder { }
+impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for TableBuilder<T> {
+    type Parent = T;
+}
 
-impl Into<Command> for TableBuilder {
+impl<T> Into<Command> for TableBuilder<T> {
     fn into(self) -> Command {
         self.0
     }
@@ -762,7 +851,7 @@ mod tests {
 
     #[test]
     fn r_table() {
-        let query = r.table("foo").into();
+        let query = r.table::<serde_json::Value>("foo").into();
         let serialised = cmd::serialise(&query);
         let expected = r#"[15,["foo"]]"#;
         assert_eq!(serialised, expected);
@@ -770,7 +859,7 @@ mod tests {
 
     #[test]
     fn r_db_table() {
-        let query = r.db("foo").table("bar").into();
+        let query = r.db("foo").table::<serde_json::Value>("bar").into();
         let serialised = cmd::serialise(&query);
         let expected = r#"[15,[[14,["foo"]],"bar"]]"#;
         assert_eq!(serialised, expected);
