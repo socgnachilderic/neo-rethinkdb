@@ -803,6 +803,14 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.into())
     }
 
+    /// Return all the elements in a sequence for which the given predicate is true. 
+    /// The return value of `filter` will be the same as the input (sequence, stream, or array). 
+    /// Documents can be filtered in a variety of ways—ranges, nested values, boolean conditions, 
+    /// and the results of anonymous functions.
+    pub fn filter(self, func: Func) -> super::filter::FilterBuilder<T> {
+        super::filter::FilterBuilder::new(func)._with_parent(self.into())
+    }
+
     pub fn do_(self, func: Func) -> super::do_::DoBuilder {
         super::do_::DoBuilder::new(func)._with_parent(self.0)
     }

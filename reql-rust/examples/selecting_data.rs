@@ -1,4 +1,5 @@
 use reql_rust::{r, Result, Session};
+use reql_rust::prelude::*;
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -34,6 +35,12 @@ async fn main() -> Result<()> {
 
     let result = r.table::<Posts>("posts")
         .between(6, 10)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = r.table::<Posts>("posts")
+        .filter(func!(|row| row.bracket("id").eq(3)))
         .run(&conn)
         .await?;
     dbg!(result);

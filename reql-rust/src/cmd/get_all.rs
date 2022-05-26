@@ -2,13 +2,12 @@ use super::StaticString;
 use crate::{Command, Result};
 use futures::TryStreamExt;
 use ql2::term::TermType;
-use reql_rust_macros::CommandOptions;
 use serde::{Serialize, de::DeserializeOwned};
 use std::borrow::Cow;
 
 pub struct GetAllBuilder<T>(Command, GetAllOption, Option<T>);
 
-#[derive(Debug, Clone, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct GetAllOption {
     pub index: Option<Cow<'static, str>>,

@@ -404,10 +404,6 @@ fn bytes_to_string(bytes: &[u8]) -> String {
 }
 
 impl<'a> Command {
-    pub fn filter(self, arg: impl filter::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn inner_join(self, arg: impl inner_join::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
