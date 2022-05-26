@@ -55,6 +55,15 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    let result = post_table
+        .outer_join(
+            &user_table,
+            func!(|post, _user| post.bracket("user_id").eq(1)),
+        )
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

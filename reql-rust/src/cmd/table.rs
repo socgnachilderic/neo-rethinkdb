@@ -878,6 +878,53 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         super::inner_join::InnerJoinBuilder::new(other_table, func)._with_parent(self.0.clone())
     }
 
+    /// Returns a left outer join of two sequences. 
+    /// The returned sequence represents a union of the left-hand sequence and the right-hand sequence: 
+    /// all documents in the left-hand sequence will be returned, 
+    /// each matched with a document in the right-hand sequence if one satisfies the predicate condition. 
+    /// In most cases, you will want to follow the join with [zip](super::JoinOps::zip) to combine the left and right results.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// use serde_json:: Value;
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .outer_join(
+    ///             &r.table::<Users>("users"),
+    ///             func!(|post, _user| post.bracket("user_id").eq(1)),
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn outer_join<A: Unpin + Serialize + DeserializeOwned>(
+        &self,
+        other_table: &TableBuilder<A>,
+        func: Func,
+    ) -> super::outer_join::OuterJoinBuilder<A, T> {
+        super::outer_join::OuterJoinBuilder::new(other_table, func)._with_parent(self.0.clone())
+    }
+
     pub fn do_(&self, func: Func) -> super::do_::DoBuilder {
         super::do_::DoBuilder::new(func)._with_parent(self.get_parent())
     }

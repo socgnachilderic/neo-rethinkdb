@@ -404,10 +404,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn outer_join(self, arg: impl outer_join::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn eq_join(self, arg: impl eq_join::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

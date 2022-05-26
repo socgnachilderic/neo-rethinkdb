@@ -86,8 +86,8 @@ pub struct SyncResponseType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JoinResponseType<L, R> {
-    left: L,
-    right: R,
+    left: Option<L>,
+    right: Option<R>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
