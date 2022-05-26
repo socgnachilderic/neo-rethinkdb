@@ -33,6 +33,10 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for GetBuilder<T> {
     type Parent = T;
+
+    fn get_parent(&self) -> Command {
+        self.0.clone()
+    }
 }
 
 impl<T> Into<Command> for GetBuilder<T> {

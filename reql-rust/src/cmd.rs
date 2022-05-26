@@ -175,13 +175,15 @@ pub use crate::proto::Arg;
 pub trait TableAndSelectionOps: Into<Command> {
     type Parent: Unpin + Serialize + DeserializeOwned;
 
+    fn get_parent(&self) -> Command;
+
     /// Turn a query into a changefeed, an infinite stream of objects
     /// representing changes to the query’s results as they occur.
     /// A changefeed may return changes to a table or an individual document (a “point” changefeed).
     /// Commands such as filter or map may be used before the changes command to transform or filter the output,
     /// and many commands that operate on sequences can be chained after changes.
-    fn changes(self) -> changes::ChangesBuilder<Self::Parent> {
-        changes::ChangesBuilder::new()._with_parent(self.into())
+    fn changes(&self) -> changes::ChangesBuilder<Self::Parent> {
+        changes::ChangesBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Update JSON documents in a table. Accepts a JSON document, 
@@ -224,8 +226,8 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn update(self, document: impl Serialize) -> update::UpdateBuilder<Self::Parent> {
-        update::UpdateBuilder::new(document)._with_parent(self.into())
+    fn update(&self, document: impl Serialize) -> update::UpdateBuilder<Self::Parent> {
+        update::UpdateBuilder::new(document)._with_parent(self.get_parent())
     }
     
     /// Update JSON documents in a table. Accepts a JSON document, 
@@ -253,8 +255,8 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn update_by_func(self, func: Func) -> update::UpdateBuilder<Self::Parent> {
-        update::UpdateBuilder::new_by_func(func)._with_parent(self.into())
+    fn update_by_func(&self, func: Func) -> update::UpdateBuilder<Self::Parent> {
+        update::UpdateBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
     /// Replace documents in a table. Accepts a JSON document or a ReQL expression, 
@@ -291,8 +293,8 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn replace(self, document: impl Serialize) -> replace::ReplaceBuilder<Self::Parent> {
-        replace::ReplaceBuilder::new(document)._with_parent(self.into())
+    fn replace(&self, document: impl Serialize) -> replace::ReplaceBuilder<Self::Parent> {
+        replace::ReplaceBuilder::new(document)._with_parent(self.get_parent())
     }
 
     /// Replace documents in a table. Accepts a JSON document or a ReQL expression, 
@@ -320,8 +322,8 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn replace_by_func(self, func: Func) -> replace::ReplaceBuilder<Self::Parent> {
-        replace::ReplaceBuilder::new_by_func(func)._with_parent(self.into())
+    fn replace_by_func(&self, func: Func) -> replace::ReplaceBuilder<Self::Parent> {
+        replace::ReplaceBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
     /// Delete one or more documents from a table.
@@ -365,8 +367,8 @@ pub trait TableAndSelectionOps: Into<Command> {
     ///     Ok(())
     /// }
     /// ```
-    fn delete(self) -> delete::DeleteBuilder<Self::Parent> {
-        delete::DeleteBuilder::new()._with_parent(self.into())
+    fn delete(&self) -> delete::DeleteBuilder<Self::Parent> {
+        delete::DeleteBuilder::new()._with_parent(self.get_parent())
     }
 }
 
