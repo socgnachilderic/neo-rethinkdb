@@ -1,66 +1,77 @@
-/* use serde::{Deserialize, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
-pub trait ReqlDocumentOps: Clone + Serialize + Eq + PartialEq + Ord + PartialOrd {
-
+#[derive(Debug, Clone, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Sequence<T> {
+    data: Vec<T>,
+    lenght: usize,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Document<T: ReqlDocumentOps>(T);
-
-
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Sequence<T: ReqlDocumentOps> {
-    data: Vec<Document<T>>,
-    counter: usize,
-}
-
-impl<T: ReqlDocumentOps> Sequence<T> {
-    pub fn new() -> Self {
-        Self { data: Vec::new(), counter: 0 }
-    }
-
-    pub fn add(&mut self, value: T) {
-        self.data.push(value);
-    }
-
-    pub fn get(&self, index: usize) -> Option<&T> {
-        self.data.get(index)
+impl<T> Sequence<T> {
+    pub fn into_vec(self) -> Vec<T> {
+        self.data
     }
 }
 
-impl<T: ReqlDocumentOps> Iterator for Sequence<T> {
+impl<T: Clone> Iterator for Sequence<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match self.data.get(self.counter) {
+        match self.data.get(self.lenght) {
             Some(value) => {
-                self.counter += 1;
+                self.lenght += 1;
                 Some(value.clone())
             }
-            None => None
+            None => None,
         }
+    }
+}
+
+impl<T: Clone> ExactSizeIterator for Sequence<T> {
+    fn len(&self) -> usize {
+        self.data.len()
+    }
+}
+
+impl<'de, T: DeserializeOwned> Deserialize<'de> for Sequence<T> {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        Deserialize::deserialize(deserializer).map(|item| {
+            let mut seq = Sequence {
+                data: item,
+                lenght: 0,
+            };
+
+            seq.lenght = seq.data.len();
+
+            seq
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use serde::{Deserialize, Serialize};
+
+    use crate::document::Document;
+
     use super::Sequence;
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct User {
+        first_name: String,
+        last_name: String,
+    }
 
     #[test]
     fn test_sequence() {
-        let arr = [1, 2, 3];
-        let mut list: Sequence<u8> = Sequence::new();
+        let value = r#"
+            [
+                { "first_name": "John", "last_name": "Doe" },
+                { "first_name": "Don", "last_name": "Juan" }
+            ]
+        "#;
 
-        for num in arr {
-            list.add(num);
-        }
+        let users: Sequence<Document<User>> = serde_json::from_str(&value).unwrap();
 
-        for (index, value) in list.enumerate() {
-            // if let Some(value) = list.get(index) {
-                
-            // }
-            assert_eq!(arr[index], value);
-        }
+        dbg!(users);
     }
-
-} */
+}

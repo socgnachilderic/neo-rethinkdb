@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::document::Document;
+use crate::sequence::Sequence;
 use crate::types::{Conflict, Durability, ReturnChanges, WritingResponseType};
 use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
@@ -43,14 +44,14 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType<Vec<Document<T>>>>> {
+    ) -> crate::Result<Option<WritingResponseType<Sequence<Document<T>>>>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<WritingResponseType<Vec<Document<T>>>>> {
+    ) -> impl Stream<Item = crate::Result<WritingResponseType<Sequence<Document<T>>>>> {
         let command = self.0;
 
         let command = if let Some(Func(func)) = self.2 {
@@ -63,7 +64,7 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
         command
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType<Vec<Document<T>>>>(arg)
+            .run::<_, WritingResponseType<Sequence<Document<T>>>>(arg)
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {

@@ -4,7 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{document::Document, types::JoinResponseType, Command, Func};
+use crate::{document::Document, types::JoinResponseType, Command, Func, sequence::Sequence};
 
 use super::{run, table::TableBuilder, DocManipulationOps, JoinOps, SuperOps};
 
@@ -48,19 +48,19 @@ where
     pub async fn run(
         self,
         arg: impl run::Arg,
-    ) -> crate::Result<Option<Vec<JoinResponseType<Document<T>, Document<A>>>>> {
+    ) -> crate::Result<Option<Sequence<JoinResponseType<Document<T>, Document<A>>>>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl run::Arg,
-    ) -> impl Stream<Item = crate::Result<Vec<JoinResponseType<Document<T>, Document<A>>>>> {
+    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<Document<T>, Document<A>>>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Vec<JoinResponseType<Document<T>, Document<A>>>>(arg)
+            .run::<_, Sequence<JoinResponseType<Document<T>, Document<A>>>>(arg)
     }
 
     pub fn with_ordered(mut self, ordered: bool) -> Self {

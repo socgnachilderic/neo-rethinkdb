@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Command, Func, Result, document::Document};
+use crate::{Command, Func, Result, document::Document, sequence::Sequence};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
@@ -27,16 +27,16 @@ impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
         Self(command, FilterOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Vec<Document<T>>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Sequence<Document<T>>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<Vec<Document<T>>>> {
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<Sequence<Document<T>>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Vec<Document<T>>>(arg)
+            .run::<_, Sequence<Document<T>>>(arg)
     }
 
     pub fn with_default(mut self, default: bool) -> Self {
