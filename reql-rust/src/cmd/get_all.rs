@@ -1,15 +1,15 @@
 use super::StaticString;
-use crate::{Command, Result};
+use crate::{document::Document, Command, Result};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
-use std::borrow::Cow;
+use std::{borrow::Cow, marker::PhantomData};
 
 #[derive(Debug, Clone)]
 pub struct GetAllBuilder<T>(
     pub(crate) Command,
     pub(crate) GetAllOption,
-    pub(crate) Option<T>,
+    pub(crate) PhantomData<T>,
 );
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
@@ -27,19 +27,22 @@ impl<T: Unpin + Serialize + DeserializeOwned> GetAllBuilder<T> {
             command = command.with_arg(args);
         }
 
-        Self(command, GetAllOption::default(), None)
+        Self(command, GetAllOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Option<T>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Option<Document<T>>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<Option<T>>> {
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = Result<Option<Document<T>>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Option<T>>(arg)
+            .run::<_, Option<Document<T>>>(arg)
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {

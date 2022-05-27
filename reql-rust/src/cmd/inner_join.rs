@@ -1,16 +1,18 @@
+use std::marker::PhantomData;
+
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{types::JoinResponseType, Command, Func};
+use crate::{types::JoinResponseType, Command, Func, document::Document};
 
 use super::{run, table::TableBuilder, JoinOps, DocManipulationOps, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct InnerJoinBuilder<A, T>(
     pub(crate) Command, 
-    pub(crate) Option<A>, 
-    pub(crate) Option<T>
+    pub(crate) PhantomData<A>, 
+    pub(crate) PhantomData<T>
 );
 
 impl<A, T> InnerJoinBuilder<A, T>
@@ -24,24 +26,24 @@ where
             .with_arg(other_table.0.clone())
             .with_arg(func);
 
-        Self(command, None, None)
+        Self(command, PhantomData, PhantomData)
     }
 
     pub async fn run(
         self,
         arg: impl run::Arg,
-    ) -> crate::Result<Option<Vec<JoinResponseType<T, A>>>> {
+    ) -> crate::Result<Option<Vec<JoinResponseType<Document<T>, Document<A>>>>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl run::Arg,
-    ) -> impl Stream<Item = crate::Result<Vec<JoinResponseType<T, A>>>> {
+    ) -> impl Stream<Item = crate::Result<Vec<JoinResponseType<Document<T>, Document<A>>>>> {
         self.0
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Vec<JoinResponseType<T, A>>>(arg)
+            .run::<_, Vec<JoinResponseType<Document<T>, Document<A>>>>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {

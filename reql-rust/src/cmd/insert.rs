@@ -1,3 +1,6 @@
+use std::marker::PhantomData;
+
+use crate::document::Document;
 use crate::types::{Conflict, Durability, ReturnChanges, WritingResponseType};
 use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
@@ -10,7 +13,7 @@ pub struct InsertBuilder<T>(
     pub(crate) Command,
     pub(crate) InsertOption,
     pub(crate) Option<Func>,
-    pub(crate) Option<T>,
+    pub(crate) PhantomData<T>,
 );
 
 // TODO finish this struct
@@ -34,20 +37,20 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
         let args = Command::from_json(document);
         let command = Command::new(TermType::Insert).with_arg(args);
 
-        Self(command, InsertOption::default(), None, None)
+        Self(command, InsertOption::default(), None, PhantomData)
     }
 
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType<Vec<T>>>> {
+    ) -> crate::Result<Option<WritingResponseType<Vec<Document<T>>>>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<WritingResponseType<Vec<T>>>> {
+    ) -> impl Stream<Item = crate::Result<WritingResponseType<Vec<Document<T>>>>> {
         let command = self.0;
 
         let command = if let Some(Func(func)) = self.2 {
@@ -60,7 +63,7 @@ impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
         command
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType<Vec<T>>>(arg)
+            .run::<_, WritingResponseType<Vec<Document<T>>>>(arg)
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {

@@ -63,12 +63,14 @@
 #![allow(clippy::wrong_self_convention)]
 
 pub mod cmd;
+pub mod types;
+pub mod prelude;
 pub mod connection;
 mod constants;
-mod err;
-pub mod prelude;
+mod document;
+mod sequence;
 mod proto;
-pub mod types;
+mod err;
 
 use ql2::term::TermType;
 

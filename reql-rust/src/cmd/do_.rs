@@ -1,3 +1,4 @@
+use crate::document::Document;
 use crate::prelude::Func;
 use crate::Command;
 use futures::{Stream, TryStreamExt};
@@ -16,7 +17,7 @@ impl DoBuilder {
         Self(command)
     }
 
-    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<T>>
+    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<Document<T>>>
     where
         A: super::run::Arg,
         T: Unpin + DeserializeOwned,
@@ -24,12 +25,15 @@ impl DoBuilder {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
+    pub fn make_query<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<Document<T>>>
     where
         A: super::run::Arg,
         T: Unpin + DeserializeOwned,
     {
-        self.0.into_arg::<()>().into_cmd().run::<_, T>(arg)
+        self.0
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, Document<T>>(arg)
     }
 
     pub fn with_args<T: Serialize>(mut self, args: &[T]) -> Self {

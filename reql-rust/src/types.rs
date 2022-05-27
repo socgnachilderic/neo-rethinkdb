@@ -3,6 +3,7 @@ use std::{borrow::Cow, collections::HashMap};
 
 #[doc(inline)]
 pub use reql_rust_types::*;
+pub use crate::document::Document;
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Structure of return data in `db` table
@@ -86,8 +87,8 @@ pub struct SyncResponseType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JoinResponseType<L, R> {
-    left: Option<L>,
-    right: Option<R>,
+    pub left: Option<L>,
+    pub right: Option<R>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

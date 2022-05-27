@@ -1,3 +1,6 @@
+use std::marker::PhantomData;
+
+use crate::document::Document;
 use crate::types::{IdentifierFormat, ReadMode};
 use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
@@ -11,7 +14,7 @@ use super::{run, TableAndSelectionOps, SuperOps};
 pub struct TableBuilder<T>(
     pub(crate) Command,
     pub(crate) TableOption,
-    pub(crate) Option<T>,
+    pub(crate) PhantomData<T>,
 );
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
@@ -28,19 +31,19 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::Table).with_arg(args);
 
-        Self(command, TableOption::default(), None)
+        Self(command, TableOption::default(), PhantomData)
     }
 
-    pub async fn run(&self, arg: impl run::Arg) -> crate::Result<Option<Vec<T>>> {
+    pub async fn run(&self, arg: impl run::Arg) -> crate::Result<Option<Vec<Document<T>>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(&self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Vec<T>>> {
+    pub fn make_query(&self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Vec<Document<T>>>> {
         self.get_parent()
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Vec<T>>(arg)
+            .run::<_, Vec<Document<T>>>(arg)
     }
 
     pub fn with_read_mode(mut self, read_mode: ReadMode) -> Self {

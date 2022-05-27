@@ -1,7 +1,7 @@
-use std::borrow::Cow;
+use std::{borrow::Cow, marker::PhantomData};
 
 use super::StaticString;
-use crate::{Command, Result, types::Status};
+use crate::{Command, Result, types::Status, document::Document};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
@@ -10,7 +10,7 @@ use serde::{de::DeserializeOwned, Serialize};
 pub struct BetweenBuilder<T>(
     pub(crate) Command,
     pub(crate) BetweenOption,
-    pub(crate) Option<T>
+    pub(crate) PhantomData<T>
 );
 
 #[derive(Debug, Clone, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -33,10 +33,10 @@ impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
             .with_arg(min_key)
             .with_arg(max_key);
 
-        Self(command, BetweenOption::default(), None)
+        Self(command, BetweenOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Vec<T>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Vec<Document<T>>>> {
         self.make_query(arg)
             .try_next()
             .await
@@ -45,12 +45,12 @@ impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = Result<Vec<T>>> {
+    ) -> impl Stream<Item = Result<Vec<Document<T>>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Vec<T>>(arg)
+            .run::<_, Vec<Document<T>>>(arg)
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {

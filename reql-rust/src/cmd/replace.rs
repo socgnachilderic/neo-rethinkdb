@@ -1,3 +1,6 @@
+use std::marker::PhantomData;
+
+use crate::document::Document;
 use crate::types::{Durability, ReturnChanges, WritingResponseType};
 use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
@@ -9,7 +12,7 @@ use serde::Serialize;
 pub struct ReplaceBuilder<T>(
     pub(crate) Command,
     pub(crate) ReplaceOption,
-    pub(crate) Option<T>,
+    pub(crate) PhantomData<T>,
 );
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
@@ -39,19 +42,19 @@ impl<T: Unpin + DeserializeOwned> ReplaceBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType<T>>> {
+    ) -> crate::Result<Option<WritingResponseType<Document<T>>>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<WritingResponseType<T>>> {
+    ) -> impl Stream<Item = crate::Result<WritingResponseType<Document<T>>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType<T>>(arg)
+            .run::<_, WritingResponseType<Document<T>>>(arg)
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {
@@ -84,7 +87,7 @@ impl<T: Unpin + DeserializeOwned> ReplaceBuilder<T> {
     fn constructor(arg: Command) -> Self {
         let command = Command::new(TermType::Replace).with_arg(arg);
 
-        Self(command, ReplaceOption::default(), None)
+        Self(command, ReplaceOption::default(), PhantomData)
     }
 }
 

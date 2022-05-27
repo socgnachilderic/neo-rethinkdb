@@ -1,4 +1,6 @@
-use crate::{Command, Func, Result};
+use std::marker::PhantomData;
+
+use crate::{Command, Func, Result, document::Document};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
@@ -7,7 +9,7 @@ use serde::{de::DeserializeOwned, Serialize};
 pub struct FilterBuilder<T>(
     pub(crate) Command,
     pub(crate) FilterOption,
-    pub(crate) Option<T>,
+    pub(crate) PhantomData<T>,
 );
 
 #[derive(Debug, Clone, Copy, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -22,19 +24,19 @@ impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
         let Func(func) = func;
         let command = Command::new(TermType::Filter).with_arg(func);
 
-        Self(command, FilterOption::default(), None)
+        Self(command, FilterOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Vec<T>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Vec<Document<T>>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<Vec<T>>> {
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<Vec<Document<T>>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Vec<T>>(arg)
+            .run::<_, Vec<Document<T>>>(arg)
     }
 
     pub fn with_default(mut self, default: bool) -> Self {

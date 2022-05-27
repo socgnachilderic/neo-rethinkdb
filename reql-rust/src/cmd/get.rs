@@ -1,4 +1,6 @@
-use crate::Command;
+use std::marker::PhantomData;
+
+use crate::{Command, document::Document};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
@@ -6,22 +8,22 @@ use serde::{de::DeserializeOwned, Serialize};
 use super::{run, TableAndSelectionOps, SuperOps};
 
 #[derive(Debug, Clone)]
-pub struct GetBuilder<T>(pub(crate) Command, pub(crate) Option<T>);
+pub struct GetBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
 
 impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
     pub(crate) fn new(primary_key: impl Serialize) -> Self {
         let args = Command::from_json(primary_key);
         let command = Command::new(TermType::Get).with_arg(args);
 
-        Self(command, None)
+        Self(command, PhantomData)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Option<T>>> {
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Option<Document<T>>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Option<T>>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, Option<T>>(arg)
+    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Option<Document<T>>>> {
+        self.0.into_arg::<()>().into_cmd().run::<_, Option<Document<T>>>(arg)
     }
 
     #[doc(hidden)]
