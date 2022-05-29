@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn slice(self, arg: impl slice::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn nth(self, arg: impl nth::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

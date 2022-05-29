@@ -632,6 +632,27 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::limit::LimitBuilder::new(number_of_element)._with_parent(self.get_parent())
     }
 
+    /// Return the elements of a sequence within the specified range.
+    /// 
+    /// ## Example
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("posts").slice(2, Some(5)).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn slice(&self, start_offset: usize, end_offset: Option<usize>) -> cmd::slice::SliceBuilder<T> {
+        cmd::slice::SliceBuilder::new(start_offset, end_offset)._with_parent(self.get_parent())
+    }
+
 }
 
 pub trait ReqlOpsArray: SuperOps {
