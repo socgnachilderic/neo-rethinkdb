@@ -469,6 +469,49 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::map::MapBuilder<A> {
         cmd::map::MapBuilder::new(func)._with_parent(self.get_parent())
     }
+
+    /// Plucks one or more attributes from a sequence of objects, 
+    /// filtering out any objects in the sequence that do not have the specified fields. 
+    /// Functionally, this is identical to `hasFields` followed by `pluck` on a sequence.
+    /// 
+    /// ## Example
+    /// 
+    /// Get a list of users and their posts, excluding any users who have not made any posts
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     user: String,
+    ///     email: String,
+    ///     posts: Option<[u8; 3]>,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let user_table = r.table::<Users>("users");
+    ///     let users = [
+    ///         Users { id: 1, user: "bob".to_string(), email: "bob@foo.com".to_string(), posts: Some([1, 4, 5]) },
+    ///         Users { id: 2, user: "george".to_string(), email: "george@foo.com".to_string(), posts: None },
+    ///         Users { id: 3, user: "jane".to_string(), email: "jane@foo.com".to_string(), posts: Some([2, 3, 6]) },
+    ///     ];
+    /// 
+    ///     user_table.insert(&users).run(&session).await?;
+    /// 
+    ///     let _ = user_table.with_fields::<serde_json::Value>(&["id", "user"])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn with_fields<A: Unpin + DeserializeOwned>(&self, fields: &[&str]) -> cmd::with_fields::WithFieldsBuilder<A> {
+        cmd::with_fields::WithFieldsBuilder::new(fields)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsArray: SuperOps {

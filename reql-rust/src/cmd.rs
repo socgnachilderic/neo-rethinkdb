@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn with_fields(self, arg: impl with_fields::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn concat_map(self, arg: impl concat_map::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

@@ -4,6 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
+use crate::ops::{ReqlOpsArray, SuperOps};
 use crate::{Command, Func};
 use crate::types::{Document, Sequence};
 
@@ -46,5 +47,13 @@ impl<A: Unpin + DeserializeOwned> MapBuilder<A> {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl<A> ReqlOpsArray for MapBuilder<A> { }
+
+impl<A> SuperOps for MapBuilder<A> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }
