@@ -198,23 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    /// Limits the result set to the given amount.
-    ///
-    /// Argument can be an isize.
-    ///
-    /// ## Example
-    ///
-    /// Get 5 records.
-    /// ```ignore
-    /// # reql_rust::example(|r, conn| async_stream::stream! {
-    /// r.db("database").table("users").limit(5).run(conn)
-    /// # });
-    /// ```
-    ///
-    pub fn limit(self, arg: impl limit::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn slice(self, arg: impl slice::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

@@ -605,8 +605,31 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn skip(&self, number_of_element: u32) -> cmd::skip::SkipBuilder<T> {
+    fn skip(&self, number_of_element: usize) -> cmd::skip::SkipBuilder<T> {
         cmd::skip::SkipBuilder::new(number_of_element)._with_parent(self.get_parent())
+    }
+    
+    /// End the sequence after the given number of elements.
+    /// 
+    /// ## Example
+    /// 
+    /// Only so many can fit in our Pantheon of heroes
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("posts").limit(3).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn limit(&self, number_of_element: usize) -> cmd::limit::LimitBuilder<T> {
+        cmd::limit::LimitBuilder::new(number_of_element)._with_parent(self.get_parent())
     }
 
 }

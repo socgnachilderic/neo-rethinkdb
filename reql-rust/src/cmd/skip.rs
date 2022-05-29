@@ -13,7 +13,7 @@ use crate::types::{Document, Sequence};
 pub struct SkipBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
 
 impl<T: Unpin + DeserializeOwned> SkipBuilder<T> {
-    pub(crate) fn new(step: u32) -> Self {
+    pub(crate) fn new(step: usize) -> Self {
         let arg = Command::from_json(step);
         let command = Command::new(TermType::Skip).with_arg(arg);
         
