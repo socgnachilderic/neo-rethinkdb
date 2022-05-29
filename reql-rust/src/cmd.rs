@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn offsets_of(self, arg: impl offsets_of::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn is_empty(self) -> Self {
         Self::new(TermType::IsEmpty).with_parent(self)
     }

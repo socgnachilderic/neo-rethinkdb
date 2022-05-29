@@ -693,6 +693,15 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn nth(&self, index: isize) -> cmd::nth::NthBuilder<T> {
         cmd::nth::NthBuilder::new(index)._with_parent(self.get_parent())
     }
+
+    /// Get the indexes of an element in a sequence. If the argument is a predicate, get the indexes of all elements matching it.
+    fn offsets_of(&self, datum: impl Serialize) -> cmd::offsets_of::OffsetsOfBuilder<T> {
+        cmd::offsets_of::OffsetsOfBuilder::new(datum)._with_parent(self.get_parent())
+    }
+
+    fn offsets_of_by_func(&self, func: Func) -> cmd::offsets_of::OffsetsOfBuilder<T> {
+        cmd::offsets_of::OffsetsOfBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsArray: SuperOps {
