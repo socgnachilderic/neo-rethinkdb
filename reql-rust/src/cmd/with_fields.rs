@@ -2,9 +2,10 @@ use std::marker::PhantomData;
 
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
+use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::ops::{ReqlOpsArray, SuperOps};
+use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
 use crate::Command;
 use crate::types::{Document, Sequence};
 
@@ -41,6 +42,7 @@ impl<A: Unpin + DeserializeOwned> WithFieldsBuilder<A> {
     }
 }
 
+impl<A: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<A> for WithFieldsBuilder<A> { }
 impl<A> ReqlOpsArray for WithFieldsBuilder<A> { }
 
 impl<A> SuperOps for WithFieldsBuilder<A> {

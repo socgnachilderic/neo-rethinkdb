@@ -4,7 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{types::JoinResponseType, Command, Func, document::Document, sequence::Sequence, ops::ReqlOpsJoin};
+use crate::{types::JoinResponseType, Command, Func, document::Document, sequence::Sequence, ops::{ReqlOpsJoin, ReqlOpsSequence}};
 
 use super::{run, table::TableBuilder, SuperOps};
 
@@ -52,7 +52,8 @@ where
     }
 }
 
-impl<A, T> ReqlOpsJoin for InnerJoinBuilder<A, T> { }
+impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for InnerJoinBuilder<A, T> { }
+impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for InnerJoinBuilder<A, T> { }
 
 impl<A, T> SuperOps for InnerJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {

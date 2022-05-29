@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 struct Users {
     id: u8,
     full_name: String,
+    posts: [u8; 2],
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -78,8 +79,20 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    #[derive(Debug, Serialize, Deserialize)]
+    struct NewPost {
+        id: u8,
+        title: String,
+    }
+
     let result = post_table
-        .with_fields::<serde_json::Value>(&["id", "title"])
+        .with_fields::<NewPost>(&["id", "title"])
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = user_table
+        .concat_map::<u8>(func!(|row| row.bracket("posts")))
         .run(&conn)
         .await?;
     dbg!(result);
@@ -94,10 +107,12 @@ async fn set_up(conn: &Session) -> Result<()> {
         Users {
             id: 1,
             full_name: "John Doe".to_string(),
+            posts: [1, 2]
         },
         Users {
             id: 2,
             full_name: "Don Juan".to_string(),
+            posts: [3, 5]
         },
     ];
 

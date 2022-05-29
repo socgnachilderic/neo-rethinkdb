@@ -4,7 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
-use crate::ops::{ReqlOpsArray, SuperOps};
+use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
 use crate::{Command, Func};
 use crate::types::{Document, Sequence};
 
@@ -50,6 +50,7 @@ impl<A: Unpin + DeserializeOwned> MapBuilder<A> {
     }
 }
 
+impl<A: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<A> for MapBuilder<A> { }
 impl<A> ReqlOpsArray for MapBuilder<A> { }
 
 impl<A> SuperOps for MapBuilder<A> {

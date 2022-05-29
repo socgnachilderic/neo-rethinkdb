@@ -7,6 +7,38 @@ use crate::Func;
 use crate::cmd;
 use crate::cmd::table::TableBuilder;
 
+pub trait ReqlOpsJoin<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsSequence<T> {
+    /// Used to ‘zip’ up the result of a join by merging the ‘right’ fields into ‘left’ fields of each member of the sequence.
+    /// 
+    /// ## Example
+    /// 
+    /// ‘zips up’ the sequence by merging the left and right fields produced by a join.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// use serde_json::Value;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("marvel")
+    ///         .eq_join(
+    ///             "main_dc_collaborator",
+    ///             &r.table::<Value>("dc"),
+    ///         )
+    ///         .zip()
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn zip(&self) -> cmd::zip::ZipBuilder {
+        cmd::zip::ZipBuilder::new()._with_parent(self.get_parent())
+    }
+}
+
 pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// Turn a query into a changefeed, an infinite stream of objects
     /// representing changes to the query’s results as they occur.
@@ -512,42 +544,54 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn with_fields<A: Unpin + DeserializeOwned>(&self, fields: &[&str]) -> cmd::with_fields::WithFieldsBuilder<A> {
         cmd::with_fields::WithFieldsBuilder::new(fields)._with_parent(self.get_parent())
     }
-}
 
-pub trait ReqlOpsArray: SuperOps {
-    
-}
-
-pub trait ReqlOpsJoin: SuperOps {
-    /// Used to ‘zip’ up the result of a join by merging the ‘right’ fields into ‘left’ fields of each member of the sequence.
+    /// Concatenate one or more elements into a single sequence using a mapping function.
+    /// 
+    /// concatMap works in a similar fashion to map, applying the given function to each element in a sequence, 
+    /// but it will always return a single sequence. If the mapping function returns a sequence, 
+    /// map would produce a sequence of sequences:
     /// 
     /// ## Example
     /// 
-    /// ‘zips up’ the sequence by merging the left and right fields produced by a join.
+    /// Construct a sequence of all posts wroten by Marvel users. The field posts is an array of one or more posts.
     /// 
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// use serde_json::Value;
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     user: String,
+    ///     posts: Option<[u8; 3]>,
+    /// }
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table::<Value>("marvel")
-    ///         .eq_join(
-    ///             "main_dc_collaborator",
-    ///             &r.table::<Value>("dc"),
-    ///         )
-    ///         .zip()
+    ///     let user_table = r.table::<Users>("users");
+    ///     let users = [
+    ///         Users { id: 1, user: "bob".to_string(), posts: Some([1, 4, 5]) },
+    ///         Users { id: 2, user: "george".to_string(), posts: None },
+    ///         Users { id: 3, user: "jane".to_string(), posts: Some([2, 3, 6]) },
+    ///     ];
+    /// 
+    ///     user_table.insert(&users).run(&session).await?;
+    /// 
+    ///     let _ = user_table.concat_map::<serde_json::Value>(func!(|row| row.bracket("posts")))
     ///         .run(&session)
     ///         .await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    fn zip(&self) -> cmd::zip::ZipBuilder {
-        cmd::zip::ZipBuilder::new()._with_parent(self.get_parent())
+    fn concat_map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::concat_map::ConcatMapBuilder<A> {
+        cmd::concat_map::ConcatMapBuilder::new(func)._with_parent(self.get_parent())
     }
+}
+
+pub trait ReqlOpsArray: SuperOps {
+    
 }
 
 pub trait SuperOps {
