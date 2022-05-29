@@ -653,9 +653,54 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::slice::SliceBuilder::new(start_offset, end_offset)._with_parent(self.get_parent())
     }
 
+    /// Get the nth element of a sequence, counting from zero. If the argument is negative, count from the last element.
+    /// 
+    /// ## Example
+    /// 
+    /// Select the bronze medalist from the competitors
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("players").nth(3).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Select the last place competitor
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("players").nth(-1).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn nth(&self, index: isize) -> cmd::nth::NthBuilder<T> {
+        cmd::nth::NthBuilder::new(index)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsArray: SuperOps {
+    
+}
+
+
+pub trait ReqlOpsObject<T>: SuperOps {
     
 }
 
