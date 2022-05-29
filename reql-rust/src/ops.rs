@@ -105,7 +105,6 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// ```ignore
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// use serde_json::json;
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
@@ -172,7 +171,6 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// ```ignore
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// use serde_json::json;
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
@@ -214,7 +212,6 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
     /// use serde::{Serialize, Deserialize};
-    /// use serde_json::json;
     /// 
     /// #[derive(Serialize, Deserialize)]
     /// struct Heroes {
@@ -588,6 +585,30 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn concat_map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::concat_map::ConcatMapBuilder<A> {
         cmd::concat_map::ConcatMapBuilder::new(func)._with_parent(self.get_parent())
     }
+
+    /// Skip a number of elements from the head of the sequence.
+    /// 
+    /// ## Example
+    /// 
+    /// Here in conjunction with `orderBy` we choose to ignore the most successful heroes
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("posts").skip(2).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn skip(&self, number_of_element: u32) -> cmd::skip::SkipBuilder<T> {
+        cmd::skip::SkipBuilder::new(number_of_element)._with_parent(self.get_parent())
+    }
+
 }
 
 pub trait ReqlOpsArray: SuperOps {

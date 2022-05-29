@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn skip(self, arg: impl skip::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     /// Limits the result set to the given amount.
     ///
     /// Argument can be an isize.
