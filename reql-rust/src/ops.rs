@@ -702,6 +702,28 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn offsets_of_by_func(&self, func: Func) -> cmd::offsets_of::OffsetsOfBuilder<T> {
         cmd::offsets_of::OffsetsOfBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
+
+    /// Test if a sequence is empty.
+    /// 
+    /// ## Example
+    /// 
+    /// Are there any documents in the marvel table?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel").is_empty().run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn is_empty(&self) -> cmd::is_empty::IsEmptyBuilder {
+        cmd::is_empty::IsEmptyBuilder::new()._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsArray: SuperOps {

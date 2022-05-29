@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn is_empty(self) -> Self {
-        Self::new(TermType::IsEmpty).with_parent(self)
-    }
-
     pub fn union(self, arg: impl union::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
