@@ -1,7 +1,13 @@
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct Document<T>(T);
+pub struct Document<T>(pub(crate) T);
+
+impl<T> Document<T> {
+    pub fn get_value(self) -> T {
+        self.0
+    }
+}
 
 impl<T: Serialize> Serialize for Document<T> {
     fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {

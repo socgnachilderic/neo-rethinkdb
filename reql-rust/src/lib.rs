@@ -71,6 +71,7 @@ mod document;
 mod sequence;
 mod proto;
 mod err;
+mod ops;
 
 use ql2::term::TermType;
 

@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{types::JoinResponseType, Command, Func, document::Document, sequence::Sequence};
+use crate::{types::JoinResponseType, Command, Func, document::Document, sequence::Sequence, ops::ReqlOpsJoin};
 
-use super::{run, table::TableBuilder, JoinOps, DocManipulationOps, SuperOps};
+use super::{run, table::TableBuilder, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct InnerJoinBuilder<A, T>(
@@ -52,9 +52,7 @@ where
     }
 }
 
-impl<A, T> JoinOps for InnerJoinBuilder<A, T> {}
-
-impl<A, T> DocManipulationOps for InnerJoinBuilder<A, T> {}
+impl<A, T> ReqlOpsJoin for InnerJoinBuilder<A, T> { }
 
 impl<A, T> SuperOps for InnerJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {

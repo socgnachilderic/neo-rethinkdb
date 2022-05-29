@@ -1,7 +1,7 @@
 use std::{borrow::Cow, marker::PhantomData};
 
 use super::StaticString;
-use crate::{Command, Result, types::Status, document::Document, sequence::Sequence};
+use crate::{Command, Result, types::Status, document::Document, sequence::Sequence, ops::{ReqlOpsSequence, SuperOps}};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
@@ -72,5 +72,13 @@ impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for BetweenBuilder<T> { }
+
+impl<T> SuperOps for BetweenBuilder<T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }

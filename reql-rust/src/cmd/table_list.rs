@@ -3,7 +3,9 @@ use std::borrow::Cow;
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::Command;
+use crate::{Command, ops::ReqlOpsArray};
+
+use super::SuperOps;
 
 #[derive(Debug, Clone)]
 pub struct TableListBuilder(pub(crate) Command);
@@ -34,5 +36,13 @@ impl TableListBuilder {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl ReqlOpsArray for TableListBuilder { }
+
+impl SuperOps for TableListBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }

@@ -4,6 +4,7 @@ use std::{borrow::Cow, collections::HashMap};
 #[doc(inline)]
 pub use reql_rust_types::*;
 pub use crate::document::Document;
+pub use crate::sequence::Sequence;
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Structure of return data in `db` table

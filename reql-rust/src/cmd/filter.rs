@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Command, Func, Result, document::Document, sequence::Sequence};
+use crate::{Command, Func, Result, document::Document, sequence::Sequence, ops::{ReqlOpsSequence, SuperOps}};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
@@ -20,7 +20,7 @@ pub(crate) struct FilterOption {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
-    pub(crate) fn new(func: Func) -> Self {
+    pub fn new(func: Func) -> Self {
         let Func(func) = func;
         let command = Command::new(TermType::Filter).with_arg(func);
 
@@ -53,5 +53,13 @@ impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
 impl<T> Into<Command> for FilterBuilder<T> {
     fn into(self) -> Command {
         self.0
+    }
+}
+
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for FilterBuilder<T> { }
+
+impl<T> SuperOps for FilterBuilder<T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }

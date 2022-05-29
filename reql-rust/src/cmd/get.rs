@@ -1,11 +1,9 @@
 use std::marker::PhantomData;
 
-use crate::{Command, document::Document};
+use crate::{Command, document::Document, ops::{ReqlOpsSequence, SuperOps}};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
-
-use super::{run, TableAndSelectionOps, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct GetBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
@@ -18,11 +16,11 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
         Self(command, PhantomData)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Option<Document<T>>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Option<Document<T>>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Option<Document<T>>>> {
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Option<Document<T>>>> {
         self.0.into_arg::<()>().into_cmd().run::<_, Option<Document<T>>>(arg)
     }
 
@@ -33,9 +31,7 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> TableAndSelectionOps for GetBuilder<T> {
-    type Parent = T;
-}
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for GetBuilder<T> { }
 
 impl<T> SuperOps for GetBuilder<T> {
     fn get_parent(&self) -> Command {

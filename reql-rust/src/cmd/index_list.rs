@@ -3,9 +3,9 @@ use std::borrow::Cow;
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::Command;
+use crate::{Command, ops::ReqlOpsArray};
 
-use super::run;
+use super::{run, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct IndexListBuilder(pub(crate) Command);
@@ -35,3 +35,12 @@ impl IndexListBuilder {
         self
     }
 }
+
+impl ReqlOpsArray for IndexListBuilder { }
+
+impl SuperOps for IndexListBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
+    }
+}
+

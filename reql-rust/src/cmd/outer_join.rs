@@ -4,9 +4,12 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{document::Document, types::JoinResponseType, Command, Func, sequence::Sequence};
+use crate::{
+    document::Document, ops::ReqlOpsJoin, sequence::Sequence, types::JoinResponseType, Command,
+    Func,
+};
 
-use super::{run, table::TableBuilder, DocManipulationOps, JoinOps, SuperOps};
+use super::{run, table::TableBuilder, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct OuterJoinBuilder<A, T>(
@@ -39,7 +42,8 @@ where
     pub fn make_query(
         self,
         arg: impl run::Arg,
-    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<Document<T>, Document<A>>>>> {
+    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<Document<T>, Document<A>>>>>
+    {
         self.0
             .into_arg::<()>()
             .into_cmd()
@@ -52,9 +56,7 @@ where
     }
 }
 
-impl<A, T> JoinOps for OuterJoinBuilder<A, T> {}
-
-impl<A, T> DocManipulationOps for OuterJoinBuilder<A, T> {}
+impl<A, T> ReqlOpsJoin for OuterJoinBuilder<A, T> {}
 
 impl<A, T> SuperOps for OuterJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {

@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{document::Document, types::JoinResponseType, Command, Func, sequence::Sequence};
+use crate::{document::Document, types::JoinResponseType, Command, Func, sequence::Sequence, ops::ReqlOpsJoin};
 
-use super::{run, table::TableBuilder, DocManipulationOps, JoinOps, SuperOps};
+use super::{run, table::TableBuilder, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct EqJoinBuilder<A, T>(
@@ -74,9 +74,7 @@ where
     }
 }
 
-impl<A, T> JoinOps for EqJoinBuilder<A, T> {}
-
-impl<A, T> DocManipulationOps for EqJoinBuilder<A, T> {}
+impl<A, T> ReqlOpsJoin for EqJoinBuilder<A, T> { }
 
 impl<A, T> SuperOps for EqJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {
