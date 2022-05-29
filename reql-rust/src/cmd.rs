@@ -198,14 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn zip(self) -> Self {
-        Self::new(TermType::Zip).with_parent(self)
-    }
-
-    pub fn map(self, arg: impl map::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn with_fields(self, arg: impl with_fields::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

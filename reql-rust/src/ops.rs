@@ -430,6 +430,45 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ) -> cmd::eq_join::EqJoinBuilder<A, T> {
         cmd::eq_join::EqJoinBuilder::new_by_func(func, right_table)._with_parent(self.get_parent())
     }
+
+    /// Transform each element of one or more sequences by applying a mapping function to them. 
+    /// If `map` is run with two or more sequences, it will iterate for as many items as there are in the shortest sequence.
+    /// 
+    /// ## Note
+    /// 
+    /// Note that `map` can only be applied to sequences, not single values. 
+    /// If you wish to apply a function to a single value/selection (including an array), use the do_ command.
+    /// See [r.map](crate::r::map) for more information.
+    /// 
+    /// ## Example
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Posts>("posts")
+    ///         .map::<String>(
+    ///             func!(|row| row.bracket("title"))
+    ///         )
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::map::MapBuilder<A> {
+        cmd::map::MapBuilder::new(func)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsArray: SuperOps {
