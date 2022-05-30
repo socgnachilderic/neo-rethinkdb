@@ -97,6 +97,12 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    let result = user_table
+        .order_by_key("full_name")
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     let result = post_table
         .skip(3)
         .run(&conn)

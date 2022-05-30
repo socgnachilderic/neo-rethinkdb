@@ -829,15 +829,21 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// ## Example
     ///
     /// Sort the result in descending order based on the `created_at` column.
-    // ```
-    // # reql_rust::example(|r, conn| async_stream::stream! {
-    // r.db("database").table("users").order_by(r.desc("created_at")).run(conn)
-    // # });
-    // ```
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("posts").order_by().run(&conn).await?;
     ///
-    pub fn order_by(&self, _arg: impl super::order_by::Arg) -> Command {
-        // arg.arg().into_cmd().with_parent(self)
-        todo!()
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    pub fn order_by(&self) -> super::order_by::OrderByBuilder<T> {
+        super::order_by::OrderByBuilder::new()._with_parent(self.get_parent())
     }
 }
 

@@ -586,6 +586,14 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::concat_map::ConcatMapBuilder::new(func)._with_parent(self.get_parent())
     }
 
+    fn order_by_key(&self, key: &str) -> cmd::order_by::OrderByBuilder<T> {
+        cmd::order_by::OrderByBuilder::new_by_key(key)._with_parent(self.get_parent())
+    }
+
+    fn order_by_func(&self, func: Func) -> cmd::order_by::OrderByBuilder<T> {
+        cmd::order_by::OrderByBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
     /// Skip a number of elements from the head of the sequence.
     /// 
     /// ## Example
@@ -595,7 +603,6 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// use serde::{Serialize, Deserialize};
     /// 
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
