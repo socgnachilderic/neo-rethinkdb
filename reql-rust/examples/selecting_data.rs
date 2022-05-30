@@ -133,6 +133,18 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    // let result = post_table
+    //     .union(user_table)
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
+
+    let result = post_table
+        .sample(3)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

@@ -724,6 +724,31 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn is_empty(&self) -> cmd::is_empty::IsEmptyBuilder {
         cmd::is_empty::IsEmptyBuilder::new()._with_parent(self.get_parent())
     }
+
+    /// Select a given number of elements from a sequence with uniform random distribution. Selection is done without replacement.
+    /// 
+    /// If the sequence has less than the requested number of elements (i.e., calling `sample(10)` on a sequence with only five elements), 
+    /// `sample` will return the entire sequence in a random order.
+    /// 
+    /// ## Example
+    /// 
+    /// Select 3 random heroes
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel").sample(3).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn sample(&self, number: usize) -> cmd::sample::SampleBuilder<T> {
+        cmd::sample::SampleBuilder::new(number)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsArray: SuperOps {

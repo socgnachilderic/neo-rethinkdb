@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn sample(self, arg: impl sample::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn group(self, arg: impl group::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
