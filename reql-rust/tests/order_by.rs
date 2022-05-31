@@ -6,12 +6,14 @@ use serde_json::Value;
 async fn order_by() -> reql_rust::Result<()> {
     tracing_subscriber::fmt::init();
     let conn = r.connection().connect().await?;
-    let mut query = r
+    let user = r
         .db("rethinkdb")
         .table::<Value>("server_status")
-        .order_by(r.args(("name", r.index(r.desc("id")))))
-        .run(&conn);
-    let user: Option<Value> = query.try_next().await?;
+        .order_by_key("name")
+        // .with_index(r.index(r.desc("id")))
+        .run(&conn)
+        .await?;
+        
     assert!(user.is_some());
     Ok(())
 }

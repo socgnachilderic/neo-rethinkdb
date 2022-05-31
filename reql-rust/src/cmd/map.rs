@@ -1,80 +1,60 @@
-use super::args::Args;
-use crate::{cmd, Command, Func};
+use std::marker::PhantomData;
+
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
+use serde::{Serialize, de::DeserializeOwned};
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
+use crate::{Command, Func};
+use crate::types::{Document, Sequence};
 
-impl Arg for cmd::Arg<()> {
-    fn arg(self) -> cmd::Arg<()> {
+#[derive(Debug, Clone)]
+pub struct MapBuilder<A>(pub(crate) Command, pub(crate) PhantomData<A>);
+
+impl<A: Unpin + DeserializeOwned> MapBuilder<A> {
+    pub(crate) fn new(func: Func) -> Self {
+        let Func(func) = func;
+        let command = Command::new(TermType::Map).with_arg(func);
+        
+        Self(command, PhantomData)
+    }
+
+    pub async fn run(
+        self,
+        arg: impl super::run::Arg,
+    ) -> crate::Result<Option<Sequence<Document<A>>>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<Sequence<Document<A>>>> {
+        self.0.into_arg::<()>()
+            .into_cmd()
+            .run::<_, Sequence<Document<A>>>(arg)
+    }
+
+    pub fn with_sequences(mut self, sequences: &[impl Serialize]) -> Self {
+        for seq in sequences {
+            let arg = Command::from_json(seq);
+            self.0 = self.0.with_arg(arg)
+        }
+
+        self
+    }
+
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
         self
     }
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Command::new(TermType::Map).with_arg(self).into_arg()
-    }
-}
+impl<A: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<A> for MapBuilder<A> { }
+impl<A> ReqlOpsArray for MapBuilder<A> { }
 
-impl Arg for Func {
-    fn arg(self) -> cmd::Arg<()> {
-        let Func(func) = self;
-        func.arg()
-    }
-}
-
-impl Arg for Args<(Command, Func)> {
-    fn arg(self) -> cmd::Arg<()> {
-        let Args((sequence, Func(func))) = self;
-        sequence.arg().with_arg(func)
-    }
-}
-
-#[allow(array_into_iter)]
-#[allow(clippy::into_iter_on_ref)]
-impl<const N: usize> Arg for Args<([Command; N], Func)> {
-    fn arg(self) -> cmd::Arg<()> {
-        let Args((sequence, Func(func))) = self;
-        let mut cmd = cmd::Arg::new();
-        if N == 0 {
-            func.arg()
-        } else {
-            for (i, arg) in sequence.into_iter().cloned().enumerate() {
-                if i == 0 {
-                    cmd = arg.arg();
-                } else {
-                    cmd = cmd.with_arg(arg);
-                }
-            }
-            cmd.with_arg(func)
-        }
-    }
-}
-
-#[allow(array_into_iter)]
-#[allow(clippy::into_iter_on_ref)]
-impl<T, const N: usize> Arg for Args<([T; N], Func)>
-where
-    T: Serialize + Clone,
-{
-    fn arg(self) -> cmd::Arg<()> {
-        let Args((sequence, Func(func))) = self;
-        let mut cmd = cmd::Arg::new();
-        if N == 0 {
-            func.arg()
-        } else {
-            for (i, arg) in sequence.into_iter().cloned().enumerate() {
-                let arg = Command::from_json(arg);
-                if i == 0 {
-                    cmd = arg.arg();
-                } else {
-                    cmd = cmd.with_arg(arg);
-                }
-            }
-            cmd.with_arg(func)
-        }
+impl<A> SuperOps for MapBuilder<A> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }

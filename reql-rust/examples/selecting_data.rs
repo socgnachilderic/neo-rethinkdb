@@ -1,4 +1,5 @@
 use reql_rust::prelude::*;
+use reql_rust::types::Interleave;
 use reql_rust::{r, Result, Session};
 use serde::{Deserialize, Serialize};
 
@@ -6,6 +7,7 @@ use serde::{Deserialize, Serialize};
 struct Users {
     id: u8,
     full_name: String,
+    posts: [u8; 2],
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -31,11 +33,12 @@ async fn main() -> Result<()> {
     let result = post_table.get(2).run(&conn).await?;
     dbg!(result);
 
-    // let result = post_table
-    //     .get_all(&["title"])
-    //     .run(&conn)
-    //     .await?;
-    // dbg!(result);
+    let result = post_table
+        .get_all(&[1, 2])
+        .with_index("id")
+        .run(&conn)
+        .await?;
+    dbg!(result);
 
     let result = post_table.between(1, 4).run(&conn).await?;
     dbg!(result);
@@ -72,6 +75,96 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    let result = post_table
+        .map::<String>(func!(|row| row.bracket("title")))
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct NewPost {
+        id: u8,
+        title: String,
+    }
+
+    let result = post_table
+        .with_fields::<NewPost>(&["id", "title"])
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = user_table
+        .concat_map::<u8>(func!(|row| row.bracket("posts")))
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = user_table
+        .order_by_key("full_name")
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = post_table
+        .skip(3)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = post_table
+        .limit(3)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = post_table
+        .slice(2, None)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = post_table
+        .nth(-1)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    // let result = post_table
+    //     .offsets_of(-1)
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
+
+    let result = post_table
+        .is_empty()
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    
+    #[derive(Serialize, Deserialize, Debug)]
+    struct MergePostAndUser {
+        id: u8,
+        full_name: Option<String>,
+        posts: Option<[u8; 2]>,
+        title: Option<String>,
+        content: Option<String>,
+        user_id: Option<u8>,
+    }
+    
+    let result = post_table
+        .union::<_, MergePostAndUser>(&[&user_table])
+        .with_interleave(Interleave::Bool(false))
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = post_table
+        .sample(3)
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())
@@ -82,10 +175,12 @@ async fn set_up(conn: &Session) -> Result<()> {
         Users {
             id: 1,
             full_name: "John Doe".to_string(),
+            posts: [1, 2]
         },
         Users {
             id: 2,
             full_name: "Don Juan".to_string(),
+            posts: [3, 5]
         },
     ];
 

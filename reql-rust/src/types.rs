@@ -3,6 +3,8 @@ use std::{borrow::Cow, collections::HashMap};
 
 #[doc(inline)]
 pub use reql_rust_types::*;
+pub use crate::document::Document;
+pub use crate::sequence::Sequence;
 use serde::{Deserialize, Serialize, Serializer};
 
 /// Structure of return data in `db` table
@@ -86,8 +88,8 @@ pub struct SyncResponseType {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct JoinResponseType<L, R> {
-    left: Option<L>,
-    right: Option<R>,
+    pub left: Option<L>,
+    pub right: Option<R>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -196,6 +198,14 @@ pub enum Squash {
     /// changes together as possible, reducing network traffic. The first
     /// batch will always be returned immediately.
     Float(f32),
+}
+
+#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(untagged)]
+pub enum Interleave {
+    Bool(bool),
+    FieldName(&'static str),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

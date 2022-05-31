@@ -78,7 +78,9 @@
 //! {old_val: null, new_val: {id: 1}}
 //! ```
 
-use crate::{Command, types::Squash};
+use std::marker::PhantomData;
+
+use crate::{document::Document, types::Squash, Command};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
@@ -87,9 +89,9 @@ use super::run;
 
 #[derive(Debug, Clone)]
 pub struct ChangesBuilder<T>(
-    pub(crate) Command, 
-    pub(crate) ChangesOption, 
-    pub(crate) Option<T>
+    pub(crate) Command,
+    pub(crate) ChangesOption,
+    pub(crate) PhantomData<T>,
 );
 
 /// Optional arguments to `changes`
@@ -154,19 +156,19 @@ impl<T: Unpin + Serialize + DeserializeOwned> ChangesBuilder<T> {
     pub(crate) fn new() -> Self {
         let command = Command::new(TermType::Changes).mark_change_feed();
 
-        Self(command, ChangesOption::default(), None)
+        Self(command, ChangesOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<T>> {
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Document<T>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<T>> {
+    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Document<T>>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, T>(arg)
+            .run::<_, Document<T>>(arg)
     }
 
     pub fn with_squash(mut self, squash: Squash) -> Self {

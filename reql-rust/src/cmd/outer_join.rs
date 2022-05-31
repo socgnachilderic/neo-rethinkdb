@@ -1,16 +1,21 @@
+use std::marker::PhantomData;
+
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{types::JoinResponseType, Command, Func};
+use crate::{
+    document::Document, ops::{ReqlOpsJoin, ReqlOpsSequence}, sequence::Sequence, types::JoinResponseType, Command,
+    Func,
+};
 
-use super::{run, table::TableBuilder, JoinOps, DocManipulationOps, SuperOps};
+use super::{run, table::TableBuilder, SuperOps};
 
 #[derive(Debug, Clone)]
 pub struct OuterJoinBuilder<A, T>(
-    pub(crate) Command, 
-    pub(crate) Option<A>, 
-    pub(crate) Option<T>
+    pub(crate) Command,
+    pub(crate) PhantomData<A>,
+    pub(crate) PhantomData<T>,
 );
 
 impl<A, T> OuterJoinBuilder<A, T>
@@ -24,24 +29,25 @@ where
             .with_arg(other_table.0.clone())
             .with_arg(func);
 
-        Self(command, None, None)
+        Self(command, PhantomData, PhantomData)
     }
 
     pub async fn run(
         self,
         arg: impl run::Arg,
-    ) -> crate::Result<Option<Vec<JoinResponseType<T, A>>>> {
+    ) -> crate::Result<Option<Sequence<JoinResponseType<Document<T>, Document<A>>>>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl run::Arg,
-    ) -> impl Stream<Item = crate::Result<Vec<JoinResponseType<T, A>>>> {
+    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<Document<T>, Document<A>>>>>
+    {
         self.0
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Vec<JoinResponseType<T, A>>>(arg)
+            .run::<_, Sequence<JoinResponseType<Document<T>, Document<A>>>>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -50,9 +56,8 @@ where
     }
 }
 
-impl<A, T> JoinOps for OuterJoinBuilder<A, T> { }
-
-impl<A, T> DocManipulationOps for OuterJoinBuilder<A, T> {}
+impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for OuterJoinBuilder<A, T> { }
+impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for OuterJoinBuilder<A, T> {}
 
 impl<A, T> SuperOps for OuterJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {

@@ -254,7 +254,7 @@ where
         self
     }
 
-    pub(crate) fn with_opts(mut self, opts: T) -> Self {
+    pub(crate) fn _with_opts(mut self, opts: T) -> Self {
         self.opts = Some(opts);
         self
     }

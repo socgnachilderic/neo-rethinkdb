@@ -3,7 +3,9 @@ use std::borrow::Cow;
 use futures::{TryStreamExt, Stream};
 use ql2::term::TermType;
 
-use crate::Command;
+use crate::{Command, ops::ReqlOpsArray};
+
+use super::SuperOps;
 
 #[derive(Debug, Clone)]
 pub struct DbListBuilder(pub(crate) Command);
@@ -30,5 +32,13 @@ impl DbListBuilder {
             .into_arg::<()>()
             .into_cmd()
             .run::<_, Vec<Cow<'static, str>>>(arg)
+    }
+}
+
+impl ReqlOpsArray for DbListBuilder { }
+
+impl SuperOps for DbListBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }
