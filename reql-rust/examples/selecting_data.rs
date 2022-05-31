@@ -32,11 +32,12 @@ async fn main() -> Result<()> {
     let result = post_table.get(2).run(&conn).await?;
     dbg!(result);
 
-    // let result = post_table
-    //     .get_all(&["title"])
-    //     .run(&conn)
-    //     .await?;
-    // dbg!(result);
+    let result = post_table
+        .get_all(&[1, 2])
+        .with_index("id")
+        .run(&conn)
+        .await?;
+    dbg!(result);
 
     let result = post_table.between(1, 4).run(&conn).await?;
     dbg!(result);

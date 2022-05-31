@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::marker::PhantomData;
 
 use futures::{Stream, TryStreamExt};
@@ -9,8 +10,20 @@ use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
 use crate::{Command, Func};
 use crate::types::{Document, Sequence};
 
+use super::StaticString;
+
 #[derive(Debug, Clone)]
-pub struct OrderByBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
+pub struct OrderByBuilder<T>(
+    pub(crate) Command,
+    pub(crate) OrderByOption,
+    pub(crate) PhantomData<T>
+);
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
+#[non_exhaustive]
+pub(crate) struct OrderByOption {
+    pub index: Option<Cow<'static, str>>,
+}
 
 impl<T: Unpin + DeserializeOwned> OrderByBuilder<T> {
     pub(crate) fn new() -> Self {
@@ -38,13 +51,19 @@ impl<T: Unpin + DeserializeOwned> OrderByBuilder<T> {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<Sequence<Document<T>>>> {
-        self.0.into_arg::<()>()
+        let mut command = self.0;
+        
+        if self.1.index.is_some() {
+            command = command.with_opts(self.1);
+        }
+
+        command.into_arg::<()>()
             .into_cmd()
             .run::<_, Sequence<Document<T>>>(arg)
     }
 
-    pub fn with_index(mut self, index: impl Serialize) -> Self {
-        self.0 = self.0.with_opts(index);
+    pub fn with_index(mut self, index: &'static str) -> Self {
+        self.1.index = Some(index.static_string());
         self
     }
 
@@ -60,7 +79,7 @@ impl<T: Unpin + DeserializeOwned> OrderByBuilder<T> {
             command = command.with_arg(arg);
         }
         
-        Self(command, PhantomData)
+        Self(command, OrderByOption::default(), PhantomData)
     }
 }
 

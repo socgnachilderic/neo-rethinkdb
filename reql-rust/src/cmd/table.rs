@@ -680,8 +680,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(&self, document: &[T]) -> super::insert::InsertBuilder<T> {
-        super::insert::InsertBuilder::new(document)._with_parent(self.get_parent())
+    pub fn insert(&self, documents: &[T]) -> super::insert::InsertBuilder<T> {
+        super::insert::InsertBuilder::new(documents)._with_parent(self.get_parent())
     }
 
     /// `sync` ensures that writes on a given table are written to permanent storage.
@@ -796,9 +796,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn get_all(&self, index_keys: &[&str]) -> super::get_all::GetAllBuilder<T> {
-        assert!(index_keys.len() > 0);
-        super::get_all::GetAllBuilder::new(index_keys)._with_parent(self.get_parent())
+    pub fn get_all(&self, values: &[impl Serialize]) -> super::get_all::GetAllBuilder<T> {
+        super::get_all::GetAllBuilder::new(values)._with_parent(self.get_parent())
     }
 
     /// Get all documents between two keys. Accepts three options methods:

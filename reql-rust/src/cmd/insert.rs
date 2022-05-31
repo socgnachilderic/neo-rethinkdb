@@ -33,9 +33,10 @@ pub(crate) struct InsertOption {
     pub ignore_write_hook: Option<bool>,
 }
 
-impl<T: Unpin + DeserializeOwned> InsertBuilder<T> {
-    pub(crate) fn new(document: impl Serialize) -> Self {
-        let args = Command::from_json(document);
+impl<T: Unpin + Serialize + DeserializeOwned> InsertBuilder<T> {
+    pub(crate) fn new(documents: &[T]) -> Self {
+        assert!(documents.len() > 0);
+        let args = Command::from_json(documents);
         let command = Command::new(TermType::Insert).with_arg(args);
 
         Self(command, InsertOption::default(), None, PhantomData)
