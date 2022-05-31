@@ -1,4 +1,5 @@
 use reql_rust::prelude::*;
+use reql_rust::types::Interleave;
 use reql_rust::{r, Result, Session};
 use serde::{Deserialize, Serialize};
 
@@ -140,11 +141,23 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
-    // let result = post_table
-    //     .union(user_table)
-    //     .run(&conn)
-    //     .await?;
-    // dbg!(result);
+    
+    #[derive(Serialize, Deserialize, Debug)]
+    struct MergePostAndUser {
+        id: u8,
+        full_name: Option<String>,
+        posts: Option<[u8; 2]>,
+        title: Option<String>,
+        content: Option<String>,
+        user_id: Option<u8>,
+    }
+    
+    let result = post_table
+        .union::<_, MergePostAndUser>(&[&user_table])
+        .with_interleave(Interleave::Bool(false))
+        .run(&conn)
+        .await?;
+    dbg!(result);
 
     let result = post_table
         .sample(3)

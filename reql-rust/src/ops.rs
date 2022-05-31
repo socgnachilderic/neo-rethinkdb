@@ -732,6 +732,71 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::is_empty::IsEmptyBuilder::new()._with_parent(self.get_parent())
     }
 
+    /// Merge two or more sequences.
+    /// 
+    /// The [with_interleave(reql_rust::types::Interleave)](cmd::union::UnionBuilder::with_interleave) method controls how the sequences will be merged:
+    /// 
+    /// - `Interleave::Bool(true)` : results will be mixed together; this is the fastest setting, but ordering of elements is not guaranteed. 
+    /// (This is the default.)
+    /// - `Interleave::Bool(false)` : input sequences will be appended to one another, left to right.
+    /// - `Interleave::FieldName("field_name")` : a string will be taken as the name of a field to perform a merge-sort on. 
+    /// The input sequences must be ordered before being passed to `union` .
+    /// 
+    /// ## Example
+    /// 
+    /// Construct a stream of all heroes
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Serialize, Deserialize};
+    /// 
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Users {
+    ///     id: u8,
+    ///     full_name: String,
+    ///     posts: [u8; 2],
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct Posts {
+    ///     id: u8,
+    ///     title: String,
+    ///     content: String,
+    ///     user_id: u8,
+    /// }
+    ///
+    /// #[derive(Serialize, Deserialize, Debug)]
+    /// struct MergePostAndUser {
+    ///     id: u8,
+    ///     full_name: Option<String>,
+    ///     posts: Option<[u8; 2]>,
+    ///     title: Option<String>,
+    ///     content: Option<String>,
+    ///     user_id: Option<u8>,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let marvel_table = r.table::<Users>("users");
+    ///     let dc_table = r.table::<Posts>("marvel");
+    /// 
+    ///     let _ = marvel_table.union::<_, MergePostAndUser>(&[&dc_table])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn union<A, B>(&self, sequence: &[&A]) -> cmd::union::UnionBuilder<B>
+    where
+        A: SuperOps,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        assert!(sequence.len() > 0);
+        cmd::union::UnionBuilder::new(sequence)._with_parent(self.get_parent())
+    }
+
     /// Select a given number of elements from a sequence with uniform random distribution. Selection is done without replacement.
     /// 
     /// If the sequence has less than the requested number of elements (i.e., calling `sample(10)` on a sequence with only five elements), 

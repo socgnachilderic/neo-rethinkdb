@@ -167,9 +167,10 @@ where
                         break;
                     }
                     payload = Payload(QueryType::Continue, None, Default::default());
-                    for val in serde_json::from_value::<Vec<T>>(resp.r)? {
-                        yield val;
-                    }
+                    // for val in serde_json::from_value::<Vec<T>>(resp.r)? {
+                    //     yield val;
+                    // }
+                    yield serde_json::from_value::<T>(resp.r)?;
                     continue;
                 }
                 ResponseType::WaitComplete => { break; }

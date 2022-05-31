@@ -200,6 +200,14 @@ pub enum Squash {
     Float(f32),
 }
 
+#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(untagged)]
+pub enum Interleave {
+    Bool(bool),
+    FieldName(&'static str),
+}
+
 #[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]

@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn union(self, arg: impl union::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn group(self, arg: impl group::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
