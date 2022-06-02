@@ -80,10 +80,12 @@
 
 use std::marker::PhantomData;
 
-use crate::{document::Document, types::Squash, Command};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
+
+use crate::Command;
+use crate::types::{Squash, Document};
 
 use super::run;
 

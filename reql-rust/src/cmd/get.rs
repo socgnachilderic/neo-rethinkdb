@@ -1,9 +1,12 @@
 use std::marker::PhantomData;
 
-use crate::{Command, document::Document, ops::{ReqlOpsSequence, SuperOps}};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
+
+use crate::Command;
+use crate::ops::{ReqlOpsSequence, SuperOps};
+use crate::types::Document;
 
 #[derive(Debug, Clone)]
 pub struct GetBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);

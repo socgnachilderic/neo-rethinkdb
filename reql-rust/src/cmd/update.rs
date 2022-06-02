@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
-use crate::document::Document;
-use crate::types::{Durability, ReturnChanges, WritingResponseType};
-use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+use crate::{Command, Func};
+use crate::types::{Durability, ReturnChanges, WritingResponseType, Document};
 
 #[derive(Debug, Clone)]
 pub struct UpdateBuilder<T>(

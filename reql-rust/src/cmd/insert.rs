@@ -1,13 +1,12 @@
 use std::marker::PhantomData;
 
-use crate::document::Document;
-use crate::sequence::Sequence;
-use crate::types::{Conflict, Durability, ReturnChanges, WritingResponseType};
-use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+use crate::{Command, Func};
+use crate::types::{Conflict, Durability, ReturnChanges, WritingResponseType, Document, Sequence};
 
 #[derive(Debug)]
 pub struct InsertBuilder<T>(

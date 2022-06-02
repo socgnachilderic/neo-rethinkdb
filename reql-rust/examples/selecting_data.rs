@@ -165,6 +165,13 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    let result = post_table
+        .group::<[serde_json::Value; 2]>(&["user_id"])
+        .with_index("title")
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

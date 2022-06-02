@@ -55,7 +55,7 @@ impl<'de, T: DeserializeOwned> Deserialize<'de> for Sequence<T> {
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use crate::document::Document;
+    use crate::types::document::Document;
 
     use super::Sequence;
 

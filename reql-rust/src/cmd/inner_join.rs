@@ -4,7 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{types::JoinResponseType, Command, Func, document::Document, sequence::Sequence, ops::{ReqlOpsJoin, ReqlOpsSequence}};
+use crate::{Command, Func};
+use crate::ops::{ReqlOpsJoin, ReqlOpsSequence};
+use crate::types::{Document, Sequence, JoinResponseType};
 
 use super::{run, table::TableBuilder, SuperOps};
 

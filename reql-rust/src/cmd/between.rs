@@ -1,10 +1,14 @@
 use std::{borrow::Cow, marker::PhantomData};
 
-use super::StaticString;
-use crate::{Command, Result, types::Status, document::Document, sequence::Sequence, ops::{ReqlOpsSequence, SuperOps}};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
+
+use crate::{Command, Result};
+use crate::ops::{ReqlOpsSequence, SuperOps};
+use crate::types::{Status, Document, Sequence};
+
+use super::StaticString;
 
 #[derive(Debug, Clone)]
 pub struct BetweenBuilder<T>(

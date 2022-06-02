@@ -1,9 +1,12 @@
 use std::marker::PhantomData;
 
-use crate::{Command, Func, Result, document::Document, sequence::Sequence, ops::{ReqlOpsSequence, SuperOps}};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
+
+use crate::{Command, Func, Result};
+use crate::ops::{ReqlOpsSequence, SuperOps};
+use crate::types::{Document, Sequence};
 
 #[derive(Debug, Clone)]
 pub struct FilterBuilder<T>(

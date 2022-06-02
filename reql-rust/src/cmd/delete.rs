@@ -1,15 +1,13 @@
 use std::marker::PhantomData;
 
-use crate::document::Document;
-use crate::types::Durability;
-use crate::types::ReturnChanges;
-use crate::types::WritingResponseType;
-use crate::Command;
 use futures::Stream;
 use futures::TryStreamExt;
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+use crate::Command;
+use crate::types::{Durability, ReturnChanges, WritingResponseType, Document};
 
 #[derive(Debug, Clone)]
 pub struct DeleteBuilder<T>(

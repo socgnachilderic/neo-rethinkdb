@@ -1,9 +1,14 @@
-use super::StaticString;
-use crate::{document::Document, Command, Result, ops::{ReqlOpsSequence, SuperOps}, types::Sequence};
+use std::{borrow::Cow, marker::PhantomData};
+
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{borrow::Cow, marker::PhantomData};
+
+use crate::{Command, Result};
+use crate::ops::{ReqlOpsSequence, SuperOps};
+use crate::types::{Document, Sequence};
+
+use super::StaticString;
 
 #[derive(Debug, Clone)]
 pub struct GetAllBuilder<T>(

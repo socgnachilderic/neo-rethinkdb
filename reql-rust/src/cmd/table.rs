@@ -1,14 +1,13 @@
 use std::marker::PhantomData;
 
-use crate::document::Document;
-use crate::ops::ReqlOpsSequence;
-use crate::sequence::Sequence;
-use crate::types::{IdentifierFormat, ReadMode};
-use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+use crate::{Command, Func};
+use crate::ops::ReqlOpsSequence;
+use crate::types::{IdentifierFormat, ReadMode, Document, Sequence};
 
 use super::{run, SuperOps};
 

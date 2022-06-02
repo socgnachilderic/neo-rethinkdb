@@ -821,6 +821,26 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn sample(&self, number: usize) -> cmd::sample::SampleBuilder<T> {
         cmd::sample::SampleBuilder::new(number)._with_parent(self.get_parent())
     }
+
+    /// Takes a stream and partitions it into multiple groups based on the fields or functions provided.
+    fn group<G>(&self, fields: &[&str]) -> cmd::group::GroupBuilder<G, T>
+    where
+        G: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::group::GroupBuilder::new(fields)._with_parent(self.get_parent())
+    }
+
+    /// Takes a stream and partitions it into multiple groups based on the fields or functions provided.
+    fn group_by_func<G>(&self, func: Func) -> cmd::group::GroupBuilder<G, T>
+    where
+        G: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::group::GroupBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+}
+
+pub trait ReqlOpsGroupedStream: SuperOps {
+    
 }
 
 pub trait ReqlOpsArray: SuperOps {

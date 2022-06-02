@@ -65,12 +65,10 @@
 pub mod cmd;
 pub mod connection;
 mod constants;
-mod document;
 mod err;
 mod ops;
 pub mod prelude;
 mod proto;
-mod sequence;
 pub mod types;
 
 use prelude::SuperOps;
@@ -571,19 +569,19 @@ impl r {
         cmd::table::TableBuilder::new(table_name)
     }
 
-    /// Transform each element of one or more sequences by applying a mapping function to them. 
+    /// Transform each element of one or more sequences by applying a mapping function to them.
     /// If `map` is run with two or more sequences, it will iterate for as many items as there are in the shortest sequence.
-    /// 
+    ///
     /// ## Note
-    /// 
-    /// Note that `map` can only be applied to sequences, not single values. 
+    ///
+    /// Note that `map` can only be applied to sequences, not single values.
     /// If you wish to apply a function to a single value/selection (including an array), use the do_ command.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Return the first five squares
-    /// 
-    /// 
+    ///
+    ///
     pub fn map<A: Unpin + DeserializeOwned>(
         self,
         sequences: &[impl Serialize],
@@ -593,24 +591,24 @@ impl r {
     }
 
     /// Merge two or more sequences.
-    /// 
+    ///
     /// The [with_interleave(reql_rust::types::Interleave)](cmd::union::UnionBuilder::with_interleave) method controls how the sequences will be merged:
-    /// 
-    /// - `Interleave::Bool(true)` : results will be mixed together; this is the fastest setting, but ordering of elements is not guaranteed. 
+    ///
+    /// - `Interleave::Bool(true)` : results will be mixed together; this is the fastest setting, but ordering of elements is not guaranteed.
     /// (This is the default.)
     /// - `Interleave::Bool(false)` : input sequences will be appended to one another, left to right.
-    /// - `Interleave::FieldName("field_name")` : a string will be taken as the name of a field to perform a merge-sort on. 
+    /// - `Interleave::FieldName("field_name")` : a string will be taken as the name of a field to perform a merge-sort on.
     /// The input sequences must be ordered before being passed to `union` .
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Construct a stream of all heroes
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// 
+    ///
     /// #[derive(Debug, Serialize, Deserialize)]
     /// struct Users {
     ///     id: u8,
@@ -640,7 +638,7 @@ impl r {
     ///     let session = r.connection().connect().await?;
     ///     let marvel_table = r.table::<Users>("users");
     ///     let dc_table = r.table::<Posts>("marvel");
-    /// 
+    ///
     ///     let _ = marvel_table.union::<_, MergePostAndUser>(&[&dc_table])
     ///         .run(&session)
     ///         .await?;
@@ -653,12 +651,7 @@ impl r {
         A: SuperOps,
         T: Unpin + Serialize + DeserializeOwned,
     {
-        assert!(sequence.len() > 1);
         cmd::union::UnionBuilder::new(sequence)
-    }
-
-    pub fn group(self, arg: impl cmd::group::Arg) -> Command {
-        arg.arg().into_cmd()
     }
 
     pub fn reduce(self, arg: impl cmd::reduce::Arg) -> Command {
