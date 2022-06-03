@@ -5,7 +5,7 @@ use serde::Serialize;
 use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
-pub struct CountBuilder(Command);
+pub struct CountBuilder(pub(crate) Command);
 
 impl CountBuilder {
     pub(crate) fn new() -> Self {

@@ -654,10 +654,6 @@ impl r {
         cmd::union::UnionBuilder::new(sequence)
     }
 
-    pub fn min(self, arg: impl cmd::min::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
     pub fn max(self, arg: impl cmd::max::Arg) -> Command {
         arg.arg().into_cmd()
     }

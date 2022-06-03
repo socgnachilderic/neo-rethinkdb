@@ -871,13 +871,13 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
-    ///     r.table::<serde_json::Value>("games").sum_by_value("points").run(&conn).await?;
+    ///     r.table::<serde_json::Value>("games").sum_by_field("points").run(&conn).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    fn sum_by_value(&self, value: impl Serialize) -> cmd::sum::SumBuilder {
-        cmd::sum::SumBuilder::new_by_value(value)._with_parent(self.get_parent())
+    fn sum_by_field(&self, field_name: &str) -> cmd::sum::SumBuilder {
+        cmd::sum::SumBuilder::new_by_field(field_name)._with_parent(self.get_parent())
     }
 
     /// See [sum](#methods.sum) for more informations
@@ -928,13 +928,13 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
-    ///     r.table::<serde_json::Value>("games").avg_by_value("points").run(&conn).await?;
+    ///     r.table::<serde_json::Value>("games").avg_by_field("points").run(&conn).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    fn avg_by_value(&self, value: impl Serialize) -> cmd::avg::AvgBuilder {
-        cmd::avg::AvgBuilder::new_by_value(value)._with_parent(self.get_parent())
+    fn avg_by_field(&self, field_name: &str) -> cmd::avg::AvgBuilder {
+        cmd::avg::AvgBuilder::new_by_field(field_name)._with_parent(self.get_parent())
     }
 
     /// See [avg](#methods.avg) for more informations
@@ -959,6 +959,88 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// ```
     fn avg_by_func(&self, func: Func) -> cmd::avg::AvgBuilder {
         cmd::avg::AvgBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
+    /// Finds the minimum element of a sequence.
+    /// 
+    /// an index (the primary key or a secondary index) via [with_index(index: &'static str)](cmd::min::MinBuilder::with_index), 
+    /// to return the element of the sequence with the smallest value in that index.
+    /// 
+    /// Calling `min` on an empty sequence will throw a non-existence error; this can be handled using the default command.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the fewest points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users")
+    ///         .min()
+    ///         .with_index("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn min(&self) -> cmd::min::MinBuilder<T> {
+        cmd::min::MinBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [min](#methods.min) for more informations
+    /// 
+    /// Return the element of the sequence with the smallest value in that field.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the fewest points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users").min_by_field("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn min_by_field(&self, field_name: &str) -> cmd::min::MinBuilder<T> {
+        cmd::min::MinBuilder::new_by_value(field_name)._with_parent(self.get_parent())
+    }
+
+    /// See [min](#methods.min) for more informations
+    /// 
+    /// Ro apply the function to every element within the sequence and return the element which returns the smallest value from the function, 
+    /// ignoring any elements where the function produces a non-existence error;
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the fewest points, adding in bonus points from a separate field using a function.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").min_by_func(func!(
+    ///         |user| user.bracket("points").add(user.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn min_by_func(&self, func: Func) -> cmd::min::MinBuilder<T> {
+        cmd::min::MinBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
 }

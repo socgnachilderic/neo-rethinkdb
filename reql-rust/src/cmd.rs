@@ -201,10 +201,6 @@ impl<'a> Command {
     pub fn fold(self, arg: impl fold::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
-    
-    pub fn min(self, arg: impl min::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
 
     pub fn max(self, arg: impl max::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)

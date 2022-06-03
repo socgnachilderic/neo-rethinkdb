@@ -1,11 +1,10 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 
 use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
-pub struct AvgBuilder(Command);
+pub struct AvgBuilder(pub(crate) Command);
 
 impl AvgBuilder {
     pub(crate) fn new() -> Self {
@@ -13,8 +12,8 @@ impl AvgBuilder {
         Self(command)
     }
 
-    pub(crate) fn new_by_value(value: impl Serialize) -> Self {
-        let arg = Command::from_json(value);
+    pub(crate) fn new_by_field(field_name: &str) -> Self {
+        let arg = Command::from_json(field_name);
         let command = Command::new(TermType::Avg).with_arg(arg);
         Self(command)
     }
