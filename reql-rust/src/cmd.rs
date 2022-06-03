@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn count(self, arg: impl count::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn sum(self, arg: impl sum::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

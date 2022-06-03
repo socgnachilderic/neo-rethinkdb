@@ -186,6 +186,9 @@ async fn main() -> Result<()> {
     //     .await?;
     // dbg!(result);
 
+    let result = post_table.count().run(&conn).await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

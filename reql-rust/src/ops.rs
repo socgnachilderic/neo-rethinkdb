@@ -897,4 +897,78 @@ pub trait ReqlOpsObject<T>: SuperOps {
 
 pub trait SuperOps {
     fn get_parent(&self) -> Command;
+
+    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
+    /// 
+    /// ## Example
+    /// 
+    /// Count the number of users.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("table").count().run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn count(&self) -> cmd::count::CountBuilder {
+        cmd::count::CountBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
+    /// 
+    /// It returns the number of elements in the sequence equal to that value or where the function returns `true` . 
+    /// On a binary object, `count` returns the size of the object in bytes; on strings, count returns the string’s length. 
+    /// This is determined by counting the number of Unicode codepoints in the string, counting combining codepoints separately.
+    /// 
+    /// ## Example
+    /// 
+    /// Count the number of 18 year old users.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("table").bracket("age").count_by_value(18).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn count_by_value(&self, value: impl Serialize) -> cmd::count::CountBuilder {
+        cmd::count::CountBuilder::new_by_value(value)._with_parent(self.get_parent())
+    }
+
+    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
+    /// 
+    /// It returns the number of elements in the sequence equal to that value or where the function returns `true` . 
+    /// On a binary object, `count` returns the size of the object in bytes; on strings, count returns the string’s length. 
+    /// This is determined by counting the number of Unicode codepoints in the string, counting combining codepoints separately.
+    /// 
+    /// ## Example
+    /// 
+    /// Count the number of 18 year old users.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("table").count_by_func(func!(|age| age.gt(18))).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn count_by_func(&self, func: Func) -> cmd::count::CountBuilder {
+        cmd::count::CountBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
 }

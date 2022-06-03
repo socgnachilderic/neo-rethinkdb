@@ -654,10 +654,6 @@ impl r {
         cmd::union::UnionBuilder::new(sequence)
     }
 
-    pub fn count(self, arg: impl cmd::count::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
     pub fn sum(self, arg: impl cmd::sum::Arg) -> Command {
         arg.arg().into_cmd()
     }
