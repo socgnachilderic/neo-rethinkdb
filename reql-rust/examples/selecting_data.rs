@@ -200,6 +200,9 @@ async fn main() -> Result<()> {
     let result = post_table.min_by_field("note").run(&conn).await?;
     dbg!(result);
 
+    let result = post_table.max_by_field("note").run(&conn).await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

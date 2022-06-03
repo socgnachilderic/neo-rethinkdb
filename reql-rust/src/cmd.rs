@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn max(self, arg: impl max::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn distinct(self, arg: impl distinct::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

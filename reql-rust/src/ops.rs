@@ -1043,6 +1043,88 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::min::MinBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
+    /// Finds the maximum element of a sequence.
+    /// 
+    /// an index (the primary key or a secondary index) via [with_index(index: &'static str)](cmd::min::MinBuilder::with_index), 
+    /// to return the element of the sequence with the largest value in that index.
+    /// 
+    /// Calling `max` on an empty sequence will throw a non-existence error; this can be handled using the default command.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the most points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users")
+    ///         .max()
+    ///         .with_index("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn max(&self) -> cmd::max::MaxBuilder<T> {
+        cmd::max::MaxBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [max](#methods.max) for more informations
+    /// 
+    /// Return the element of the sequence with the largest value in that field.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the most points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users").max_by_field("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn max_by_field(&self, field_name: &str) -> cmd::max::MaxBuilder<T> {
+        cmd::max::MaxBuilder::new_by_value(field_name)._with_parent(self.get_parent())
+    }
+
+    /// See [max](#methods.max) for more informations
+    /// 
+    /// To apply the function to every element within the sequence and return the element which returns the largest value from the function, 
+    /// ignoring any elements where the function produces a non-existence error;
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the most points, adding in bonus points from a separate field using a function.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").max_by_func(func!(
+    ///         |user| user.bracket("points").add(user.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn max_by_func(&self, func: Func) -> cmd::max::MaxBuilder<T> {
+        cmd::max::MaxBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps
