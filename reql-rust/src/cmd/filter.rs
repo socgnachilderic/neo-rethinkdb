@@ -6,7 +6,6 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Command, Func, Result};
 use crate::ops::{ReqlOpsSequence, SuperOps};
-use crate::types::{Document, Sequence};
 
 #[derive(Debug, Clone)]
 pub struct FilterBuilder<T>(
@@ -30,16 +29,16 @@ impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
         Self(command, FilterOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Sequence<Document<T>>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<Sequence<Document<T>>>> {
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<T>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Sequence<Document<T>>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub fn with_default(mut self, default: bool) -> Self {

@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::{Command, Func, Result};
 use crate::ops::{ReqlOpsGroupedStream, SuperOps};
 use crate::types::GroupStream;
-use crate::{Command, Func, Result};
 
 use super::StaticString;
 
@@ -86,9 +86,9 @@ where
     }
 }
 
-impl<G, V> ReqlOpsGroupedStream for GroupBuilder<G, V>
+impl<G, V> ReqlOpsGroupedStream<G, V> for GroupBuilder<G, V>
 where
-    G: Serialize,
+    G: Unpin + Serialize + DeserializeOwned,
     V: Unpin + Serialize + DeserializeOwned,
 {}
 

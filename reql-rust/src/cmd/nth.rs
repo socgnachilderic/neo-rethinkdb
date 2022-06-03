@@ -7,7 +7,6 @@ use serde::de::DeserializeOwned;
 
 use crate::ops::{SuperOps, ReqlOpsObject};
 use crate::Command;
-use crate::types::Document;
 
 #[derive(Debug, Clone)]
 pub struct NthBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
@@ -23,17 +22,17 @@ impl<T: Unpin + DeserializeOwned> NthBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<Document<T>>> {
+    ) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<Document<T>>> {
+    ) -> impl Stream<Item = crate::Result<T>> {
         self.0.into_arg::<()>()
             .into_cmd()
-            .run::<_, Document<T>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {

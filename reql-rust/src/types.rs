@@ -86,6 +86,14 @@ pub struct WriteHookResponseType {
     pub query: Cow<'static, str>,
 }
 
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[non_exhaustive]
+pub struct UngroupResponseType<G, V> {
+    pub group: G,
+    pub reduction: Vec<V>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyncResponseType {
     synced: Option<u8>

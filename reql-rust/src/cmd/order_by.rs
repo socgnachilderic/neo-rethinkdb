@@ -8,7 +8,6 @@ use serde::de::DeserializeOwned;
 
 use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
 use crate::{Command, Func};
-use crate::types::{Document, Sequence};
 
 use super::StaticString;
 
@@ -43,14 +42,14 @@ impl<T: Unpin + DeserializeOwned> OrderByBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<Sequence<Document<T>>>> {
+    ) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<Sequence<Document<T>>>> {
+    ) -> impl Stream<Item = crate::Result<T>> {
         let mut command = self.0;
         
         if self.1.index.is_some() {
@@ -59,7 +58,7 @@ impl<T: Unpin + DeserializeOwned> OrderByBuilder<T> {
 
         command.into_arg::<()>()
             .into_cmd()
-            .run::<_, Sequence<Document<T>>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {

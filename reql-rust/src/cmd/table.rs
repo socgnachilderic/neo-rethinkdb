@@ -730,7 +730,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn get(&self, primary_key: impl Serialize) -> super::get::GetBuilder<T> {
+    pub fn get(&self, primary_key: impl Serialize) -> super::get::GetBuilder<Option<Document<T>>> {
         super::get::GetBuilder::new(primary_key)._with_parent(self.get_parent())
     }
 
@@ -795,7 +795,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn get_all(&self, values: &[impl Serialize]) -> super::get_all::GetAllBuilder<T> {
+    pub fn get_all(&self, values: &[impl Serialize]) -> super::get_all::GetAllBuilder<Sequence<Document<T>>> {
         super::get_all::GetAllBuilder::new(values)._with_parent(self.get_parent())
     }
 
@@ -811,7 +811,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         &self,
         lower_key: impl Serialize,
         upper_key: impl Serialize,
-    ) -> super::between::BetweenBuilder<T> {
+    ) -> super::between::BetweenBuilder<Sequence<Document<T>>> {
         super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.get_parent())
     }
 
@@ -845,7 +845,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for TableBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }
 
 impl<T: Unpin + Serialize + DeserializeOwned> SuperOps for TableBuilder<T> {
     fn get_parent(&self) -> Command {

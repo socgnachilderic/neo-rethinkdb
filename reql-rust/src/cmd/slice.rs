@@ -7,7 +7,7 @@ use serde::de::DeserializeOwned;
 
 use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
 use crate::Command;
-use crate::types::{Document, Sequence, Status};
+use crate::types::Status;
 
 #[derive(Debug, Clone)]
 pub struct SliceBuilder<T>(
@@ -41,18 +41,18 @@ impl<T: Unpin + DeserializeOwned> SliceBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<Sequence<Document<T>>>> {
+    ) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<Sequence<Document<T>>>> {
+    ) -> impl Stream<Item = crate::Result<T>> {
         self.0.with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Sequence<Document<T>>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub fn with_left_bound(mut self, status: Status) -> Self {

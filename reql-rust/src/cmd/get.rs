@@ -6,7 +6,6 @@ use serde::{de::DeserializeOwned, Serialize};
 
 use crate::Command;
 use crate::ops::{ReqlOpsSequence, SuperOps};
-use crate::types::Document;
 
 #[derive(Debug, Clone)]
 pub struct GetBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
@@ -19,12 +18,12 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
         Self(command, PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Option<Document<T>>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Option<Document<T>>>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, Option<Document<T>>>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.0.into_arg::<()>().into_cmd().run::<_, T>(arg)
     }
 
     #[doc(hidden)]
