@@ -840,6 +840,13 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     {
         cmd::group::GroupBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
+
+    fn reduce<A>(&self, func: Func) -> cmd::reduce::ReduceBuilder<A>
+    where
+        A: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::reduce::ReduceBuilder::new(func)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps

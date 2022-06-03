@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn reduce(self, arg: impl reduce::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn fold(self, arg: impl fold::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
