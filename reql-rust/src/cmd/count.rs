@@ -2,7 +2,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::{cmd, Command, Func};
+use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
 pub struct CountBuilder(Command);
@@ -36,15 +36,5 @@ impl CountBuilder {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
-    }
-}
-
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
-
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Count).with_arg(self).into_arg()
     }
 }

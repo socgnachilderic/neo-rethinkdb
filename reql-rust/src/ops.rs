@@ -847,6 +847,63 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     {
         cmd::reduce::ReduceBuilder::new(func)._with_parent(self.get_parent())
     }
+
+    /// Sums all the elements of a sequence. If called with a field name, 
+    /// sums all the values of that field in the sequence, skipping elements of the sequence that lack that field. 
+    /// If called with a function, calls that function on every element of the sequence and sums the results, 
+    /// skipping elements of the sequence where that function returns null or a non-existence error.
+    /// 
+    /// Returns 0 when called on an empty sequence.
+    fn sum(&self) -> cmd::sum::SumBuilder {
+        cmd::sum::SumBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [sum](#methods.sum) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// How many points have been scored across all games?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").sum_by_value("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn sum_by_value(&self, value: impl Serialize) -> cmd::sum::SumBuilder {
+        cmd::sum::SumBuilder::new_by_value(value)._with_parent(self.get_parent())
+    }
+
+    /// See [sum](#methods.sum) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// How many points have been scored across all games, counting bonus point?
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").sum_by_func(func!(
+    ///         |game| game.bracket("points").add(game.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn sum_by_func(&self, func: Func) -> cmd::sum::SumBuilder {
+        cmd::sum::SumBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps
