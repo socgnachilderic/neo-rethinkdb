@@ -654,10 +654,6 @@ impl r {
         cmd::union::UnionBuilder::new(sequence)
     }
 
-    pub fn avg(self, arg: impl cmd::avg::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
     pub fn min(self, arg: impl cmd::min::Arg) -> Command {
         arg.arg().into_cmd()
     }

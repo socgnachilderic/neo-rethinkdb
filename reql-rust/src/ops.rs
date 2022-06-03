@@ -904,6 +904,63 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::sum::SumBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
+    /// Averages all the elements of a sequence. 
+    /// If called with a field name, averages all the values of that field in the sequence, 
+    /// skipping elements of the sequence that lack that field. 
+    /// If called with a function, calls that function on every element of the sequence and averages the results, 
+    /// skipping elements of the sequence where that function returns null or a non-existence error.
+    /// 
+    /// Produces a non-existence error when called on an empty sequence. You can handle this case with default.
+    fn avg(&self) -> cmd::avg::AvgBuilder {
+        cmd::avg::AvgBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [avg](#methods.avg) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// What’s the average number of points scored in a game?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").avg_by_value("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn avg_by_value(&self, value: impl Serialize) -> cmd::avg::AvgBuilder {
+        cmd::avg::AvgBuilder::new_by_value(value)._with_parent(self.get_parent())
+    }
+
+    /// See [avg](#methods.avg) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// How many points have been scored across all games, counting bonus point?
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").avg_by_func(func!(
+    ///         |game| game.bracket("points").add(game.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn avg_by_func(&self, func: Func) -> cmd::avg::AvgBuilder {
+        cmd::avg::AvgBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps

@@ -194,6 +194,9 @@ async fn main() -> Result<()> {
     let result = post_table.sum_by_value("note").run(&conn).await?;
     dbg!(result);
 
+    let result = post_table.avg_by_value("note").run(&conn).await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())
