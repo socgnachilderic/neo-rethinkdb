@@ -1,9 +1,13 @@
-use super::StaticString;
-use crate::{document::Document, Command, Result, ops::{ReqlOpsSequence, SuperOps}, types::Sequence};
+use std::{borrow::Cow, marker::PhantomData};
+
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
-use std::{borrow::Cow, marker::PhantomData};
+
+use crate::{Command, Result};
+use crate::ops::{ReqlOpsSequence, SuperOps};
+
+use super::StaticString;
 
 #[derive(Debug, Clone)]
 pub struct GetAllBuilder<T>(
@@ -32,14 +36,14 @@ impl<T: Unpin + Serialize + DeserializeOwned> GetAllBuilder<T> {
         Self(command, GetAllOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<Sequence<Document<T>>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = Result<Sequence<Document<T>>>> {
+    ) -> impl Stream<Item = Result<T>> {
         let mut command = self.0;
 
         if self.1.index.is_some() {
@@ -48,7 +52,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> GetAllBuilder<T> {
 
         command.into_arg::<()>()
             .into_cmd()
-            .run::<_, Sequence<Document<T>>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {

@@ -4,7 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{types::JoinResponseType, Command, Func, document::Document, sequence::Sequence, ops::{ReqlOpsJoin, ReqlOpsSequence}};
+use crate::{Command, Func};
+use crate::ops::{ReqlOpsJoin, ReqlOpsSequence};
+use crate::types::{Document, Sequence, JoinResponseType};
 
 use super::{run, table::TableBuilder, SuperOps};
 
@@ -32,18 +34,18 @@ where
     pub async fn run(
         self,
         arg: impl run::Arg,
-    ) -> crate::Result<Option<Sequence<JoinResponseType<Document<T>, Document<A>>>>> {
+    ) -> crate::Result<Option<Sequence<JoinResponseType<T, Document<A>>>>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl run::Arg,
-    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<Document<T>, Document<A>>>>> {
+    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<T, Document<A>>>>> {
         self.0
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Sequence<JoinResponseType<Document<T>, Document<A>>>>(arg)
+            .run::<_, Sequence<JoinResponseType<T, Document<A>>>>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {

@@ -6,6 +6,9 @@ use crate::Func;
 
 use crate::cmd;
 use crate::cmd::table::TableBuilder;
+use crate::types::Document;
+use crate::types::Sequence;
+use crate::types::WritingResponseType;
 
 pub trait ReqlOpsJoin<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsSequence<T> {
     /// Used to ‘zip’ up the result of a join by merging the ‘right’ fields into ‘left’ fields of each member of the sequence.
@@ -45,7 +48,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// A changefeed may return changes to a table or an individual document (a “point” changefeed).
     /// Commands such as filter or map may be used before the changes command to transform or filter the output,
     /// and many commands that operate on sequences can be chained after changes.
-    fn changes(&self) -> cmd::changes::ChangesBuilder<T> {
+    fn changes(&self) -> cmd::changes::ChangesBuilder<Document<T>> {
         cmd::changes::ChangesBuilder::new()._with_parent(self.get_parent())
     }
 
@@ -89,7 +92,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn update(&self, document: impl Serialize) -> cmd::update::UpdateBuilder<T> {
+    fn update(&self, document: impl Serialize) -> cmd::update::UpdateBuilder<WritingResponseType<Document<T>>> {
         cmd::update::UpdateBuilder::new(document)._with_parent(self.get_parent())
     }
     
@@ -117,7 +120,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn update_by_func(&self, func: Func) -> cmd::update::UpdateBuilder<T> {
+    fn update_by_func(&self, func: Func) -> cmd::update::UpdateBuilder<WritingResponseType<Document<T>>> {
         cmd::update::UpdateBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
@@ -155,7 +158,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn replace(&self, document: impl Serialize) -> cmd::replace::ReplaceBuilder<T> {
+    fn replace(&self, document: impl Serialize) -> cmd::replace::ReplaceBuilder<WritingResponseType<Document<T>>> {
         cmd::replace::ReplaceBuilder::new(document)._with_parent(self.get_parent())
     }
 
@@ -183,7 +186,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn replace_by_func(&self, func: Func) -> cmd::replace::ReplaceBuilder<T> {
+    fn replace_by_func(&self, func: Func) -> cmd::replace::ReplaceBuilder<WritingResponseType<Document<T>>> {
         cmd::replace::ReplaceBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
@@ -227,7 +230,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn delete(&self) -> cmd::delete::DeleteBuilder<T> {
+    fn delete(&self) -> cmd::delete::DeleteBuilder<WritingResponseType<Document<T>>> {
         cmd::delete::DeleteBuilder::new()._with_parent(self.get_parent())
     }
 
@@ -235,7 +238,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// The return value of `filter` will be the same as the input (sequence, stream, or array).
     /// Documents can be filtered in a variety of ways—ranges, nested values, boolean conditions,
     /// and the results of anonymous functions.
-    fn filter(&self, func: Func) -> cmd::filter::FilterBuilder<T> {
+    fn filter(&self, func: Func) -> cmd::filter::FilterBuilder<Sequence<T>> {
         cmd::filter::FilterBuilder::new(func)._with_parent(self.get_parent())
     }
     
@@ -495,7 +498,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::map::MapBuilder<A> {
+    fn map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::map::MapBuilder<Sequence<Document<A>>> {
         cmd::map::MapBuilder::new(func)._with_parent(self.get_parent())
     }
 
@@ -538,7 +541,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn with_fields<A: Unpin + DeserializeOwned>(&self, fields: &[&str]) -> cmd::with_fields::WithFieldsBuilder<A> {
+    fn with_fields<A: Unpin + DeserializeOwned>(&self, fields: &[&str]) -> cmd::with_fields::WithFieldsBuilder<Sequence<Document<A>>> {
         cmd::with_fields::WithFieldsBuilder::new(fields)._with_parent(self.get_parent())
     }
 
@@ -582,11 +585,11 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn concat_map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::concat_map::ConcatMapBuilder<A> {
+    fn concat_map<A: Unpin + DeserializeOwned>(&self, func: Func) -> cmd::concat_map::ConcatMapBuilder<Sequence<Document<A>>> {
         cmd::concat_map::ConcatMapBuilder::new(func)._with_parent(self.get_parent())
     }
 
-    fn order_by_key(&self, key: &str) -> cmd::order_by::OrderByBuilder<T> {
+    fn order_by_key(&self, key: &str) -> cmd::order_by::OrderByBuilder<Sequence<T>> {
         cmd::order_by::OrderByBuilder::new_by_key(key)._with_parent(self.get_parent())
     }
 
@@ -612,7 +615,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn skip(&self, number_of_element: usize) -> cmd::skip::SkipBuilder<T> {
+    fn skip(&self, number_of_element: usize) -> cmd::skip::SkipBuilder<Sequence<T>> {
         cmd::skip::SkipBuilder::new(number_of_element)._with_parent(self.get_parent())
     }
     
@@ -635,7 +638,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn limit(&self, number_of_element: usize) -> cmd::limit::LimitBuilder<T> {
+    fn limit(&self, number_of_element: usize) -> cmd::limit::LimitBuilder<Sequence<T>> {
         cmd::limit::LimitBuilder::new(number_of_element)._with_parent(self.get_parent())
     }
 
@@ -656,7 +659,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn slice(&self, start_offset: usize, end_offset: Option<usize>) -> cmd::slice::SliceBuilder<T> {
+    fn slice(&self, start_offset: usize, end_offset: Option<usize>) -> cmd::slice::SliceBuilder<Sequence<T>> {
         cmd::slice::SliceBuilder::new(start_offset, end_offset)._with_parent(self.get_parent())
     }
 
@@ -702,11 +705,11 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     }
 
     /// Get the indexes of an element in a sequence. If the argument is a predicate, get the indexes of all elements matching it.
-    fn offsets_of(&self, datum: impl Serialize) -> cmd::offsets_of::OffsetsOfBuilder<T> {
+    fn offsets_of(&self, datum: impl Serialize) -> cmd::offsets_of::OffsetsOfBuilder<Sequence<Document<T>>> {
         cmd::offsets_of::OffsetsOfBuilder::new(datum)._with_parent(self.get_parent())
     }
 
-    fn offsets_of_by_func(&self, func: Func) -> cmd::offsets_of::OffsetsOfBuilder<T> {
+    fn offsets_of_by_func(&self, func: Func) -> cmd::offsets_of::OffsetsOfBuilder<Sequence<Document<T>>> {
         cmd::offsets_of::OffsetsOfBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
@@ -788,7 +791,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn union<A, B>(&self, sequence: &[&A]) -> cmd::union::UnionBuilder<B>
+    fn union<A, B>(&self, sequence: &[&A]) -> cmd::union::UnionBuilder<Sequence<Document<B>>>
     where
         A: SuperOps,
         B: Unpin + Serialize + DeserializeOwned,
@@ -818,8 +821,68 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn sample(&self, number: usize) -> cmd::sample::SampleBuilder<T> {
+    fn sample(&self, number: usize) -> cmd::sample::SampleBuilder<Sequence<T>> {
         cmd::sample::SampleBuilder::new(number)._with_parent(self.get_parent())
+    }
+
+    /// Takes a stream and partitions it into multiple groups based on the fields or functions provided.
+    fn group<G>(&self, fields: &[&str]) -> cmd::group::GroupBuilder<G, T>
+    where
+        G: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::group::GroupBuilder::new(fields)._with_parent(self.get_parent())
+    }
+
+    /// Takes a stream and partitions it into multiple groups based on the fields or functions provided.
+    fn group_by_func<G>(&self, func: Func) -> cmd::group::GroupBuilder<G, T>
+    where
+        G: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::group::GroupBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
+    fn reduce<A>(&self, func: Func) -> cmd::reduce::ReduceBuilder<A>
+    where
+        A: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::reduce::ReduceBuilder::new(func)._with_parent(self.get_parent())
+    }
+}
+
+pub trait ReqlOpsGroupedStream<G, V>: SuperOps
+where
+    G: Unpin + Serialize + DeserializeOwned,
+    V: Unpin + Serialize + DeserializeOwned,
+{
+    /// Takes a grouped stream or grouped data and turns it into an array of objects representing the groups. 
+    /// Any commands chained after `ungroup` will operate on this array, rather than operating on each group individually. 
+    /// This is useful if you want to e.g. order the groups by the value of their reduction.
+    /// 
+    /// The format of the array returned by `ungroup` is the same as the default native format 
+    /// of grouped data in the JavaScript driver and Data Explorer.
+    /// 
+    /// ## Example
+    /// 
+    /// Select users and all their posts.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("posts")
+    ///         .group::<u8>(&["user_id"])
+    ///         .ungroup()
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn ungroup(&self) -> cmd::ungroup::UngroupBuilder<G, V> {
+        cmd::ungroup::UngroupBuilder::new()._with_parent(self.get_parent())
     }
 }
 

@@ -7,7 +7,6 @@ use serde::de::DeserializeOwned;
 
 use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
 use crate::Command;
-use crate::types::{Document, Sequence};
 
 #[derive(Debug, Clone)]
 pub struct SkipBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
@@ -23,17 +22,17 @@ impl<T: Unpin + DeserializeOwned> SkipBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<Sequence<Document<T>>>> {
+    ) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<Sequence<Document<T>>>> {
+    ) -> impl Stream<Item = crate::Result<T>> {
         self.0.into_arg::<()>()
             .into_cmd()
-            .run::<_, Sequence<Document<T>>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {

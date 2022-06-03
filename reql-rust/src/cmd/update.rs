@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 
-use crate::document::Document;
-use crate::types::{Durability, ReturnChanges, WritingResponseType};
-use crate::{Command, Func};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+use crate::{Command, Func};
+use crate::types::{Durability, ReturnChanges};
 
 #[derive(Debug, Clone)]
 pub struct UpdateBuilder<T>(
@@ -43,19 +43,19 @@ impl<T: Unpin + DeserializeOwned> UpdateBuilder<T> {
     pub async fn run(
         self,
         arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType<Document<T>>>> {
+    ) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<WritingResponseType<Document<T>>>> {
+    ) -> impl Stream<Item = crate::Result<T>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, WritingResponseType<Document<T>>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {

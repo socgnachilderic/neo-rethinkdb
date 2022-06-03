@@ -3,9 +3,14 @@ use std::{borrow::Cow, collections::HashMap};
 
 #[doc(inline)]
 pub use reql_rust_types::*;
-pub use crate::document::Document;
-pub use crate::sequence::Sequence;
+pub use document::Document;
+pub use sequence::Sequence;
+pub use group_stream::{GroupStream, GroupItem};
 use serde::{Deserialize, Serialize, Serializer};
+
+mod document;
+mod sequence;
+mod group_stream;
 
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -79,6 +84,14 @@ pub struct IndexStatusResponseType {
 pub struct WriteHookResponseType {
     pub function: Binary,
     pub query: Cow<'static, str>,
+}
+
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+#[non_exhaustive]
+pub struct UngroupResponseType<G, V> {
+    pub group: G,
+    pub reduction: Vec<V>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

@@ -80,10 +80,12 @@
 
 use std::marker::PhantomData;
 
-use crate::{document::Document, types::Squash, Command};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
+
+use crate::Command;
+use crate::types::Squash;
 
 use super::run;
 
@@ -159,16 +161,16 @@ impl<T: Unpin + Serialize + DeserializeOwned> ChangesBuilder<T> {
         Self(command, ChangesOption::default(), PhantomData)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Document<T>>> {
+    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Document<T>>> {
+    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<T>> {
         self.0
             .with_opts(self.1)
             .into_arg::<()>()
             .into_cmd()
-            .run::<_, Document<T>>(arg)
+            .run::<_, T>(arg)
     }
 
     pub fn with_squash(mut self, squash: Squash) -> Self {

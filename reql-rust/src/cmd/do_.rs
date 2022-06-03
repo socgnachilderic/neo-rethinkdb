@@ -1,10 +1,10 @@
-use crate::document::Document;
-use crate::prelude::Func;
-use crate::Command;
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
+
+use crate::{Command, Func};
+use crate::types::Document;
 
 #[derive(Debug, Clone)]
 pub struct DoBuilder(pub(crate) Command);
