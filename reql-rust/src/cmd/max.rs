@@ -5,13 +5,13 @@ use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{Command, Func};
+use crate::ops::{ReqlOpsObject, SuperOps};
 
 use super::StaticString;
 
 #[derive(Debug, Clone)]
 pub struct MaxBuilder<T>(
     pub(crate) Command,
-    pub(crate) MaxOption,
     pub(crate) PhantomData<T>
 );
 
@@ -40,18 +40,16 @@ impl<T: Unpin + Serialize + DeserializeOwned> MaxBuilder<T> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
-        let mut command = self.0;
-
-        if self.1.index.is_some() {
-            command = command.with_opts(self.1);
-        }
-        
-        command.into_arg::<()>().into_cmd().run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {        
+        self.0.into_arg::<()>().into_cmd().run::<_, T>(arg)
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {
-        self.1.index = Some(index.static_string());
+        let index = Some(index.static_string());
+        let index = MaxOption { index };
+        
+        self.0 = self.0.with_opts(index);
+
         self
     }
 
@@ -67,6 +65,14 @@ impl<T: Unpin + Serialize + DeserializeOwned> MaxBuilder<T> {
             command = command.with_arg(arg)
         }
 
-        Self(command, MaxOption::default(), PhantomData)
+        Self(command, PhantomData)
+    }
+}
+
+impl<T> ReqlOpsObject<T> for MaxBuilder<T> { }
+
+impl<T> SuperOps for MaxBuilder<T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }

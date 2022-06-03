@@ -654,10 +654,6 @@ impl r {
         cmd::union::UnionBuilder::new(sequence)
     }
 
-    pub fn distinct(self, arg: impl cmd::distinct::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
     pub fn contains(self, arg: impl cmd::contains::Arg) -> Command {
         arg.arg().into_cmd()
     }

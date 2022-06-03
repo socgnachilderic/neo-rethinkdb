@@ -1125,6 +1125,66 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::max::MaxBuilder::new_by_func(func)._with_parent(self.get_parent())
     }
 
+    /// Removes duplicates from elements in a sequence.
+    /// 
+    /// The `distinct` command can be called on any sequence or table with an index.
+    /// 
+    /// ```text
+    /// While distinct can be called on a table without an index, 
+    /// the only effect will be to convert the table into a stream; 
+    /// the content of the stream will not be affected.
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Which unique villains have been vanquished by Marvel heroes?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games")
+    ///         .concat_map::<serde_json::Value>(func!(
+    ///             |hero| hero.bracket("villain_list")
+    ///         ))
+    ///         .distinct()
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Topics in a table of messages have a secondary index on them, 
+    /// and more than one message can have the same topic. 
+    /// What are the unique topics in the table?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("messages")
+    ///         .distinct()
+    ///         .with_index("topics")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// 
+    fn distinct(&self) -> cmd::distinct::DistinctBuilder<Sequence<T>> {
+        cmd::distinct::DistinctBuilder::new()._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps
