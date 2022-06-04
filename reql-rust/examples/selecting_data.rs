@@ -246,7 +246,15 @@ async fn main() -> Result<()> {
     // let result = post_table
     //     .get(1)
     //     .bracket("title")
-    //     .append::<_, serde_json::Value>("user_id")
+    //     .append::<_, serde_json::Value>("title 1")
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
+
+    // let result = post_table
+    //     .get(1)
+    //     .bracket("title")
+    //     .difference::<_, serde_json::Value>(&["title 1"])
     //     .run(&conn)
     //     .await?;
     // dbg!(result);

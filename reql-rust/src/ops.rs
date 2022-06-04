@@ -1500,6 +1500,37 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     {
         cmd::prepend::PrependBuilder::new(value)._with_parent(self.get_parent())
     }
+
+    /// Remove the elements of one array from another array.
+    /// 
+    /// ## Example
+    /// 
+    /// Retrieve Iron Man’s equipment list without boots.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("IronMan")
+    ///         .bracket("equipment")
+    ///         .prepend("Boots")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn difference<A, B>(&self, value: &[A]) -> cmd::difference::DifferenceBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::difference::DifferenceBuilder::new(value)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps
