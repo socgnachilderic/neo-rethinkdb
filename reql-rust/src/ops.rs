@@ -42,7 +42,7 @@ pub trait ReqlOpsJoin<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsSequence<
     }
 }
 
-pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
+pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocManipulation {
     /// Turn a query into a changefeed, an infinite stream of objects
     /// representing changes to the query’s results as they occur.
     /// A changefeed may return changes to a table or an individual document (a “point” changefeed).
@@ -1229,7 +1229,9 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn contains_by_funcs(&self, funcs: Vec<Func>) -> cmd::contains::ContainsBuilder {
         cmd::contains::ContainsBuilder::new_by_func(funcs)._with_parent(self.get_parent())
     }
+}
 
+pub trait ReqlOpsDocManipulation: SuperOps {
     /// Plucks out one or more attributes from either an object or a sequence of objects (projection).
     /// 
     /// ## Example
@@ -1524,12 +1526,12 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     ///     Ok(())
     /// }
     /// ```
-    fn difference<A, B>(&self, value: &[A]) -> cmd::difference::DifferenceBuilder<B>
+    fn difference<A, B>(&self, values: &[A]) -> cmd::difference::DifferenceBuilder<B>
     where
         A: Serialize,
         B: Unpin + Serialize + DeserializeOwned,
     {
-        cmd::difference::DifferenceBuilder::new(value)._with_parent(self.get_parent())
+        cmd::difference::DifferenceBuilder::new(values)._with_parent(self.get_parent())
     }
 
     /// Add a value to an array and return it as a set (an array with distinct values).
@@ -1561,6 +1563,131 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         B: Unpin + Serialize + DeserializeOwned,
     {
         cmd::set_insert::SetInsertBuilder::new(value)._with_parent(self.get_parent())
+    }
+
+    /// Perform a set intersection of two arrays, returning an array with all unique items from both.
+    /// 
+    /// ## Example
+    /// 
+    /// Retrieve Iron Man’s equipment list with the addition of some new boots and an arc reactor.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("IronMan")
+    ///         .bracket("equipment")
+    ///         .set_union(&["newBoots", "arc_reactor"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn set_union<A, B>(&self, values: &[A]) -> cmd::set_union::SetUnionBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::set_union::SetUnionBuilder::new(values)._with_parent(self.get_parent())
+    }
+
+    /// Intersect two arrays returning values that occur in both of them as a set (an array with distinct values).
+    /// 
+    /// ## Example
+    /// 
+    /// Check which pieces of equipment Iron Man has from a fixed list.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("IronMan")
+    ///         .bracket("equipment")
+    ///         .set_intersection(&["newBoots", "arc_reactor"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn set_intersection<A, B>(&self, values: &[A]) -> cmd::set_intersection::SetIntersectionBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::set_intersection::SetIntersectionBuilder::new(values)._with_parent(self.get_parent())
+    }
+
+    /// Remove the elements of one array from another and return them as a set (an array with distinct values).
+    /// 
+    /// ## Example
+    /// 
+    /// Check which pieces of equipment Iron Man has, excluding a fixed list.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("IronMan")
+    ///         .bracket("equipment")
+    ///         .set_intersection(&["newBoots", "arc_reactor"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn set_difference<A, B>(&self, values: &[A]) -> cmd::set_difference::SetDifferenceBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::set_difference::SetDifferenceBuilder::new(values)._with_parent(self.get_parent())
+    }
+
+    /// Get a single field from an object. If called on a sequence, 
+    /// gets that field from every object in the sequence, skipping objects that lack it.
+    /// 
+    /// ```text
+    /// Under most circumstances, you’ll want to use getField (or its shorthand g) or nth rather than bracket. 
+    /// The bracket term may be useful in situations where you are unsure of the data type returned by the term you are calling bracket on.
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Check which pieces of equipment Iron Man has, excluding a fixed list.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("IronMan")
+    ///         .bracket("equipment")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn bracket(&self, attr: impl Serialize) -> cmd::bracket::BracketBuilder {
+        cmd::bracket::BracketBuilder::new(attr)._with_parent(self.get_parent())
     }
 }
 

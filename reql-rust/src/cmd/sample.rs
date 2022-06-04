@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
+use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -43,6 +43,7 @@ impl<T: Unpin + DeserializeOwned> SampleBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SampleBuilder<T> { }
 impl<T> ReqlOpsArray for SampleBuilder<T> { }
+impl<T> ReqlOpsDocManipulation for SampleBuilder<T> { }
 
 impl<T> SuperOps for SampleBuilder<T> {
     fn get_parent(&self) -> Command {

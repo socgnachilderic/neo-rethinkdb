@@ -162,7 +162,7 @@ pub mod without;
 pub mod year;
 pub mod zip;
 
-use crate::ops::SuperOps;
+use crate::ops::{SuperOps, ReqlOpsDocManipulation};
 use crate::Command;
 use futures::stream::Stream;
 use ql2::term::TermType;
@@ -199,22 +199,6 @@ impl StaticString for &Cow<'static, str> {
 
 impl<'a> Command {
     pub fn merge(self, arg: impl merge::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn set_union(self, arg: impl set_union::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn set_intersection(self, arg: impl set_intersection::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn set_difference(self, arg: impl set_difference::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn bracket(self, arg: impl bracket::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
 
@@ -492,6 +476,14 @@ impl<'a> Command {
         T: Unpin + DeserializeOwned,
     {
         Box::pin(run::new(self, arg))
+    }
+}
+
+impl ReqlOpsDocManipulation for Command {}
+
+impl SuperOps for Command {
+    fn get_parent(&self) -> Command {
+        self.clone()
     }
 }
 

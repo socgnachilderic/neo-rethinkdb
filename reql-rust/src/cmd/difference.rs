@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence};
+use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct DifferenceBuilder<T>(
@@ -36,6 +36,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> DifferenceBuilder<T> {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for DifferenceBuilder<T> { }
+
+impl<T> ReqlOpsDocManipulation for DifferenceBuilder<T> { }
 
 impl<T> SuperOps for DifferenceBuilder<T> {
     fn get_parent(&self) -> Command {

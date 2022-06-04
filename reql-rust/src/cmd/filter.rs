@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Command, Func, Result};
-use crate::ops::{ReqlOpsSequence, SuperOps};
+use crate::ops::{ReqlOpsSequence, SuperOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct FilterBuilder<T>(
@@ -59,6 +59,8 @@ impl<T> Into<Command> for FilterBuilder<T> {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for FilterBuilder<T> { }
+
+impl<T> ReqlOpsDocManipulation for FilterBuilder<T> { }
 
 impl<T> SuperOps for FilterBuilder<T> {
     fn get_parent(&self) -> Command {

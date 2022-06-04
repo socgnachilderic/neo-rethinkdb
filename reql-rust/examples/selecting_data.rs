@@ -44,30 +44,30 @@ async fn main() -> Result<()> {
     let result = post_table.between(1, 4).run(&conn).await?;
     dbg!(result);
 
-    let result = post_table
-        .filter(func!(|row| row.bracket("id").eq(3)))
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .filter(func!(|row| row.bracket("id").eq(3)))
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
-    let result = post_table
-        .inner_join(
-            &user_table,
-            func!(|post, _user| post.bracket("user_id").eq(1)),
-        )
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .inner_join(
+    //         &user_table,
+    //         func!(|post, _user| post.bracket("user_id").eq(1)),
+    //     )
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
-    let result = post_table
-        .outer_join(
-            &user_table,
-            func!(|post, _user| post.bracket("user_id").eq(1)),
-        )
-        .zip()
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .outer_join(
+    //         &user_table,
+    //         func!(|post, _user| post.bracket("user_id").eq(1)),
+    //     )
+    //     .zip()
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
     let result = post_table
         .eq_join("user_id", &user_table)
@@ -76,11 +76,11 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
-    let result = post_table
-        .map::<String>(func!(|row| row.bracket("title")))
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .map::<String>(func!(|row| row.bracket("title")))
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
     #[derive(Debug, Serialize, Deserialize)]
     struct NewPost {
@@ -94,11 +94,11 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
-    let result = user_table
-        .concat_map::<u8>(func!(|row| row.bracket("posts")))
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = user_table
+    //     .concat_map::<u8>(func!(|row| row.bracket("posts")))
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
     let result = user_table
         .order_by_key("full_name")
@@ -258,6 +258,15 @@ async fn main() -> Result<()> {
     //     .run(&conn)
     //     .await?;
     // dbg!(result);
+
+    let result: String = post_table
+        .get(1)
+        .bracket("title")
+        .run(&conn)
+        .await?
+        .unwrap()
+        .parse();
+    dbg!(result);
 
     tear_down(&conn).await?;
 

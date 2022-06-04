@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::{Command, Func};
-use crate::ops::ReqlOpsSequence;
+use crate::ops::{ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::types::{IdentifierFormat, ReadMode, Document, Sequence};
 
 use super::{run, SuperOps};
@@ -846,6 +846,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsDocManipulation for TableBuilder<T> { }
 
 impl<T: Unpin + Serialize + DeserializeOwned> SuperOps for TableBuilder<T> {
     fn get_parent(&self) -> Command {

@@ -6,7 +6,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
+use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::{Command, Func};
 
 use super::StaticString;
@@ -84,6 +84,7 @@ impl<T: Unpin + DeserializeOwned> OrderByBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for OrderByBuilder<T> { }
 impl<T> ReqlOpsArray for OrderByBuilder<T> { }
+impl<T> ReqlOpsDocManipulation for OrderByBuilder<T> { }
 
 impl<T> SuperOps for OrderByBuilder<T> {
     fn get_parent(&self) -> Command {

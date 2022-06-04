@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence};
+use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -43,6 +43,7 @@ impl<T: Unpin + DeserializeOwned> SkipBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SkipBuilder<T> { }
 impl<T> ReqlOpsArray for SkipBuilder<T> { }
+impl<T> ReqlOpsDocManipulation for SkipBuilder<T> { }
 
 impl<T> SuperOps for SkipBuilder<T> {
     fn get_parent(&self) -> Command {

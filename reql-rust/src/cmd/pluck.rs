@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence};
+use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct PluckBuilder<T>(
@@ -36,6 +36,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> PluckBuilder<T> {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for PluckBuilder<T> { }
+impl<T> ReqlOpsDocManipulation for PluckBuilder<T> { }
 
 impl<T> SuperOps for PluckBuilder<T> {
     fn get_parent(&self) -> Command {
