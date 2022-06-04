@@ -847,6 +847,388 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     {
         cmd::reduce::ReduceBuilder::new(func)._with_parent(self.get_parent())
     }
+
+    fn fold<A, B>(&self, base: A, func: Func) -> cmd::fold::FoldBuilder<A, B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::fold::FoldBuilder::new(base, func)._with_parent(self.get_parent())
+    }
+
+    /// Sums all the elements of a sequence. If called with a field name, 
+    /// sums all the values of that field in the sequence, skipping elements of the sequence that lack that field. 
+    /// If called with a function, calls that function on every element of the sequence and sums the results, 
+    /// skipping elements of the sequence where that function returns null or a non-existence error.
+    /// 
+    /// Returns 0 when called on an empty sequence.
+    fn sum(&self) -> cmd::sum::SumBuilder {
+        cmd::sum::SumBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [sum](#methods.sum) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// How many points have been scored across all games?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").sum_by_field("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn sum_by_field(&self, field_name: &str) -> cmd::sum::SumBuilder {
+        cmd::sum::SumBuilder::new_by_field(field_name)._with_parent(self.get_parent())
+    }
+
+    /// See [sum](#methods.sum) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// How many points have been scored across all games, counting bonus point?
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").sum_by_func(func!(
+    ///         |game| game.bracket("points").add(game.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn sum_by_func(&self, func: Func) -> cmd::sum::SumBuilder {
+        cmd::sum::SumBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
+    /// Averages all the elements of a sequence. 
+    /// If called with a field name, averages all the values of that field in the sequence, 
+    /// skipping elements of the sequence that lack that field. 
+    /// If called with a function, calls that function on every element of the sequence and averages the results, 
+    /// skipping elements of the sequence where that function returns null or a non-existence error.
+    /// 
+    /// Produces a non-existence error when called on an empty sequence. You can handle this case with default.
+    fn avg(&self) -> cmd::avg::AvgBuilder {
+        cmd::avg::AvgBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [avg](#methods.avg) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// What’s the average number of points scored in a game?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").avg_by_field("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn avg_by_field(&self, field_name: &str) -> cmd::avg::AvgBuilder {
+        cmd::avg::AvgBuilder::new_by_field(field_name)._with_parent(self.get_parent())
+    }
+
+    /// See [avg](#methods.avg) for more informations
+    /// 
+    /// ## Example
+    /// 
+    /// How many points have been scored across all games, counting bonus point?
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").avg_by_func(func!(
+    ///         |game| game.bracket("points").add(game.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn avg_by_func(&self, func: Func) -> cmd::avg::AvgBuilder {
+        cmd::avg::AvgBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
+    /// Finds the minimum element of a sequence.
+    /// 
+    /// an index (the primary key or a secondary index) via [with_index(index: &'static str)](cmd::min::MinBuilder::with_index), 
+    /// to return the element of the sequence with the smallest value in that index.
+    /// 
+    /// Calling `min` on an empty sequence will throw a non-existence error; this can be handled using the default command.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the fewest points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users")
+    ///         .min()
+    ///         .with_index("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn min(&self) -> cmd::min::MinBuilder<T> {
+        cmd::min::MinBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [min](#methods.min) for more informations
+    /// 
+    /// Return the element of the sequence with the smallest value in that field.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the fewest points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users").min_by_field("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn min_by_field(&self, field_name: &str) -> cmd::min::MinBuilder<T> {
+        cmd::min::MinBuilder::new_by_value(field_name)._with_parent(self.get_parent())
+    }
+
+    /// See [min](#methods.min) for more informations
+    /// 
+    /// Ro apply the function to every element within the sequence and return the element which returns the smallest value from the function, 
+    /// ignoring any elements where the function produces a non-existence error;
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the fewest points, adding in bonus points from a separate field using a function.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").min_by_func(func!(
+    ///         |user| user.bracket("points").add(user.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn min_by_func(&self, func: Func) -> cmd::min::MinBuilder<T> {
+        cmd::min::MinBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
+    /// Finds the maximum element of a sequence.
+    /// 
+    /// an index (the primary key or a secondary index) via [with_index(index: &'static str)](cmd::min::MinBuilder::with_index), 
+    /// to return the element of the sequence with the largest value in that index.
+    /// 
+    /// Calling `max` on an empty sequence will throw a non-existence error; this can be handled using the default command.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the most points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users")
+    ///         .max()
+    ///         .with_index("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn max(&self) -> cmd::max::MaxBuilder<T> {
+        cmd::max::MaxBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// See [max](#methods.max) for more informations
+    /// 
+    /// Return the element of the sequence with the largest value in that field.
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the most points.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users").max_by_field("points").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn max_by_field(&self, field_name: &str) -> cmd::max::MaxBuilder<T> {
+        cmd::max::MaxBuilder::new_by_value(field_name)._with_parent(self.get_parent())
+    }
+
+    /// See [max](#methods.max) for more informations
+    /// 
+    /// To apply the function to every element within the sequence and return the element which returns the largest value from the function, 
+    /// ignoring any elements where the function produces a non-existence error;
+    /// 
+    /// ## Example
+    /// 
+    /// Return the user who has scored the most points, adding in bonus points from a separate field using a function.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games").max_by_func(func!(
+    ///         |user| user.bracket("points").add(user.bracket("bonus_points"))
+    ///     )).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn max_by_func(&self, func: Func) -> cmd::max::MaxBuilder<T> {
+        cmd::max::MaxBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
+
+    /// Removes duplicates from elements in a sequence.
+    /// 
+    /// The `distinct` command can be called on any sequence or table with an index.
+    /// 
+    /// ```text
+    /// While distinct can be called on a table without an index, 
+    /// the only effect will be to convert the table into a stream; 
+    /// the content of the stream will not be affected.
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Which unique villains have been vanquished by Marvel heroes?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("games")
+    ///         .concat_map::<serde_json::Value>(func!(
+    ///             |hero| hero.bracket("villain_list")
+    ///         ))
+    ///         .distinct()
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Topics in a table of messages have a secondary index on them, 
+    /// and more than one message can have the same topic. 
+    /// What are the unique topics in the table?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("messages")
+    ///         .distinct()
+    ///         .with_index("topics")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// 
+    fn distinct(&self) -> cmd::distinct::DistinctBuilder<Sequence<T>> {
+        cmd::distinct::DistinctBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// Returns `true` if a sequence contains all the specified values.
+    /// 
+    /// Values may be mixed freely in the argument list.
+    /// 
+    /// ## Example
+    /// 
+    /// Has Iron Man ever fought Superman?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("ironman")
+    ///         .bracket("opponents")
+    ///         .contains("superman")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn contains(&self, values: impl Serialize) -> cmd::contains::ContainsBuilder {
+        cmd::contains::ContainsBuilder::new(values)._with_parent(self.get_parent())
+    }
+
+    /// Returns `true` if for each predicate there exists at least one element of the stream where that predicate returns `true` .
+    /// 
+    /// Predicates may be mixed freely in the argument list.
+    fn contains_by_funcs(&self, funcs: Vec<Func>) -> cmd::contains::ContainsBuilder {
+        cmd::contains::ContainsBuilder::new_by_func(funcs)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps
@@ -897,4 +1279,78 @@ pub trait ReqlOpsObject<T>: SuperOps {
 
 pub trait SuperOps {
     fn get_parent(&self) -> Command;
+
+    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
+    /// 
+    /// ## Example
+    /// 
+    /// Count the number of users.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("table").count().run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn count(&self) -> cmd::count::CountBuilder {
+        cmd::count::CountBuilder::new()._with_parent(self.get_parent())
+    }
+
+    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
+    /// 
+    /// It returns the number of elements in the sequence equal to that value or where the function returns `true` . 
+    /// On a binary object, `count` returns the size of the object in bytes; on strings, count returns the string’s length. 
+    /// This is determined by counting the number of Unicode codepoints in the string, counting combining codepoints separately.
+    /// 
+    /// ## Example
+    /// 
+    /// Count the number of 18 year old users.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("table").bracket("age").count_by_value(18).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn count_by_value(&self, value: impl Serialize) -> cmd::count::CountBuilder {
+        cmd::count::CountBuilder::new_by_value(value)._with_parent(self.get_parent())
+    }
+
+    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
+    /// 
+    /// It returns the number of elements in the sequence equal to that value or where the function returns `true` . 
+    /// On a binary object, `count` returns the size of the object in bytes; on strings, count returns the string’s length. 
+    /// This is determined by counting the number of Unicode codepoints in the string, counting combining codepoints separately.
+    /// 
+    /// ## Example
+    /// 
+    /// Count the number of 18 year old users.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("table").count_by_func(func!(|age| age.gt(18))).run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn count_by_func(&self, func: Func) -> cmd::count::CountBuilder {
+        cmd::count::CountBuilder::new_by_func(func)._with_parent(self.get_parent())
+    }
 }

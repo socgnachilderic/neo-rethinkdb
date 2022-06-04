@@ -15,6 +15,7 @@ struct Posts {
     id: u8,
     title: String,
     content: String,
+    note: f32,
     user_id: u8,
 }
 
@@ -149,6 +150,7 @@ async fn main() -> Result<()> {
         posts: Option<[u8; 2]>,
         title: Option<String>,
         content: Option<String>,
+        note: Option<f32>,
         user_id: Option<u8>,
     }
     
@@ -186,6 +188,36 @@ async fn main() -> Result<()> {
     //     .await?;
     // dbg!(result);
 
+    let result = post_table.count().run(&conn).await?;
+    dbg!(result);
+
+    let result = post_table.sum_by_field("note").run(&conn).await?;
+    dbg!(result);
+
+    let result = post_table.avg_by_field("note").run(&conn).await?;
+    dbg!(result);
+
+    let result = post_table.min_by_field("note").run(&conn).await?;
+    dbg!(result);
+
+    let result = post_table.max_by_field("note").run(&conn).await?;
+    dbg!(result);
+
+    let result = post_table.distinct().run(&conn).await?;
+    dbg!(result);
+
+    // let result = post_table
+    //     .fold::<_, >(0, func!(|acc, row| r.))
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
+
+    // let result = post_table
+    //     .contains("title")
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())
@@ -210,30 +242,35 @@ async fn set_up(conn: &Session) -> Result<()> {
             id: 1,
             title: "title 1".to_string(),
             content: "content 1".to_string(),
+            note: 4.5,
             user_id: 1,
         },
         Posts {
             id: 2,
             title: "title 2".to_string(),
             content: "content 2".to_string(),
+            note: 2.5,
             user_id: 2,
         },
         Posts {
             id: 3,
             title: "title 3".to_string(),
             content: "content 3".to_string(),
+            note: 5.,
             user_id: 1,
         },
         Posts {
             id: 4,
             title: "title 4".to_string(),
             content: "content 4".to_string(),
+            note: 4.,
             user_id: 2,
         },
         Posts {
             id: 5,
             title: "title 5".to_string(),
             content: "content 5".to_string(),
+            note: 3.5,
             user_id: 1,
         },
     ];

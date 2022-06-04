@@ -198,38 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn fold(self, arg: impl fold::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn count(self, arg: impl count::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn sum(self, arg: impl sum::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn avg(self, arg: impl avg::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn min(self, arg: impl min::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn max(self, arg: impl max::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn distinct(self, arg: impl distinct::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn contains(self, arg: impl contains::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn pluck(self, arg: impl pluck::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

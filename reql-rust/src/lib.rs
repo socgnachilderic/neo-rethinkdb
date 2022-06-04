@@ -654,34 +654,6 @@ impl r {
         cmd::union::UnionBuilder::new(sequence)
     }
 
-    pub fn count(self, arg: impl cmd::count::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn sum(self, arg: impl cmd::sum::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn avg(self, arg: impl cmd::avg::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn min(self, arg: impl cmd::min::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn max(self, arg: impl cmd::max::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn distinct(self, arg: impl cmd::distinct::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn contains(self, arg: impl cmd::contains::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
     pub fn literal(self, arg: impl cmd::literal::Arg) -> Command {
         arg.arg().into_cmd()
     }
