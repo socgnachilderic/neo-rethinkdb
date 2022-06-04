@@ -206,6 +206,12 @@ async fn main() -> Result<()> {
     let result = post_table.distinct().run(&conn).await?;
     dbg!(result);
 
+    // let result = post_table
+    //     .fold::<_, >(0, func!(|acc, row| r.))
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

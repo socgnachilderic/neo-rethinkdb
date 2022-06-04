@@ -848,6 +848,14 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
         cmd::reduce::ReduceBuilder::new(func)._with_parent(self.get_parent())
     }
 
+    fn fold<A, B>(&self, base: A, func: Func) -> cmd::fold::FoldBuilder<A, B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::fold::FoldBuilder::new(base, func)._with_parent(self.get_parent())
+    }
+
     /// Sums all the elements of a sequence. If called with a field name, 
     /// sums all the values of that field in the sequence, skipping elements of the sequence that lack that field. 
     /// If called with a function, calls that function on every element of the sequence and sums the results, 
