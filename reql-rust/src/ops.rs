@@ -1193,6 +1193,42 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     fn distinct(&self) -> cmd::distinct::DistinctBuilder<Sequence<T>> {
         cmd::distinct::DistinctBuilder::new()._with_parent(self.get_parent())
     }
+
+    /// Returns `true` if a sequence contains all the specified values.
+    /// 
+    /// Values may be mixed freely in the argument list.
+    /// 
+    /// ## Example
+    /// 
+    /// Has Iron Man ever fought Superman?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("ironman")
+    ///         .bracket("opponents")
+    ///         .contains("superman")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn contains(&self, values: impl Serialize) -> cmd::contains::ContainsBuilder {
+        cmd::contains::ContainsBuilder::new(values)._with_parent(self.get_parent())
+    }
+
+    /// Returns `true` if for each predicate there exists at least one element of the stream where that predicate returns `true` .
+    /// 
+    /// Predicates may be mixed freely in the argument list.
+    fn contains_by_funcs(&self, funcs: Vec<Func>) -> cmd::contains::ContainsBuilder {
+        cmd::contains::ContainsBuilder::new_by_func(funcs)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps

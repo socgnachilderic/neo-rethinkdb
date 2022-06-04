@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn contains(self, arg: impl contains::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn pluck(self, arg: impl pluck::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
