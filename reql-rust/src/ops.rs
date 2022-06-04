@@ -1332,6 +1332,112 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     {
         cmd::pluck::PluckBuilder::new(fields)._with_parent(self.get_parent())
     }
+
+    /// The opposite of pluck; takes an object or a sequence of objects, 
+    /// and returns them with the specified fields or paths removed.
+    /// 
+    /// ## Example
+    /// 
+    /// Since we don’t need it for this computation we’ll save bandwidth and 
+    /// leave out the list of IronMan’s romantic conquests.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .get("IronMan")
+    ///         .without::<_, Value>("personalVictoriesList")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Without their prized weapons, our enemies will quickly be vanquished.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .without::<_, Value>("weapons")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Nested objects can be used to remove the damage subfield from the weapons and abilities fields.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::{json, Value};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .without::<_, Value>(json!({
+    ///             "abilities": {
+    ///                 "damage": true
+    ///             },
+    ///             "weapons": {
+    ///                 "damage": true
+    ///             }
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// The nested syntax can quickly become overly verbose so there’s a shorthand for it.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::{json, Value};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .without::<_, Value>(json!({ 
+    ///             "weapons", "damage",
+    ///             "abilities": "damage"
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn without<A, B>(&self, fields: A) -> cmd::without::WithoutBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::without::WithoutBuilder::new(fields)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps

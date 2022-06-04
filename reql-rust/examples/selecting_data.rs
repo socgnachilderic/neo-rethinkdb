@@ -230,6 +230,19 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    #[derive(Debug, Serialize, Deserialize)]
+    struct PostWithout {
+        id: u8,
+        note: f32,
+        title: String,
+    }
+
+    let result = post_table
+        .without::<_, Vec<PostWithout>>(["user_id", "content"])
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

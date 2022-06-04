@@ -198,10 +198,6 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn without(self, arg: impl without::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn merge(self, arg: impl merge::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
