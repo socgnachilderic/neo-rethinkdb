@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn prepend(self, arg: impl prepend::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn difference(self, arg: impl difference::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
