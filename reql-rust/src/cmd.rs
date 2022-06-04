@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn set_insert(self, arg: impl set_insert::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn set_union(self, arg: impl set_union::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

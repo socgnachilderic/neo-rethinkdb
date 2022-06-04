@@ -1531,6 +1531,37 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     {
         cmd::difference::DifferenceBuilder::new(value)._with_parent(self.get_parent())
     }
+
+    /// Add a value to an array and return it as a set (an array with distinct values).
+    /// 
+    /// ## Example
+    /// 
+    /// Retrieve Iron Man’s equipment list with the addition of some new boots.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("IronMan")
+    ///         .bracket("equipment")
+    ///         .setInsert("newBoots")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn set_insert<A, B>(&self, value: A) -> cmd::set_insert::SetInsertBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::set_insert::SetInsertBuilder::new(value)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps
