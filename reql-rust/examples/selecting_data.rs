@@ -243,6 +243,14 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
+    // let result = post_table
+    //     .get(1)
+    //     .bracket("title")
+    //     .append::<_, serde_json::Value>("user_id")
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())

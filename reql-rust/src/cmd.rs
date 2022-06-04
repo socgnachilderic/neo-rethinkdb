@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn append(self, arg: impl append::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn prepend(self, arg: impl prepend::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

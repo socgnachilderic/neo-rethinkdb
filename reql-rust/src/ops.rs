@@ -1438,6 +1438,37 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     {
         cmd::without::WithoutBuilder::new(fields)._with_parent(self.get_parent())
     }
+
+    /// Append a value to an array.
+    /// 
+    /// ## Example
+    /// 
+    /// Retrieve Iron Man’s equipment list with the addition of some new boots.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("ironman")
+    ///         .bracket("opponents")
+    ///         .append("newBoots")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn append<A, B>(&self, value: A) -> cmd::append::AppendBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::append::AppendBuilder::new(value)._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps
