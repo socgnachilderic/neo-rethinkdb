@@ -1761,7 +1761,30 @@ where
 }
 
 pub trait ReqlOpsArray: SuperOps {
-    
+    /// Insert a value in to an array at a given index. Returns the modified array.
+    /// 
+    /// ## Example
+    /// 
+    /// Hulk decides to join the avengers.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.expr(["Iron Man", "Spider-Man"])
+    ///         .insert_at(1, "Hulk")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn insert_at(&self, offset: usize, value: impl Serialize) -> cmd::insert_at::InsertAtBuilder {
+        cmd::insert_at::InsertAtBuilder::new(offset, value)._with_parent(self.get_parent())
+    }
 }
 
 

@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn insert_at(self, arg: impl insert_at::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn splice_at(self, arg: impl splice_at::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
