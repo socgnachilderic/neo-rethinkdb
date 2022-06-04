@@ -1202,7 +1202,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// 
     /// Has Iron Man ever fought Superman?
     /// 
-    /// ```
+    /// ```ignore
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
     /// 
@@ -1228,6 +1228,109 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: SuperOps {
     /// Predicates may be mixed freely in the argument list.
     fn contains_by_funcs(&self, funcs: Vec<Func>) -> cmd::contains::ContainsBuilder {
         cmd::contains::ContainsBuilder::new_by_func(funcs)._with_parent(self.get_parent())
+    }
+
+    /// Plucks out one or more attributes from either an object or a sequence of objects (projection).
+    /// 
+    /// ## Example
+    /// 
+    /// We just need information about IronMan’s reactor and not the rest of the document.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .get("IronMan")
+    ///         .pluck::<_, Value>(["reactorState", "reactorPower"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// For the hero beauty contest we only care about certain qualities.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .pluck::<_, Value>(["beauty", "muscleTone", "charm"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Pluck can also be used on nested objects.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::{json, Value};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .pluck::<_, Value>(json!({
+    ///             "abilities": {
+    ///                 "damage": true,
+    ///                 "mana_cost": true
+    ///             },
+    ///             "weapons": true
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Pluck can also be used on nested objects.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use serde_json::{json, Value};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<Value>("marvel")
+    ///         .pluck::<_, Value>(
+    ///             json!({ "abilities": [ "damage", "mana cost" ] }),
+    ///             "weapons"
+    ///         )
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn pluck<A, B>(&self, fields: A) -> cmd::pluck::PluckBuilder<B>
+    where
+        A: Serialize,
+        B: Unpin + Serialize + DeserializeOwned,
+    {
+        cmd::pluck::PluckBuilder::new(fields)._with_parent(self.get_parent())
     }
 }
 

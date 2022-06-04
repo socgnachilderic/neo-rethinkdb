@@ -218,6 +218,18 @@ async fn main() -> Result<()> {
     //     .await?;
     // dbg!(result);
 
+    #[derive(Debug, Serialize, Deserialize)]
+    struct PostsProjection {
+        title: String,
+        content: String,
+    }
+
+    let result = post_table
+        .pluck::<_, Vec<PostsProjection>>(["title", "content"])
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())
