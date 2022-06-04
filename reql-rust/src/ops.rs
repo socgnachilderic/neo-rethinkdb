@@ -1716,6 +1716,11 @@ pub trait ReqlOpsDocManipulation: SuperOps {
     fn get_field(&self, field: &str) -> cmd::get_field::GetFieldBuilder {
         cmd::get_field::GetFieldBuilder::new(field)._with_parent(self.get_parent())
     }
+
+    fn has_fields(&self, fields: impl Serialize) -> cmd::has_fields::HasFieldsBuilder {
+        cmd::has_fields::HasFieldsBuilder::new(fields)._with_parent(self.get_parent())
+    }
+
 }
 
 pub trait ReqlOpsGroupedStream<G, V>: SuperOps

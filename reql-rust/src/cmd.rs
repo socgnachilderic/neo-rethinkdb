@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn has_fields(self, arg: impl has_fields::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn insert_at(self, arg: impl insert_at::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }
