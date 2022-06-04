@@ -1670,7 +1670,7 @@ pub trait ReqlOpsDocManipulation: SuperOps {
     /// 
     /// Check which pieces of equipment Iron Man has, excluding a fixed list.
     /// 
-    /// ```ignore
+    /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
     /// 
@@ -1679,7 +1679,7 @@ pub trait ReqlOpsDocManipulation: SuperOps {
     ///     
     ///     r.table::<serde_json::Value>("marvel")
     ///         .get("IronMan")
-    ///         .bracket("equipment")
+    ///         .bracket("firstAppearance")
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -1688,6 +1688,33 @@ pub trait ReqlOpsDocManipulation: SuperOps {
     /// ```
     fn bracket(&self, attr: impl Serialize) -> cmd::bracket::BracketBuilder {
         cmd::bracket::BracketBuilder::new(attr)._with_parent(self.get_parent())
+    }
+
+    /// Get a single field from an object. If called on a sequence, 
+    /// gets that field from every object in the sequence, skipping objects that lack it.
+    /// 
+    /// ## Example
+    /// 
+    /// What was Iron Man’s first appearance in a comic?
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("marvel")
+    ///         .get("IronMan")
+    ///         .get_field("firstAppearance")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn get_field(&self, field: &str) -> cmd::get_field::GetFieldBuilder {
+        cmd::get_field::GetFieldBuilder::new(field)._with_parent(self.get_parent())
     }
 }
 

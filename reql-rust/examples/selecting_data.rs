@@ -268,6 +268,13 @@ async fn main() -> Result<()> {
         .parse();
     dbg!(result);
 
+    let result = post_table
+        .get(1)
+        .get_field("title")
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
     tear_down(&conn).await?;
 
     Ok(())
