@@ -1,28 +1,48 @@
-use super::args::Args;
-use crate::{cmd, Command};
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
+use serde::{Serialize, de::DeserializeOwned};
+use serde_json::Value;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use crate::Command;
+use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::DeleteAt).with_arg(self).into_arg()
+#[derive(Debug, Clone)]
+pub struct DeleteAtBuilder(pub(crate) Command);
+
+impl DeleteAtBuilder {
+    pub(crate) fn new(offset: isize, end_offset: Option<isize>) -> Self {
+        let arg_offset = Command::from_json(offset);
+        let mut command = Command::new(TermType::DeleteAt)
+            .with_arg(arg_offset);
+
+        if let Some(end_offset) = end_offset {
+            let arg_end_offset = Command::from_json(end_offset);
+            command = command.with_arg(arg_end_offset);
+        }
+
+        Self(command)
+    }
+
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Value>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Value>> {        
+        self.0.into_arg::<()>().into_cmd().run::<_, Value>(arg)
+    }
+
+    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
+        self.0 = self.0.with_parent(parent);
+        self
     }
 }
 
-impl Arg for i64 {
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self).arg()
-    }
-}
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for DeleteAtBuilder { }
 
-impl Arg for Args<[i64; 2]> {
-    fn arg(self) -> cmd::Arg<()> {
-        let Args([offset, end_offset]) = self;
-        Command::from_json(offset)
-            .arg()
-            .with_arg(Command::from_json(end_offset))
+impl ReqlOpsDocManipulation for DeleteAtBuilder { }
+
+impl SuperOps for DeleteAtBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }

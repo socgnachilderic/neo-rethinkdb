@@ -1774,7 +1774,7 @@ pub trait ReqlOpsArray: SuperOps {
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
-    ///     r.expr(["Iron Man", "Spider-Man"])
+    ///     r.expr(&["Iron Man", "Spider-Man"])
     ///         .insert_at(1, "Hulk")
     ///         .run(&conn)
     ///         .await?;
@@ -1784,6 +1784,56 @@ pub trait ReqlOpsArray: SuperOps {
     /// ```
     fn insert_at(&self, offset: usize, value: impl Serialize) -> cmd::insert_at::InsertAtBuilder {
         cmd::insert_at::InsertAtBuilder::new(offset, value)._with_parent(self.get_parent())
+    }
+
+    /// Insert several values in to an array at a given index. Returns the modified array.
+    /// 
+    /// ## Example
+    /// 
+    /// Hulk and Thor decide to join the avengers.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.expr(&["Iron Man", "Spider-Man"])
+    ///         .splice_at(1, &["Hulk", "Thor"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn splice_at(&self, offset: usize, values: &[impl Serialize]) -> cmd::splice_at::SpliceAtBuilder {
+        cmd::splice_at::SpliceAtBuilder::new(offset, values)._with_parent(self.get_parent())
+    }
+
+    /// Remove one or more elements from an array at a given index. Returns the modified array.
+    /// 
+    /// ## Example
+    /// 
+    /// Delete the second element of an array.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r..expr(['a','b','c','d','e','f'])
+    ///         .delete_at(1, None)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn delete_at(&self, offset: isize, end_offset: Option<isize>) -> cmd::delete_at::DeleteAtBuilder {
+        cmd::delete_at::DeleteAtBuilder::new(offset, end_offset)._with_parent(self.get_parent())
     }
 }
 
