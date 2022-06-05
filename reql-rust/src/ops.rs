@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -1913,7 +1914,23 @@ pub trait ReqlOpsArray: SuperOps {
     }
 }
 
+pub trait ReqlOpsString: SuperOps {
+    fn match_(&self, regex: Regex) -> cmd::match_::MatchBuilder {
+        cmd::match_::MatchBuilder::new(regex)._with_parent(self.get_parent())
+    }
 
+    fn split(&self, separator: Option<&str>, max_splits: Option<&str>) -> cmd::split::SplitBuilder {
+        cmd::split::SplitBuilder::new(separator, max_splits)._with_parent(self.get_parent())
+    }
+
+    fn upcase(&self) -> cmd::upcase::UpcaseBuilder {
+        cmd::upcase::UpcaseBuilder::new()._with_parent(self.get_parent())
+    }
+
+    fn downcase(&self) -> cmd::downcase::DowncaseBuilder {
+        cmd::downcase::DowncaseBuilder::new()._with_parent(self.get_parent())
+    }
+}
 pub trait ReqlOpsObject<T>: SuperOps {
     
 }
