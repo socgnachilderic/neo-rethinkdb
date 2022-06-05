@@ -202,10 +202,6 @@ impl<'a> Command {
     //     arg.arg().into_cmd().with_parent(self)
     // }
 
-    pub fn match_(self, arg: impl match_::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn split(self, arg: impl split::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

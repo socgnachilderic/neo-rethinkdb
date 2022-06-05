@@ -1,3 +1,4 @@
+use regex::Regex;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -1913,7 +1914,11 @@ pub trait ReqlOpsArray: SuperOps {
     }
 }
 
-
+pub trait ReqlOpsString: SuperOps {
+    fn match_(&self, regex: Regex) -> cmd::match_::MatchBuilder {
+        cmd::match_::MatchBuilder::new(regex)._with_parent(self.get_parent())
+    }
+}
 pub trait ReqlOpsObject<T>: SuperOps {
     
 }
