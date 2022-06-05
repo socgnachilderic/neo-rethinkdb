@@ -198,13 +198,9 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
-    pub fn merge(self, arg: impl merge::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn values(self) -> Self {
-        Self::new(TermType::Values).with_parent(self)
-    }
+    // pub fn merge(self, arg: impl merge::Arg) -> Self {
+    //     arg.arg().into_cmd().with_parent(self)
+    // }
 
     pub fn match_(self, arg: impl match_::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
