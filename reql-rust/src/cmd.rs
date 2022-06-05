@@ -202,10 +202,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn change_at(self, arg: impl change_at::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn keys(self) -> Self {
         Self::new(TermType::Keys).with_parent(self)
     }

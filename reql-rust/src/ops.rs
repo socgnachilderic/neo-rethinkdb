@@ -1835,6 +1835,31 @@ pub trait ReqlOpsArray: SuperOps {
     fn delete_at(&self, offset: isize, end_offset: Option<isize>) -> cmd::delete_at::DeleteAtBuilder {
         cmd::delete_at::DeleteAtBuilder::new(offset, end_offset)._with_parent(self.get_parent())
     }
+
+    /// Change a value in an array at a given index. Returns the modified array.
+    /// 
+    /// ## Example
+    /// 
+    /// Bruce Banner hulks out.
+    /// 
+    /// ```ignore
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.expr(&["Iron Man", "Bruce", "Spider-Man"])
+    ///         .change_at(1, "Hulk")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn change_at(&self, offset: usize, value: impl Serialize) -> cmd::change_at::ChangeAtBuilder {
+        cmd::change_at::ChangeAtBuilder::new(offset, value)._with_parent(self.get_parent())
+    }
 }
 
 
