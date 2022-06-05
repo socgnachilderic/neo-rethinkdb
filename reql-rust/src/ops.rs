@@ -1918,6 +1918,11 @@ pub trait ReqlOpsString: SuperOps {
     fn match_(&self, regex: Regex) -> cmd::match_::MatchBuilder {
         cmd::match_::MatchBuilder::new(regex)._with_parent(self.get_parent())
     }
+
+    fn split(&self, separator: Option<&str>, max_splits: Option<&str>) -> cmd::split::SplitBuilder {
+        cmd::split::SplitBuilder::new(separator, max_splits)._with_parent(self.get_parent())
+    }
+
 }
 pub trait ReqlOpsObject<T>: SuperOps {
     

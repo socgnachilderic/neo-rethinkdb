@@ -202,10 +202,6 @@ impl<'a> Command {
     //     arg.arg().into_cmd().with_parent(self)
     // }
 
-    pub fn split(self, arg: impl split::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn upcase(self) -> Self {
         Self::new(TermType::Upcase).with_parent(self)
     }

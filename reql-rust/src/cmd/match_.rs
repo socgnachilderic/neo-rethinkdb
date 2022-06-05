@@ -1,11 +1,10 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use regex::Regex;
-use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{SuperOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct MatchBuilder(pub(crate) Command);
@@ -31,8 +30,6 @@ impl MatchBuilder {
         self
     }
 }
-
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for MatchBuilder { }
 
 impl ReqlOpsDocManipulation for MatchBuilder { }
 
