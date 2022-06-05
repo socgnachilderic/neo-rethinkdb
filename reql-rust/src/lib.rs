@@ -654,13 +654,13 @@ impl r {
         cmd::union::UnionBuilder::new(sequence)
     }
 
-    pub fn literal(self, arg: impl cmd::literal::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
+    // pub fn literal(self, document: impl Serialize) -> String {
+    //     cmd::literal::LiteralBuilder::new(document)
+    // }
 
-    pub fn object(self, arg: impl cmd::object::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
+    // pub fn object(self, arg: impl cmd::object::Arg) -> Command {
+    //     arg.arg().into_cmd()
+    // }
 
     pub fn random(self, arg: impl cmd::random::Arg) -> Command {
         arg.arg().into_cmd()

@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Command, Result};
-use crate::ops::{ReqlOpsSequence, SuperOps};
+use crate::ops::{ReqlOpsSequence, SuperOps, ReqlOpsDocManipulation};
 use crate::types::{UngroupResponseType, Sequence};
 
 #[derive(Debug, Clone)]
@@ -53,6 +53,8 @@ where
     G: Unpin + Serialize + DeserializeOwned,
     V: Unpin + Serialize + DeserializeOwned,
 {}
+
+impl<G, V> ReqlOpsDocManipulation for UngroupBuilder<G, V> { }
 
 impl<G, V> SuperOps for UngroupBuilder<G, V> {
     fn get_parent(&self) -> Command {

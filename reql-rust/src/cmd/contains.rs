@@ -3,7 +3,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 
 use crate::{Command, Func};
-use crate::ops::{ReqlOpsObject, SuperOps};
+use crate::ops::SuperOps;
 
 #[derive(Debug, Clone)]
 pub struct ContainsBuilder(pub(crate) Command);
@@ -39,8 +39,6 @@ impl ContainsBuilder {
         self
     }
 }
-
-impl<T> ReqlOpsObject<T> for ContainsBuilder { }
 
 impl SuperOps for ContainsBuilder {
     fn get_parent(&self) -> Command {

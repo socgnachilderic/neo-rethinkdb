@@ -6,7 +6,7 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::ops::{ReqlOpsSequence, SuperOps};
+use crate::ops::{ReqlOpsSequence, SuperOps, ReqlOpsDocManipulation};
 use crate::Command;
 
 use super::StaticString;
@@ -51,6 +51,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> DistinctBuilder<T> {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for DistinctBuilder<T> {}
+
+impl<T> ReqlOpsDocManipulation for DistinctBuilder<T> { }
 
 impl<T> SuperOps for DistinctBuilder<T> {
     fn get_parent(&self) -> Command {

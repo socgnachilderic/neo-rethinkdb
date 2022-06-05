@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Command, Func};
-use crate::ops::{ReqlOpsJoin, ReqlOpsSequence};
+use crate::ops::{ReqlOpsJoin, ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::types::{Document, Sequence, JoinResponseType};
 
 use super::{run, table::TableBuilder, SuperOps};
@@ -56,6 +56,7 @@ where
 
 impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for InnerJoinBuilder<A, T> { }
 impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for InnerJoinBuilder<A, T> { }
+impl<A, T> ReqlOpsDocManipulation for InnerJoinBuilder<A, T> { }
 
 impl<A, T> SuperOps for InnerJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {

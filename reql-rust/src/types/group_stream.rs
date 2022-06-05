@@ -29,13 +29,8 @@ where
             let inner: InnerGroup = item;
 
             let data: Vec<GroupItem<G, V>> = inner.data.into_iter().map(|item| {                
-                let group: G = serde_json::from_str(
-                    item[0].to_string().as_str()
-                ).unwrap();
-                
-                let values: Vec<V> = serde_json::from_str(
-                    item[1].to_string().as_str()
-                ).unwrap();
+                let group: G = serde_json::from_value(item[0].clone()).unwrap();
+                let values: Vec<V> = serde_json::from_value(item[1].clone()).unwrap();
                 
                 GroupItem {
                     group,
