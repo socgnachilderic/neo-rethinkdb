@@ -1923,6 +1923,9 @@ pub trait ReqlOpsString: SuperOps {
         cmd::split::SplitBuilder::new(separator, max_splits)._with_parent(self.get_parent())
     }
 
+    fn upcase(&self) -> cmd::upcase::UpcaseBuilder {
+        cmd::upcase::UpcaseBuilder::new()._with_parent(self.get_parent())
+    }
 }
 pub trait ReqlOpsObject<T>: SuperOps {
     

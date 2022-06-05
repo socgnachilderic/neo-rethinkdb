@@ -1,7 +1,8 @@
+use std::borrow::Cow;
+
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use regex::Regex;
-use serde_json::Value;
 
 use crate::Command;
 use crate::ops::{SuperOps, ReqlOpsDocManipulation};
@@ -17,12 +18,12 @@ impl MatchBuilder {
         Self(command)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Value>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Vec<Cow<'static, str>>>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Value>> {        
-        self.0.into_arg::<()>().into_cmd().run::<_, Value>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Vec<Cow<'static, str>>>> {        
+        self.0.into_arg::<()>().into_cmd().run::<_, Vec<Cow<'static, str>>>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
