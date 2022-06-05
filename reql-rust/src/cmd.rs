@@ -202,10 +202,6 @@ impl<'a> Command {
     //     arg.arg().into_cmd().with_parent(self)
     // }
 
-    pub fn downcase(self) -> Self {
-        Self::new(TermType::Downcase).with_parent(self)
-    }
-
     pub fn and(self, arg: impl and::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

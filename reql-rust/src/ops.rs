@@ -1926,6 +1926,10 @@ pub trait ReqlOpsString: SuperOps {
     fn upcase(&self) -> cmd::upcase::UpcaseBuilder {
         cmd::upcase::UpcaseBuilder::new()._with_parent(self.get_parent())
     }
+
+    fn downcase(&self) -> cmd::downcase::DowncaseBuilder {
+        cmd::downcase::DowncaseBuilder::new()._with_parent(self.get_parent())
+    }
 }
 pub trait ReqlOpsObject<T>: SuperOps {
     
