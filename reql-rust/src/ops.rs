@@ -1229,6 +1229,34 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     fn contains_by_funcs(&self, funcs: Vec<Func>) -> cmd::contains::ContainsBuilder {
         cmd::contains::ContainsBuilder::new_by_func(funcs)._with_parent(self.get_parent())
     }
+
+    /// Return an array containing all of an object’s keys. 
+    /// Note that the keys will be sorted as described in [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order)
+    /// (for strings, lexicographically).
+    /// 
+    /// ## Example
+    /// 
+    /// Hulk decides to join the avengers.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     
+    ///     r.table::<serde_json::Value>("users"])
+    ///         .get(1)
+    ///         .keys()
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    fn keys(&self) -> cmd::keys::KeysBuilder {
+        cmd::keys::KeysBuilder::new()._with_parent(self.get_parent())
+    }
 }
 
 pub trait ReqlOpsDocManipulation: SuperOps {
