@@ -187,6 +187,34 @@ impl DbBuilder {
     {
         super::table::TableBuilder::new(table_name)._with_parent(self.0)
     }
+
+    /// Grant or deny access permissions for a user account, on a per-database basis.
+    /// 
+    /// See [r::grant](crate::r::grant) for more information
+    /// 
+    /// ## Example
+    /// 
+    /// Grant the `chatapp` user account read and write permissions on the `users` database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("users")
+    ///         .grant("chatapp")
+    ///         .permit_read(true)
+    ///         .permit_write(true)
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
+        super::grant::GrantBuilder::new(username)._with_parent(self.into())
+    }
 }
 
 impl Into<Command> for DbBuilder {

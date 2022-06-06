@@ -398,10 +398,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn grant(self, arg: impl grant::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn config(self) -> Self {
         Self::new(TermType::Config).with_parent(self)
     }

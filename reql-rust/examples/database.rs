@@ -10,6 +10,9 @@ async fn main() -> Result<()> {
     let result = r.db_create("marvel").run(&conn).await?;
     dbg!(result);
 
+    let result = r.db("marvel").grant("bob").permit_write(true).run(&conn).await?;
+    dbg!(result);
+
     let result = r.db_drop("marvel").run(&conn).await?;
     dbg!(result);
 

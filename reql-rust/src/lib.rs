@@ -762,8 +762,96 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn grant(self, arg: impl cmd::grant::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Grant or deny access permissions for a user account, globally or on a per-database or per-table basis.
+    /// 
+    /// There are four different permissions that can be granted to an account:
+    /// 
+    /// - `read` allows reading the data in tables.
+    /// - `write` allows modifying data, including inserting, replacing/updating, and deleting.
+    /// - `connect` allows a user to open HTTP connections via the http command. 
+    /// This permission can only be granted in global scope.
+    /// - `config` allows users to create/drop secondary indexes on a table and changing the cluster configuration;
+    /// to create and drop tables, if granted on a database; and to create and drop databases, if granted globally.
+    /// 
+    /// Permissions may be granted on a global scope, or granted for a specific table or database.
+    /// The scope is defined by calling `grant` on its own 
+    /// (e.g., `r.grant()`, on a table (`r.table().grant()`), or on a database (`r.db().grant()`).
+    /// 
+    /// The `grant` command returns an object of the following form:
+    /// 
+    /// ```text
+    /// {
+    ///     "granted": 1,
+    ///     "permissions_changes": [
+    ///         {
+    ///             "new_val": { new permissions },
+    ///             "old_val": { original permissions }
+    ///         }
+    ///     ]
+    /// }
+    /// ```
+    /// 
+    /// The `granted` field will always be `1`, and the `permissions_changes` list will have one object, 
+    /// describing the new permissions values and the old values they were changed from (which may be `None`).
+    /// 
+    /// Permissions that are not defined on a local scope will be inherited from the next largest scope. 
+    /// For example, a write operation on a table will first check if `write` permissions are explicitly 
+    /// set to `true` or `false` for that table and account combination; 
+    /// if they are not, the `write` permissions for the database will be used if those are explicitly set; 
+    /// and if neither table nor database permissions are set for that account, the global `write` permissions for that account will be used.
+    /// 
+    /// ## Note
+    /// 
+    /// For all accounts other than the special, system-defined `admin` account, 
+    /// permissions that are not explicitly set in any scope will effectively be `false`. 
+    /// When you create a new user account by inserting a record into the [system table](https://rethinkdb.com/docs/system-tables/#users), 
+    /// that account will have **no** permissions until they are explicitly granted.
+    /// 
+    /// For a full description of permissions, read [Permissions and user accounts](https://rethinkdb.com/docs/permissions-and-accounts/).
+    /// 
+    /// ## Example
+    /// 
+    /// Grant `chatapp` the ability to use HTTP connections.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.grant("chatapp")
+    ///         .permit_connect(true)
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Grant a `monitor` account read-only access to all databases.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.grant("monitor")
+    ///         .permit_read(true)
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// See also:
+    /// - [r::db::grant](cmd::db::DbBuilder::grant)
+    /// - [r::table::grant](cmd::table::TableBuilder::grant)
+    pub fn grant(self, username: &str) -> cmd::grant::GrantBuilder {
+        cmd::grant::GrantBuilder::new(username)
     }
 
     pub fn wait(self, arg: impl cmd::wait::Arg) -> Command {

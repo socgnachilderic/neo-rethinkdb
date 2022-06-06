@@ -843,6 +843,34 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     pub fn order_by(&self) -> super::order_by::OrderByBuilder<T> {
         super::order_by::OrderByBuilder::new()._with_parent(self.get_parent())
     }
+
+    /// Grant or deny access permissions for a user account, per-table basis.
+    /// 
+    /// See [r::grant](crate::r::grant) for more information
+    /// 
+    /// ## Example
+    /// 
+    /// Deny write permissions from the `chatapp` account for the `admin` table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("users")
+    ///         .table::<serde_json::Value>("admin")
+    ///         .grant("chatapp")
+    ///         .permit_write(false)
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
+        super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
+    }
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }

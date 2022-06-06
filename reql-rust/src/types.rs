@@ -105,15 +105,19 @@ pub struct JoinResponseType<L, R> {
     pub right: Option<R>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GrantResponseType {
+    pub granted: u8,
+    pub permissions_changes: Vec<ConfigChange<GrantChangeValue>>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
 pub struct ConfigChange<T> {
     pub new_val: Option<T>,
     pub old_val: Option<T>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
 pub struct ConfigChangeValue {
     pub id: Cow<'static, str>,
     pub name: Cow<'static, str>,
@@ -128,7 +132,14 @@ pub struct ConfigChangeValue {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
+pub struct GrantChangeValue {
+    pub write: Option<bool>,
+    pub read: Option<bool>,
+    pub connect: Option<bool>,
+    pub config: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ShardType {
     pub primary_replica: Cow<'static, str>,
     pub replicas: Vec<Cow<'static, str>>,
