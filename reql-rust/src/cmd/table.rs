@@ -1031,6 +1031,32 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
         super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
     }
+
+    /// Return the status of a table.
+    /// 
+    /// The return value is an object providing information about the table’s shards, replicas and replica readiness states. 
+    /// For a more complete discussion of the object fields, read about the `table_status` table in
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#status-tables).
+    /// 
+    /// ## Example
+    /// 
+    /// Get a table’s status.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("users").status().run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn status(self) -> super::status::StatusBuilder {
+        super::status::StatusBuilder::new()._with_parent(self.get_parent())
+    }
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }

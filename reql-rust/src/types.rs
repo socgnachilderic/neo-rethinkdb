@@ -114,14 +114,14 @@ pub struct GrantResponseType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RebalanceResponseType {
     pub rebalanced: u8,
-    pub status_changes: Vec<ConfigChange<StatusChangesValue>>,
+    pub status_changes: Vec<ConfigChange<StatusResponseType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReconfigureResponseType {
     pub reconfigured: u8,
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
-    pub status_changes: Vec<ConfigChange<StatusChangesValue>>
+    pub status_changes: Vec<ConfigChange<StatusResponseType>>
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -153,17 +153,17 @@ pub struct GrantChangeValue {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct StatusChangesValue {
+pub struct StatusResponseType {
     pub db: Option<Cow<'static, str>>,
     pub id: Option<Cow<'static, str>>,
     pub name: Option<Cow<'static, str>>,
     pub raft_leader: Option<Cow<'static, str>>,
     pub shards: Option<Vec<ShardType<ShardReplicasType>>>,
-    pub status: Option<StatusChangesValueStatus>,
+    pub status: Option<StatusResponseTypeStatus>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct StatusChangesValueStatus {
+pub struct StatusResponseTypeStatus {
     pub all_replicas_ready: Option<bool>,
     pub ready_for_outdated_reads: Option<bool>,
     pub ready_for_reads: Option<bool>,
