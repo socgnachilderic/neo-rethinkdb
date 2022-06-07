@@ -30,12 +30,6 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
-    let result = r.table::<serde_json::Value>("users")
-        .rebalance()
-        .run(&conn)
-        .await?;
-    dbg!(result);
-
     let result = r.db_drop("marvel").run(&conn).await?;
     dbg!(result);
 

@@ -962,6 +962,75 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
         super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
     }
+
+    /// Reconfigure a table’s sharding and replication. Use the following methods:
+    /// 
+    /// * `with_shards(u8)` : the number of shards, an integer from 1-64. Required.
+    /// * `with_replicas(reql_rust::types::Replicas)` : either an integer or a mapping object. Required.
+    ///     - If `Replicas::Int`, it specifies the number of replicas per shard. Specifying more replicas than there are servers will return an error.
+    ///     - If `Replicas::Map`,  it specifies key-value pairs of server tags and the number of replicas to assign to those servers:
+    ///     `{tag1: 2, tag2: 4, tag3: 2, ...}` . For more information about server tags, read 
+    ///     [Administration tools](https://rethinkdb.com/docs/administration-tools/).
+    /// * `with_dry_run(bool)` : if true the generated configuration will not be applied to the table, only returned.
+    /// * `with_emergency_repair(reql_rust::types::EmergencyRepair)` : Used for the Emergency Repair mode. See the separate section below.
+    /// 
+    /// ## Example
+    /// 
+    /// Rebalance a table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::Replicas;
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("superheroes")
+    ///         .reconfigure()
+    ///         .with_shards(2)
+    ///         .with_replicas(Replicas::Int(1))
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Reconfigure a table, specifying replicas by server tags.
+    /// 
+    /// ```
+    /// use std::collections::HashMap;
+    /// use std::borrow::Cow;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::Replicas;
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("superheroes")
+    ///         .reconfigure()
+    ///         .with_shards(2)
+    ///         .with_replicas(Replicas::Map {
+    ///             replicas: HashMap::from([
+    ///                 (Cow::from("wooster"), 1),
+    ///                 (Cow::from("wayne"), 1),
+    ///             ]),
+    ///             primary_replica_tag: Cow::from("wooster"),
+    ///         })
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
+        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
+    }
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }

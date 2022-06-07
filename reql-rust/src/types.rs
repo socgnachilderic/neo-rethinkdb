@@ -114,7 +114,14 @@ pub struct GrantResponseType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RebalanceResponseType {
     pub rebalanced: u8,
-    pub status_changes: Vec<ConfigChange<RebalanceChangeValue>>,
+    pub status_changes: Vec<ConfigChange<StatusChangesValue>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReconfigureResponseType {
+    pub reconfigured: u8,
+    pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
+    pub status_changes: Vec<ConfigChange<StatusChangesValue>>
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -132,7 +139,7 @@ pub struct ConfigChangeValue {
     pub durability: Option<Durability>,
     pub indexes: Option<Vec<Cow<'static, str>>>,
     pub primary_key: Option<Cow<'static, str>>,
-    pub shards: Option<Vec<ShardType>>,
+    pub shards: Option<Vec<ShardType<Cow<'static, str>>>>,
     pub write_acks: Option<ReadMode>,
     pub write_hook: Option<Cow<'static, str>>,
 }
@@ -146,17 +153,17 @@ pub struct GrantChangeValue {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct RebalanceChangeValue {
+pub struct StatusChangesValue {
     pub db: Option<Cow<'static, str>>,
     pub id: Option<Cow<'static, str>>,
     pub name: Option<Cow<'static, str>>,
     pub raft_leader: Option<Cow<'static, str>>,
-    pub shards: Option<Vec<ShardType>>,
-    pub status: Option<RebalanceChangeValueStatus>,
+    pub shards: Option<Vec<ShardType<ShardReplicasType>>>,
+    pub status: Option<StatusChangesValueStatus>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct RebalanceChangeValueStatus {
+pub struct StatusChangesValueStatus {
     pub all_replicas_ready: Option<bool>,
     pub ready_for_outdated_reads: Option<bool>,
     pub ready_for_reads: Option<bool>,
@@ -164,9 +171,9 @@ pub struct RebalanceChangeValueStatus {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct ShardType {
+pub struct ShardType<R> {
     pub primary_replica: Option<Cow<'static, str>>,
-    pub replicas: Vec<ShardReplicasType>,
+    pub replicas: Vec<R>,
     pub nonvoting_replicas: Option<Vec<Cow<'static, str>>>,
 }
 
@@ -269,4 +276,11 @@ pub enum Interleave {
 pub enum Status {
     Open,
     Closed,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum EmergencyRepair {
+    UnsafeRollback,
+    UnsafeRollbackOrErase,
 }

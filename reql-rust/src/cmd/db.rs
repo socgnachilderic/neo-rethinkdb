@@ -261,9 +261,16 @@ impl DbBuilder {
 
     /// Rebalances the shards of a table. When called on a database, all the tables in that database will be rebalanced.
     /// 
-    /// See [r::table](super::table::TableBuilder::rebalance)
+    /// See [r::table::rebalance](super::table::TableBuilder::rebalance)
     pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
         super::rebalance::RebalanceBuilder::new()._with_parent(self.into())
+    }
+
+    /// Reconfigure a table’s sharding and replication.
+    /// 
+    /// See [r::table::reconfigure](super::table::TableBuilder::reconfigure)
+    pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
+        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.into())
     }
 }
 
