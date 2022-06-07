@@ -1057,6 +1057,48 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     pub fn status(self) -> super::status::StatusBuilder {
         super::status::StatusBuilder::new()._with_parent(self.get_parent())
     }
+
+    /// Wait for a table to be ready. 
+    /// A table may be temporarily unavailable after creation, rebalancing or reconfiguring. 
+    /// The `wait` command blocks until the given table is fully up to date.
+    /// 
+    /// The `wait` command use two optional methods:
+    /// 
+    /// - `with_wait_for(reql_rust::types::WaitFor)` : a string indicating a table status to wait on before returning, one of
+    /// `WaitFor::ReadyForOutdatedReads`, `WaitFor::ReadyForReads`, `WaitFor::ReadyForWrites`,
+    /// `WaitFor::AllReplicasReady`. The default is `WaitFor::AllReplicasReady`.
+    /// - `with_timeout(std::time::Duration)` : a number indicating maximum time, in seconds, to wait for the table to be ready.
+    /// If this value is exceeded, a ReqlRuntimeError will be thrown.A value of 0 means no timeout. The default is 0 (no timeout).
+    /// 
+    /// The return value is an object consisting of a single field, ready.
+    /// The value is an integer indicating the number of tables waited for.
+    /// It will always be 1 when wait is called on a table.
+    /// 
+    /// ## Example
+    /// 
+    /// Wait on a table to be ready.
+    /// 
+    /// ```
+    /// use std::time::Duration;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("superheroes")
+    ///         .wait()
+    ///         .with_timeout(Duration::from_secs(10))
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn wait(self) -> super::wait::WaitBuilder {
+        super::wait::WaitBuilder::new()._with_parent(self.get_parent())
+    }
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }

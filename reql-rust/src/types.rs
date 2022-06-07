@@ -96,7 +96,12 @@ pub struct UngroupResponseType<G, V> {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyncResponseType {
-    synced: Option<u8>
+    synced: u8
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct WaitResponseType {
+    ready: u32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -241,6 +246,15 @@ pub enum Conflict {
     Error,
     Replace,
     Update,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum WaitFor {
+    ReadyForOutdatedReads,
+    ReadyForReads,
+    ReadyForWrites,
+    AllReplicasReady,
 }
 
 /// Controls how change notifications are batched

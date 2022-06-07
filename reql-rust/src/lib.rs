@@ -854,10 +854,6 @@ impl r {
         cmd::grant::GrantBuilder::new(username)
     }
 
-    pub fn wait(self, arg: impl cmd::wait::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
     pub fn asc(self, arg: impl cmd::asc::Arg) -> cmd::asc::Asc {
         cmd::asc::Asc(arg.arg().into_cmd())
     }

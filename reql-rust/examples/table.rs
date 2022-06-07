@@ -25,6 +25,13 @@ async fn main() -> Result<()> {
 
     let result = r.db("test")
         .table::<Value>("foo")
+        .wait()
+        .run(&conn)
+        .await?;
+    dbg!(result);
+
+    let result = r.db("test")
+        .table::<Value>("foo")
         .status()
         .run(&conn)
         .await?;
