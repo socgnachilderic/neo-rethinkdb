@@ -38,7 +38,7 @@ pub struct WritingResponseType<T> {
     /// The number of errors encountered while performing the insert, update.
     pub errors: Option<u32>,
     /// If errors were encountered, contains the text of the first error.
-    pub first_error: Option<u32>,
+    pub first_error: Option<Cow<'static, str>>,
     /// A list of generated primary keys for inserted documents whose primary keys were not specified (capped to 100,000).
     pub generated_keys: Option<Vec<Cow<'static, str>>>,
     /// The number of documents successfully inserted.
@@ -143,6 +143,7 @@ pub struct GrantChangeValue {
 pub struct ShardType {
     pub primary_replica: Cow<'static, str>,
     pub replicas: Vec<Cow<'static, str>>,
+    pub nonvoting_replicas: Vec<Cow<'static, str>>,
 }
 
 #[derive(Debug, Clone, PartialEq)]

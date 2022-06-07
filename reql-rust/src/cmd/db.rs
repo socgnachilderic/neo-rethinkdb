@@ -215,6 +215,49 @@ impl DbBuilder {
     pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
         super::grant::GrantBuilder::new(username)._with_parent(self.into())
     }
+
+    /// Query (read and/or update) the configurations for individual databases.
+    /// 
+    /// The `config` command is a shorthand way to access the `db_config` 
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables). 
+    /// It will return the single row from the system that corresponds to the database configuration, 
+    /// as if [get](super::table::TableBuilder::get) had been called on the system table with the UUID of the database in question.
+    /// 
+    /// ## Example
+    /// 
+    /// Get the configuration for the `marvel` database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").config().run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Change the database name requirement of the `marvel` database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").config().update(json!({ "name": "heroes" })).run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn config(self) -> super::config::ConfigBuilder {
+        super::config::ConfigBuilder::new()._with_parent(self.into())
+    }
 }
 
 impl Into<Command> for DbBuilder {

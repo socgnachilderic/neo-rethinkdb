@@ -871,6 +871,51 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
         super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
     }
+
+    /// Query (read and/or update) the configurations for individual tables.
+    /// 
+    /// The `config` command is a shorthand way to access the `table_config` 
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables). 
+    /// It will return the single row from the system that corresponds to the database configuration, 
+    /// as if [get](super::table::TableBuilder::get) had been called on the system table with the UUID of the table in question.
+    /// 
+    /// ## Example
+    /// 
+    /// Get the configuration for the `users` table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("users").config().run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Change the write acknowledgement requirement of the `users` table.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::ReadMode;
+    /// use serde_json::{json, Value};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("users").config().update(json!({ "write_acks": ReadMode::Single })).run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn config(self) -> super::config::ConfigBuilder {
+        super::config::ConfigBuilder::new()._with_parent(self.into())
+    }
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }
