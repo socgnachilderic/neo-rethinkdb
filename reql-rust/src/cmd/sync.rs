@@ -1,6 +1,8 @@
-use crate::{types::SyncResponseType, Command};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
+
+use crate::Command;
+use crate::types::SyncResponseType;
 
 #[derive(Debug, Clone)]
 pub struct SyncBuilder(pub(crate) Command);

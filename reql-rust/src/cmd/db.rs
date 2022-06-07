@@ -187,6 +187,129 @@ impl DbBuilder {
     {
         super::table::TableBuilder::new(table_name)._with_parent(self.0)
     }
+
+    /// Grant or deny access permissions for a user account, on a per-database basis.
+    /// 
+    /// See [r::grant](crate::r::grant) for more information
+    /// 
+    /// ## Example
+    /// 
+    /// Grant the `chatapp` user account read and write permissions on the `users` database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("users")
+    ///         .grant("chatapp")
+    ///         .permit_read(true)
+    ///         .permit_write(true)
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
+        super::grant::GrantBuilder::new(username)._with_parent(self.into())
+    }
+
+    /// Query (read and/or update) the configurations for individual databases.
+    /// 
+    /// The `config` command is a shorthand way to access the `db_config` 
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables). 
+    /// It will return the single row from the system that corresponds to the database configuration, 
+    /// as if [get](super::table::TableBuilder::get) had been called on the system table with the UUID of the database in question.
+    /// 
+    /// ## Example
+    /// 
+    /// Get the configuration for the `marvel` database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").config().run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Change the database name requirement of the `marvel` database.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").config().update(json!({ "name": "heroes" })).run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn config(self) -> super::config::ConfigBuilder {
+        super::config::ConfigBuilder::new()._with_parent(self.into())
+    }
+
+    /// Rebalances the shards of a table. When called on a database, all the tables in that database will be rebalanced.
+    /// 
+    /// See [r::table::rebalance](super::table::TableBuilder::rebalance)
+    pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
+        super::rebalance::RebalanceBuilder::new()._with_parent(self.into())
+    }
+
+    /// Reconfigure a table’s sharding and replication.
+    /// 
+    /// See [r::table::reconfigure](super::table::TableBuilder::reconfigure)
+    pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
+        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.into())
+    }
+
+    /// Wait for all the tables to be ready. 
+    /// A table may be temporarily unavailable after creation, rebalancing or reconfiguring. 
+    /// The `wait` command blocks until the given database is fully up to date.
+    /// 
+    /// The `wait` command use two optional methods:
+    /// 
+    /// - `with_wait_for(reql_rust::types::WaitFor)` : a string indicating a table status to wait on before returning, one of
+    /// `WaitFor::ReadyForOutdatedReads`, `WaitFor::ReadyForReads`, `WaitFor::ReadyForWrites`,
+    /// `WaitFor::AllReplicasReady`. The default is `WaitFor::AllReplicasReady`.
+    /// - `with_timeout(std::time::Duration)` : a number indicating maximum time, in seconds, to wait for the table to be ready.
+    /// If this value is exceeded, a ReqlRuntimeError will be thrown.A value of 0 means no timeout. The default is 0 (no timeout).
+    /// 
+    /// The return value is an object consisting of a single field, ready.
+    /// The value is an integer indicating the number of tables waited for.
+    /// It will always be the total number of tables when called on a database.
+    /// 
+    /// ## Example
+    /// 
+    /// Wait on all table in database to be ready.
+    /// 
+    /// ```
+    /// use std::time::Duration;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::Value;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("marvel").wait().run(&session).await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn wait(self) -> super::wait::WaitBuilder {
+        super::wait::WaitBuilder::new()._with_parent(self.into())
+    }
 }
 
 impl Into<Command> for DbBuilder {

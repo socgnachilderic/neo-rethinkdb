@@ -38,7 +38,7 @@ pub struct WritingResponseType<T> {
     /// The number of errors encountered while performing the insert, update.
     pub errors: Option<u32>,
     /// If errors were encountered, contains the text of the first error.
-    pub first_error: Option<u32>,
+    pub first_error: Option<Cow<'static, str>>,
     /// A list of generated primary keys for inserted documents whose primary keys were not specified (capped to 100,000).
     pub generated_keys: Option<Vec<Cow<'static, str>>>,
     /// The number of documents successfully inserted.
@@ -96,7 +96,12 @@ pub struct UngroupResponseType<G, V> {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyncResponseType {
-    synced: Option<u8>
+    synced: u8
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct WaitResponseType {
+    ready: u32
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -105,15 +110,32 @@ pub struct JoinResponseType<L, R> {
     pub right: Option<R>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct GrantResponseType {
+    pub granted: u8,
+    pub permissions_changes: Vec<ConfigChange<GrantChangeValue>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RebalanceResponseType {
+    pub rebalanced: u8,
+    pub status_changes: Vec<ConfigChange<StatusResponseType>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ReconfigureResponseType {
+    pub reconfigured: u8,
+    pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
+    pub status_changes: Vec<ConfigChange<StatusResponseType>>
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
 pub struct ConfigChange<T> {
     pub new_val: Option<T>,
     pub old_val: Option<T>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
 pub struct ConfigChangeValue {
     pub id: Cow<'static, str>,
     pub name: Cow<'static, str>,
@@ -122,16 +144,48 @@ pub struct ConfigChangeValue {
     pub durability: Option<Durability>,
     pub indexes: Option<Vec<Cow<'static, str>>>,
     pub primary_key: Option<Cow<'static, str>>,
-    pub shards: Option<Vec<ShardType>>,
+    pub shards: Option<Vec<ShardType<Cow<'static, str>>>>,
     pub write_acks: Option<ReadMode>,
     pub write_hook: Option<Cow<'static, str>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
-pub struct ShardType {
-    pub primary_replica: Cow<'static, str>,
-    pub replicas: Vec<Cow<'static, str>>,
+pub struct GrantChangeValue {
+    pub write: Option<bool>,
+    pub read: Option<bool>,
+    pub connect: Option<bool>,
+    pub config: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct StatusResponseType {
+    pub db: Option<Cow<'static, str>>,
+    pub id: Option<Cow<'static, str>>,
+    pub name: Option<Cow<'static, str>>,
+    pub raft_leader: Option<Cow<'static, str>>,
+    pub shards: Option<Vec<ShardType<ShardReplicasType>>>,
+    pub status: Option<StatusResponseTypeStatus>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct StatusResponseTypeStatus {
+    pub all_replicas_ready: Option<bool>,
+    pub ready_for_outdated_reads: Option<bool>,
+    pub ready_for_reads: Option<bool>,
+    pub ready_for_writes: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ShardType<R> {
+    pub primary_replica: Option<Cow<'static, str>>,
+    pub replicas: Vec<R>,
+    pub nonvoting_replicas: Option<Vec<Cow<'static, str>>>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ShardReplicasType {
+    pub server: Cow<'static, str>,
+    pub state: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -151,14 +205,6 @@ pub enum ReturnChanges {
     Always,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-#[serde(rename_all = "lowercase")]
-pub enum IdentifierFormat {
-    Name,
-    Uuid,
-}
-
 impl Serialize for ReturnChanges {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -169,6 +215,14 @@ impl Serialize for ReturnChanges {
             Self::Always => "always".serialize(serializer),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(rename_all = "lowercase")]
+pub enum IdentifierFormat {
+    Name,
+    Uuid,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -192,6 +246,15 @@ pub enum Conflict {
     Error,
     Replace,
     Update,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum WaitFor {
+    ReadyForOutdatedReads,
+    ReadyForReads,
+    ReadyForWrites,
+    AllReplicasReady,
 }
 
 /// Controls how change notifications are batched
@@ -227,4 +290,11 @@ pub enum Interleave {
 pub enum Status {
     Open,
     Closed,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum EmergencyRepair {
+    UnsafeRollback,
+    UnsafeRollbackOrErase,
 }

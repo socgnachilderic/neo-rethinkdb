@@ -398,30 +398,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn grant(self, arg: impl grant::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn config(self) -> Self {
-        Self::new(TermType::Config).with_parent(self)
-    }
-
-    pub fn rebalance(self) -> Self {
-        Self::new(TermType::Rebalance).with_parent(self)
-    }
-
-    pub fn reconfigure(self, arg: impl reconfigure::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn status(self) -> Self {
-        Self::new(TermType::Status).with_parent(self)
-    }
-
-    pub fn wait(self, arg: impl wait::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
     where
         A: run::Arg,

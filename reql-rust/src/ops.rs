@@ -1246,7 +1246,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
-    ///     r.table::<serde_json::Value>("users"])
+    ///     r.table::<serde_json::Value>("users")
     ///         .get(1)
     ///         .keys()
     ///         .run(&conn)
@@ -1269,7 +1269,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
-    ///     r.table::<serde_json::Value>("users"])
+    ///     r.table::<serde_json::Value>("users")
     ///         .get(1)
     ///         .values()
     ///         .run(&conn)
