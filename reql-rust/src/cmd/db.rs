@@ -258,6 +258,13 @@ impl DbBuilder {
     pub fn config(self) -> super::config::ConfigBuilder {
         super::config::ConfigBuilder::new()._with_parent(self.into())
     }
+
+    /// Rebalances the shards of a table. When called on a database, all the tables in that database will be rebalanced.
+    /// 
+    /// See [r::table](super::table::TableBuilder::rebalance)
+    pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
+        super::rebalance::RebalanceBuilder::new()._with_parent(self.into())
+    }
 }
 
 impl Into<Command> for DbBuilder {

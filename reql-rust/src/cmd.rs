@@ -398,10 +398,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn rebalance(self) -> Self {
-        Self::new(TermType::Rebalance).with_parent(self)
-    }
-
     pub fn reconfigure(self, arg: impl reconfigure::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
     }

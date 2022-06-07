@@ -111,6 +111,12 @@ pub struct GrantResponseType {
     pub permissions_changes: Vec<ConfigChange<GrantChangeValue>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RebalanceResponseType {
+    pub rebalanced: u8,
+    pub status_changes: Vec<ConfigChange<RebalanceChangeValue>>,
+}
+
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ConfigChange<T> {
     pub new_val: Option<T>,
@@ -140,10 +146,34 @@ pub struct GrantChangeValue {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct RebalanceChangeValue {
+    pub db: Option<Cow<'static, str>>,
+    pub id: Option<Cow<'static, str>>,
+    pub name: Option<Cow<'static, str>>,
+    pub raft_leader: Option<Cow<'static, str>>,
+    pub shards: Option<Vec<ShardType>>,
+    pub status: Option<RebalanceChangeValueStatus>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct RebalanceChangeValueStatus {
+    pub all_replicas_ready: Option<bool>,
+    pub ready_for_outdated_reads: Option<bool>,
+    pub ready_for_reads: Option<bool>,
+    pub ready_for_writes: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ShardType {
-    pub primary_replica: Cow<'static, str>,
-    pub replicas: Vec<Cow<'static, str>>,
-    pub nonvoting_replicas: Vec<Cow<'static, str>>,
+    pub primary_replica: Option<Cow<'static, str>>,
+    pub replicas: Vec<ShardReplicasType>,
+    pub nonvoting_replicas: Option<Vec<Cow<'static, str>>>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ShardReplicasType {
+    pub server: Cow<'static, str>,
+    pub state: Cow<'static, str>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -163,14 +193,6 @@ pub enum ReturnChanges {
     Always,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-#[serde(rename_all = "lowercase")]
-pub enum IdentifierFormat {
-    Name,
-    Uuid,
-}
-
 impl Serialize for ReturnChanges {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
@@ -181,6 +203,14 @@ impl Serialize for ReturnChanges {
             Self::Always => "always".serialize(serializer),
         }
     }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(rename_all = "lowercase")]
+pub enum IdentifierFormat {
+    Name,
+    Uuid,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
