@@ -234,12 +234,12 @@ impl<T> Arg<T>
 where
     T: Serialize,
 {
-    pub(crate) fn new() -> Self {
-        Self {
-            arg: Command::new(TermType::Datum),
-            opts: None,
-        }
-    }
+    // pub(crate) fn new() -> Self {
+    //     Self {
+    //         arg: Command::new(TermType::Datum),
+    //         opts: None,
+    //     }
+    // }
 
     pub(crate) fn with_parent(mut self, parent: Command) -> Self {
         self.arg = self.arg.with_parent(parent);

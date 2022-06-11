@@ -113,11 +113,12 @@ pub struct r;
 impl r {
     /// Create a new connection to the database server.
     /// [connection](cmd::connect::ConnectionBuilder::connection) returns a connection builder with the following methods:
-    /// - [with_host(&'static str)](cmd::connect::ConnectionBuilder::with_host): the host to connect to (default `localhost`)
-    /// - [with_port(value: u16)](cmd::connect::ConnectionBuilder::with_port): the port to connect on (default `28015`).
-    /// - [with_db(value: &'static str)](cmd::connect::ConnectionBuilder::with_db): the default database (default `test`).
+    /// - [with_host(host: &'static str)](cmd::connect::ConnectionBuilder::with_host): the host to connect to (default `localhost`)
+    /// - [with_port(port: u16)](cmd::connect::ConnectionBuilder::with_port): the port to connect on (default `28015`).
+    /// - [with_db(db_name: &'static str)](cmd::connect::ConnectionBuilder::with_db): the default database (default `test`).
     /// - [with_user(username: &'static str, password: &'static str)](cmd::connect::ConnectionBuilder::with_user): the user account and password to connect as (default `"admin", ""`).
-    ///
+    /// - [with_ssl(ssl_context: SslContext)](cmd::connect::ConnectionBuilder::with_ssl): a hash of options to support SSL connections.
+    /// 
     ///
     /// # Example
     ///

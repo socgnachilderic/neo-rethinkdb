@@ -1,4 +1,3 @@
-use async_net::TcpStream;
 use dashmap::DashMap;
 use futures::TryFutureExt;
 use futures::channel::mpsc::{self, UnboundedReceiver, UnboundedSender};
@@ -14,6 +13,7 @@ use std::sync::atomic::{AtomicU64, AtomicBool, Ordering};
 use tracing::trace;
 use reql_rust_types::ServerInfo;
 
+use crate::cmd::TcpStreamConnection;
 use crate::proto::{Payload, Query};
 use crate::{Result, err, ReqlDriverError, r};
 use super::cmd::run::Response;
@@ -25,7 +25,7 @@ type Receiver = UnboundedReceiver<Result<(ResponseType, Response)>>;
 #[derive(Debug)]
 pub(crate) struct InnerSession {
     pub(crate) db: Mutex<Cow<'static, str>>,
-    pub(crate) stream: Mutex<TcpStream>,
+    pub(crate) stream: Mutex<TcpStreamConnection>,
     pub(crate) channels: DashMap<u64, Sender>,
     pub(crate) token: AtomicU64,
     pub(crate) broken: AtomicBool,
@@ -209,26 +209,26 @@ impl Session {
     }
 
     ///
-     /// Return information about the server being used by a connection.
-     /// 
-     /// The server command returns `ServerInfo` struct with two or three fields:
-     /// 
-     /// - `id` : the UUID of the server the client is connected to.
-     /// - `proxy` : a boolean indicating whether the server is a [RethinkDB proxy node](https://rethinkdb.com/docs/sharding-and-replication/#running-a-proxy-node).
-     /// - `name` : the server name. If `proxy` is `true`, this field will not be returned.
-     /// 
-     /// ## Example
-     /// 
-     /// Return server information.
-     /// 
-     /// ```
-     /// use reql_rust::{r, Result, types::ServerInfo};
-     /// 
-     /// async fn example() -> Result<ServerInfo> {
-     ///     let session = r.connection().connect().await?;
-     ///     session.server().await
-     /// }
-     /// ```
+    /// Return information about the server being used by a connection.
+    /// 
+    /// The server command returns `ServerInfo` struct with two or three fields:
+    /// 
+    /// - `id` : the UUID of the server the client is connected to.
+    /// - `proxy` : a boolean indicating whether the server is a [RethinkDB proxy node](https://rethinkdb.com/docs/sharding-and-replication/#running-a-proxy-node).
+    /// - `name` : the server name. If `proxy` is `true`, this field will not be returned.
+    /// 
+    /// ## Example
+    /// 
+    /// Return server information.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, types::ServerInfo};
+    /// 
+    /// async fn example() -> Result<ServerInfo> {
+    ///     let session = r.connection().connect().await?;
+    ///     session.server().await
+    /// }
+    /// ```
     pub async fn server(&self) -> Result<ServerInfo> {
         let mut conn = self.connection()?;
         let payload = Payload(QueryType::ServerInfo, None, Default::default());

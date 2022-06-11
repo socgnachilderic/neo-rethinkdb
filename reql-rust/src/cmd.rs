@@ -164,6 +164,8 @@ pub mod zip;
 
 use crate::ops::{SuperOps, ReqlOpsDocManipulation};
 use crate::Command;
+use async_native_tls::TlsStream;
+use async_net::TcpStream;
 use futures::stream::Stream;
 use ql2::term::TermType;
 use serde::de::DeserializeOwned;
@@ -174,6 +176,12 @@ pub use crate::proto::Arg;
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
+}
+
+#[derive(Debug)]
+pub(crate) struct TcpStreamConnection {
+    pub(crate) stream: TcpStream,
+    pub(crate) tls_stream: Option<TlsStream<TcpStream>>,
 }
 
 impl StaticString for &'static str {

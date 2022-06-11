@@ -12,6 +12,7 @@ authors = ["SOCGNA KOUYEM Childéric <socgnachilderic@proton.me>"]
 edition = "2018"
 
 [dependencies]
+async-native-tls = "0.4.0"
 async-net = "1.6.1"
 async-stream = "0.3.3"
 dashmap = "5.3.3"
