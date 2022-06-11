@@ -1,21 +1,24 @@
-use super::args::Args;
-use crate::constants::{DEFAULT_RETHINKDB_DBNAME, HEADER_SIZE, TOKEN_SIZE, DATA_SIZE};
-use crate::proto::{Payload, Query};
-use crate::types::{ReadMode, Durability};
-use crate::{err, r, Command, Connection, Result, Session};
+use std::borrow::Cow;
+use std::{str, mem};
+use std::sync::atomic::Ordering;
+
 use async_stream::try_stream;
 use futures::io::{AsyncReadExt, AsyncWriteExt};
 use futures::stream::{Stream, StreamExt};
+use futures::{AsyncRead, AsyncWrite};
 use ql2::query::QueryType;
 use ql2::response::{ErrorType, ResponseType};
 use reql_rust_macros::CommandOptions;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::borrow::Cow;
-use std::str;
-use std::sync::atomic::Ordering;
 use tracing::trace;
+
+use super::args::Args;
+use crate::constants::{DATA_SIZE, DEFAULT_RETHINKDB_DBNAME, HEADER_SIZE, TOKEN_SIZE};
+use crate::proto::{Payload, Query};
+use crate::types::{Durability, ReadMode};
+use crate::{err, r, Command, Connection, Result, Session};
 
 #[derive(Deserialize, Debug)]
 #[allow(dead_code)]
@@ -143,7 +146,7 @@ where
         }
         let noreply = opts.noreply.unwrap_or_default();
         let mut payload = Payload(QueryType::Start, Some(Query(&query)), opts);
-        
+
         loop {
             let (response_type, resp) = conn.request(&payload, noreply).await?;
             trace!("yielding response; token: {}", conn.token);
@@ -235,11 +238,27 @@ impl Connection {
         db_token: &mut u64,
     ) -> Result<(ResponseType, Response)> {
         let buf = query.encode(self.token)?;
-
-        let guard = self.session.inner.stream.lock().await;
-        let mut stream = guard.clone();
+        let mut stream = self.session.inner.stream.lock().await;
+        let tls_stream  = mem::take(&mut stream.tls_stream);
 
         trace!("sending query; token: {}, payload: {}", self.token, query);
+        if let Some(tcp_stream) = tls_stream {
+            self.tcp_ops(tcp_stream, buf, noreply, db_token).await
+        } else {
+            self.tcp_ops(stream.stream.clone(), buf, noreply, db_token).await
+        }
+    }
+
+    async fn tcp_ops<T>(
+        &self,
+        mut stream: T,
+        buf: Vec<u8>,
+        noreply: bool,
+        db_token: &mut u64,
+    ) -> Result<(ResponseType, Response)>
+    where
+        T: Unpin + AsyncWrite + AsyncReadExt + AsyncRead + AsyncReadExt,
+    {
         stream.write_all(&buf).await?;
         trace!("query sent; token: {}", self.token);
 
@@ -287,8 +306,9 @@ impl Connection {
         let resp = serde_json::from_slice::<Response>(&buf)?;
         trace!("response successfully parsed; token: {}", self.token,);
 
-        let response_type = ResponseType::from_i32(resp.t)
-            .ok_or_else(|| err::ReqlDriverError::Other(format!("unknown response type `{}`", resp.t)))?;
+        let response_type = ResponseType::from_i32(resp.t).ok_or_else(|| {
+            err::ReqlDriverError::Other(format!("unknown response type `{}`", resp.t))
+        })?;
 
         if let Some(error_type) = resp.e {
             let msg = error_message(resp.r)?;
@@ -304,20 +324,25 @@ fn error_message(response: Value) -> Result<String> {
     Ok(messages.join(" "))
 }
 
-fn response_error(response_type: ResponseType, error_type: Option<i32>, msg: String) -> err::ReqlError {
+fn response_error(
+    response_type: ResponseType,
+    error_type: Option<i32>,
+    msg: String,
+) -> err::ReqlError {
     match response_type {
         ResponseType::ClientError => err::ReqlDriverError::Other(msg).into(),
         ResponseType::CompileError => err::ReqlError::Compile(msg),
-        ResponseType::RuntimeError => match error_type
-            .map(ErrorType::from_i32)
-            .ok_or_else(|| err::ReqlDriverError::Other(format!("unexpected runtime error: {}", msg)))
-        {
+        ResponseType::RuntimeError => match error_type.map(ErrorType::from_i32).ok_or_else(|| {
+            err::ReqlDriverError::Other(format!("unexpected runtime error: {}", msg))
+        }) {
             Ok(Some(ErrorType::Internal)) => err::ReqlRuntimeError::Internal(msg).into(),
             Ok(Some(ErrorType::ResourceLimit)) => err::ReqlRuntimeError::ResourceLimit(msg).into(),
             Ok(Some(ErrorType::QueryLogic)) => err::ReqlRuntimeError::QueryLogic(msg).into(),
             Ok(Some(ErrorType::NonExistence)) => err::ReqlRuntimeError::NonExistence(msg).into(),
             Ok(Some(ErrorType::OpFailed)) => err::ReqlAvailabilityError::OpFailed(msg).into(),
-            Ok(Some(ErrorType::OpIndeterminate)) => err::ReqlAvailabilityError::OpIndeterminate(msg).into(),
+            Ok(Some(ErrorType::OpIndeterminate)) => {
+                err::ReqlAvailabilityError::OpIndeterminate(msg).into()
+            }
             Ok(Some(ErrorType::User)) => err::ReqlRuntimeError::User(msg).into(),
             Ok(Some(ErrorType::PermissionError)) => err::ReqlRuntimeError::Permission(msg).into(),
             Err(error) => error.into(),

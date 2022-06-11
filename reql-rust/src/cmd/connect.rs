@@ -1,39 +1,38 @@
 //! Create a new connection to the database server
 
-use super::args::Args;
-use super::{bytes_to_string, StaticString};
-use crate::constants::{
-    BUFFER_SIZE,
-    NULL_BYTE,
-    PROTOCOL_VERSION,
-    DEFAULT_RETHINKDB_DBNAME,
-    DEFAULT_RETHINKDB_PORT,
-    DEFAULT_RETHINKDB_HOSTNAME,
-    DEFAULT_RETHINKDB_USER,
-    DEFAULT_RETHINKDB_PASSWORD, DEFAULT_AUTHENTICATION_METHOD
-};
-use crate::{err, InnerSession, Result, Session};
-use async_net::{AsyncToSocketAddrs, TcpStream};
+use std::borrow::Cow;
+use std::fs::File;
+use std::io::Read;
+use std::sync::atomic::{AtomicBool, AtomicU64};
+use std::sync::Arc;
+
+use async_native_tls::{Certificate, TlsConnector};
+use async_net::TcpStream;
 use dashmap::DashMap;
 use futures::io::{AsyncReadExt, AsyncWriteExt};
 use futures::lock::Mutex;
+use futures::{AsyncWrite, AsyncRead};
 use ql2::version_dummy::Version;
 use scram::client::{ScramClient, ServerFinal, ServerFirst};
 use serde::{Deserialize, Serialize};
-use std::borrow::Cow;
-use std::net::SocketAddr;
-use std::sync::atomic::{AtomicBool, AtomicU64};
-use std::sync::Arc;
 use tracing::trace;
 
+use super::{bytes_to_string, StaticString, TcpStreamConnection};
+use crate::constants::{
+    BUFFER_SIZE, DEFAULT_AUTHENTICATION_METHOD, DEFAULT_RETHINKDB_DBNAME,
+    DEFAULT_RETHINKDB_HOSTNAME, DEFAULT_RETHINKDB_PASSWORD, DEFAULT_RETHINKDB_PORT,
+    DEFAULT_RETHINKDB_USER, NULL_BYTE, PROTOCOL_VERSION,
+};
+use crate::{err, InnerSession, Result, Session};
+
 /// Options accepted by [crate::r::connection]
-/// 
+///
 /// An asynchronous Connection to connect RethinkDB Database Server.
-/// 
+///
 /// # Example
 /// ```
 /// use reql_rust::r;
-/// 
+///
 /// let conn = r.connection()
 ///     .with_host("127.0.0.1")
 ///     .with_port(28015)
@@ -41,31 +40,40 @@ use tracing::trace;
 ///     .with_user("admin", "")
 ///     .connect();
 /// ```
-#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub struct ConnectionBuilder {
     /// Host of the RethinkDB instance. The default value is `localhost`.
-    pub host: Cow<'static, str>,
+    host: Cow<'static, str>,
 
     /// The driver port, by default `28015`.
-    pub port: u16,
+    port: u16,
 
     /// The database used if not explicitly specified in a query, by default `test`.
-    pub db: Cow<'static, str>,
+    db: Cow<'static, str>,
 
     /// The user account to connect as (default `admin`).
-    pub user: Cow<'static, str>,
+    user: Cow<'static, str>,
 
     /// The password for the user account to connect as (default `""`, empty).
-    pub password: Cow<'static, str>,
+    password: Cow<'static, str>,
+
+    tls_connector: Option<TlsConnector>,
+}
+
+#[derive(Debug, Clone)]
+#[non_exhaustive]
+pub struct SslContext<'a> {
+    pub ca_certs: &'a str,
+    pub auth_key: Option<&'a str>,
 }
 
 impl ConnectionBuilder {
     /**
      * This method initialize and launch connection.
-     * 
+     *
      * This is the same as `Connection::default()`.
-     * 
+     *
      * Default parameters are:
      * - `host` : localhost
      * - `port` : 28015
@@ -79,8 +87,24 @@ impl ConnectionBuilder {
     /// This method connect to database
     pub async fn connect(self) -> Result<Session> {
         let stream = TcpStream::connect((self.host.as_ref(), self.port)).await?;
+        let mut stream = TcpStreamConnection {
+            tls_stream: if let Some(connector) = &self.tls_connector {
+                let stream = connector.connect(self.host.as_ref(), stream.clone()).await?;
+                Some(stream)
+            } else {
+                None
+            },
+            stream,
+        };
+
+        if let Some(tcp_stream) = stream.tls_stream {
+            stream.tls_stream = Some(handshake(tcp_stream, &self).await?);
+        } else {
+            stream.stream = handshake(stream.stream, &self).await?;
+        }
+
         let inner = InnerSession {
-            stream: Mutex::new(handshake(stream, &self).await?),
+            stream: Mutex::new(stream),
             db: Mutex::new(self.db),
             channels: DashMap::new(),
             token: AtomicU64::new(0),
@@ -117,6 +141,24 @@ impl ConnectionBuilder {
         self.password = password.static_string();
         self
     }
+
+    /// This method set ssl connection
+    pub fn with_ssl(mut self, ssl_context: SslContext) -> Self {
+        let mut file = File::open(ssl_context.ca_certs).unwrap();
+        let mut certificate = Vec::new();
+        
+        file.read_to_end(&mut certificate).unwrap();
+
+        let certificate = if let Ok(cert) = Certificate::from_pem(&certificate) {
+            cert
+        } else {
+            Certificate::from_der(&certificate).unwrap()
+        };
+
+        self.tls_connector = Some(TlsConnector::new().add_root_certificate(certificate));
+
+        self
+    }
 }
 
 impl Default for ConnectionBuilder {
@@ -127,51 +169,8 @@ impl Default for ConnectionBuilder {
             db: DEFAULT_RETHINKDB_DBNAME.static_string(),
             user: DEFAULT_RETHINKDB_USER.static_string(),
             password: DEFAULT_RETHINKDB_PASSWORD.static_string(),
+            tls_connector: None,
         }
-    }
-}
-
-/// The arguments accepted by [crate::r::connection]
-pub trait Arg {
-    type ToAddrs: AsyncToSocketAddrs;
-
-    fn into_connect_opts(self) -> (Option<Self::ToAddrs>, ConnectionBuilder);
-}
-
-impl Arg for () {
-    type ToAddrs = SocketAddr;
-
-    fn into_connect_opts(self) -> (Option<Self::ToAddrs>, ConnectionBuilder) {
-        (None, Default::default())
-    }
-}
-
-impl Arg for ConnectionBuilder {
-    type ToAddrs = SocketAddr;
-
-    fn into_connect_opts(self) -> (Option<Self::ToAddrs>, ConnectionBuilder) {
-        (None, self)
-    }
-}
-
-impl<'a> Arg for &'a str {
-    type ToAddrs = (&'a str, u16);
-
-    fn into_connect_opts(self) -> (Option<Self::ToAddrs>, ConnectionBuilder) {
-        let opts = ConnectionBuilder::default();
-        (Some((self, opts.port)), opts)
-    }
-}
-
-impl<T> Arg for Args<(T, ConnectionBuilder)>
-where
-    T: AsyncToSocketAddrs,
-{
-    type ToAddrs = T;
-
-    fn into_connect_opts(self) -> (Option<Self::ToAddrs>, ConnectionBuilder) {
-        let Args((addr, opts)) = self;
-        (Some(addr), opts)
     }
 }
 
@@ -180,8 +179,15 @@ where
 // This method optimises message exchange as suggested in the RethinkDB
 // documentation by sending message 3 right after message 1, without waiting
 // for message 2 first.
-async fn handshake(mut stream: TcpStream, opts: &ConnectionBuilder) -> Result<TcpStream> {
+async fn handshake<T>(
+    mut stream: T,
+    opts: &ConnectionBuilder,
+) -> Result<T>
+where
+    T: Unpin + AsyncWrite + AsyncReadExt + AsyncRead + AsyncReadExt
+{
     trace!("sending supported version to RethinkDB");
+    
     stream
         .write_all(&(Version::V10 as i32).to_le_bytes())
         .await?; // message 1
