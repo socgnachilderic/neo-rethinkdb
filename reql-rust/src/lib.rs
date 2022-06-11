@@ -117,6 +117,7 @@ impl r {
     /// - [with_port(port: u16)](cmd::connect::ConnectionBuilder::with_port): the port to connect on (default `28015`).
     /// - [with_db(db_name: &'static str)](cmd::connect::ConnectionBuilder::with_db): the default database (default `test`).
     /// - [with_user(username: &'static str, password: &'static str)](cmd::connect::ConnectionBuilder::with_user): the user account and password to connect as (default `"admin", ""`).
+    /// - [with_timeout(timeout: std::time::Duration)](cmd::connect::ConnectionBuilder::with_timeout): timeout period in seconds for the connection to be opened.
     /// - [with_ssl(ssl_context: SslContext)](cmd::connect::ConnectionBuilder::with_ssl): a hash of options to support SSL connections.
     /// 
     ///

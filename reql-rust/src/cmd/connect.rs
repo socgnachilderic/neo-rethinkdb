@@ -5,16 +5,20 @@ use std::fs::File;
 use std::io::Read;
 use std::sync::atomic::{AtomicBool, AtomicU64};
 use std::sync::Arc;
+use std::time::Duration;
 
 use async_native_tls::{Certificate, TlsConnector};
 use async_net::TcpStream;
 use dashmap::DashMap;
+use futures::channel::oneshot;
 use futures::io::{AsyncReadExt, AsyncWriteExt};
 use futures::lock::Mutex;
-use futures::{AsyncWrite, AsyncRead};
+use futures::{AsyncRead, AsyncWrite};
 use ql2::version_dummy::Version;
 use scram::client::{ScramClient, ServerFinal, ServerFirst};
 use serde::{Deserialize, Serialize};
+use tokio::task;
+use tokio::time;
 use tracing::trace;
 
 use super::{bytes_to_string, StaticString, TcpStreamConnection};
@@ -58,6 +62,8 @@ pub struct ConnectionBuilder {
     /// The password for the user account to connect as (default `""`, empty).
     password: Cow<'static, str>,
 
+    timeout: Option<Duration>,
+
     tls_connector: Option<TlsConnector>,
 }
 
@@ -79,6 +85,8 @@ impl ConnectionBuilder {
      * - `port` : 28015
      * - `user` : admin
      * - `password` : ""
+     * - `timeout` : None
+     * - `tls_connector` : None
      */
     pub fn connection() -> Self {
         Self::default()
@@ -86,35 +94,26 @@ impl ConnectionBuilder {
 
     /// This method connect to database
     pub async fn connect(self) -> Result<Session> {
-        let stream = TcpStream::connect((self.host.as_ref(), self.port)).await?;
-        let mut stream = TcpStreamConnection {
-            tls_stream: if let Some(connector) = &self.tls_connector {
-                let stream = connector.connect(self.host.as_ref(), stream.clone()).await?;
-                Some(stream)
-            } else {
-                None
-            },
-            stream,
-        };
+        if let Some(timeout) = self.timeout {
+            let (sender, reciever) = oneshot::channel();
 
-        if let Some(tcp_stream) = stream.tls_stream {
-            stream.tls_stream = Some(handshake(tcp_stream, &self).await?);
+            task::spawn(async move { sender.send(self.new().await) });
+
+            let session = time::timeout(timeout, reciever)
+                .await
+                .expect(
+                    format!(
+                        "It took {} seconds to open the connection",
+                        timeout.as_secs_f32()
+                    )
+                    .as_str(),
+                )
+                .expect("The connection has been closed");
+
+            session
         } else {
-            stream.stream = handshake(stream.stream, &self).await?;
+            self.new().await
         }
-
-        let inner = InnerSession {
-            stream: Mutex::new(stream),
-            db: Mutex::new(self.db),
-            channels: DashMap::new(),
-            token: AtomicU64::new(0),
-            broken: AtomicBool::new(false),
-            change_feed: AtomicBool::new(false),
-        };
-
-        Ok(Session {
-            inner: Arc::new(inner),
-        })
     }
 
     /// This method set database host
@@ -142,11 +141,17 @@ impl ConnectionBuilder {
         self
     }
 
+    /// Timeout period in seconds for the connection to be opened
+    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+        self.timeout = Some(timeout);
+        self
+    }
+
     /// This method set ssl connection
     pub fn with_ssl(mut self, ssl_context: SslContext) -> Self {
         let mut file = File::open(ssl_context.ca_certs).unwrap();
         let mut certificate = Vec::new();
-        
+
         file.read_to_end(&mut certificate).unwrap();
 
         let certificate = if let Ok(cert) = Certificate::from_pem(&certificate) {
@@ -159,6 +164,40 @@ impl ConnectionBuilder {
 
         self
     }
+
+    async fn new(self) -> Result<Session> {
+        let stream = TcpStream::connect((self.host.as_ref(), self.port)).await?;
+        let mut stream = TcpStreamConnection {
+            tls_stream: if let Some(connector) = &self.tls_connector {
+                let stream = connector
+                    .connect(self.host.as_ref(), stream.clone())
+                    .await?;
+                Some(stream)
+            } else {
+                None
+            },
+            stream,
+        };
+
+        if let Some(tcp_stream) = stream.tls_stream {
+            stream.tls_stream = Some(handshake(tcp_stream, &self).await?);
+        } else {
+            stream.stream = handshake(stream.stream, &self).await?;
+        }
+
+        let inner = InnerSession {
+            stream: Mutex::new(stream),
+            db: Mutex::new(self.db),
+            channels: DashMap::new(),
+            token: AtomicU64::new(0),
+            broken: AtomicBool::new(false),
+            change_feed: AtomicBool::new(false),
+        };
+
+        Ok(Session {
+            inner: Arc::new(inner),
+        })
+    }
 }
 
 impl Default for ConnectionBuilder {
@@ -169,6 +208,7 @@ impl Default for ConnectionBuilder {
             db: DEFAULT_RETHINKDB_DBNAME.static_string(),
             user: DEFAULT_RETHINKDB_USER.static_string(),
             password: DEFAULT_RETHINKDB_PASSWORD.static_string(),
+            timeout: None,
             tls_connector: None,
         }
     }
@@ -179,15 +219,12 @@ impl Default for ConnectionBuilder {
 // This method optimises message exchange as suggested in the RethinkDB
 // documentation by sending message 3 right after message 1, without waiting
 // for message 2 first.
-async fn handshake<T>(
-    mut stream: T,
-    opts: &ConnectionBuilder,
-) -> Result<T>
+async fn handshake<T>(mut stream: T, opts: &ConnectionBuilder) -> Result<T>
 where
-    T: Unpin + AsyncWrite + AsyncReadExt + AsyncRead + AsyncReadExt
+    T: Unpin + AsyncWrite + AsyncReadExt + AsyncRead + AsyncReadExt,
 {
     trace!("sending supported version to RethinkDB");
-    
+
     stream
         .write_all(&(Version::V10 as i32).to_le_bytes())
         .await?; // message 1
