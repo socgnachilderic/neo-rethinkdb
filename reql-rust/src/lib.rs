@@ -76,6 +76,7 @@ use ql2::term::TermType;
 
 pub use prelude::Func;
 use serde::{de::DeserializeOwned, Serialize};
+use types::Point;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub use connection::*;
@@ -756,8 +757,63 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn point(self, arg: impl cmd::point::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a geometry object of type Point. 
+    /// The point is specified by two floating point numbers, 
+    /// the longitude (−180 to 180) and latitude (−90 to 90) of the point on a perfect sphere. 
+    /// See [Geospatial](https://rethinkdb.com/docs/geo-support/python/) support for more information on ReQL’s coordinate system.
+    /// 
+    /// Note you can also use [Point](crate::types::Point) as alternative.
+    /// 
+    /// ## Example
+    /// 
+    /// Define a point.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{Value, json};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": r.point(-122.423246, 37.779388)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Define a point with Point.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::Point;
+    /// use serde_json::{Value, json};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": Point::new(-122.423246, 37.779388)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn point(self, longitude: f64, latitude: f64) -> cmd::point::PointBuilder {
+        cmd::point::PointBuilder::new(Point::new(longitude, latitude))
     }
 
     pub fn polygon(self, arg: impl cmd::polygon::Arg) -> Command {

@@ -5,12 +5,29 @@ use std::{borrow::Cow, collections::HashMap};
 pub use reql_rust_types::*;
 pub use document::Document;
 pub use sequence::Sequence;
+pub use point::Point;
 pub use group_stream::{GroupStream, GroupItem};
 use serde::{Deserialize, Serialize, Serializer};
 
 mod document;
 mod sequence;
 mod group_stream;
+mod point;
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ReqlType {
+    Geometry,
+    GroupStream,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(rename_all = "PascalCase")]
+pub enum QueryTypeResponse {
+    Point,
+}
 
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
