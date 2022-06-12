@@ -1,12 +1,14 @@
+use std::fmt::Debug;
+
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use crate::Command;
-use crate::constants::{MAX_LONGITUDE_VALUE, MAX_LATITUDE_VALUE};
+use crate::constants::{MAX_LATITUDE_VALUE, MAX_LONGITUDE_VALUE};
 use crate::types::{QueryTypeResponse, ReqlType};
+use crate::Command;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Point {
     #[serde(rename = "$reql_type$")]
     pub reql_type: ReqlType,
@@ -42,6 +44,32 @@ impl Point {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Self>> {
-        self.command.unwrap().into_arg::<()>().into_cmd().run::<_, Self>(arg)
+        self.command
+            .unwrap()
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, Self>(arg)
+    }
+}
+
+impl Debug for Point {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Point")
+            .field("reql_type", &self.reql_type)
+            .field("coordinates", &self.coordinates)
+            .field("typ", &self.typ)
+            .finish()
+    }
+}
+
+impl PartialEq for Point {
+    fn eq(&self, other: &Self) -> bool {
+        self.coordinates == other.coordinates
+    }
+}
+
+impl PartialOrd for Point {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.coordinates.partial_cmp(&other.coordinates)
     }
 }

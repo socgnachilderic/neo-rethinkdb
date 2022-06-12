@@ -1,12 +1,76 @@
-use crate::{cmd, Command};
-use ql2::term::TermType;
+use std::fmt::Debug;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+use futures::{Stream, TryStreamExt};
+use ql2::term::TermType;
+use serde::{Deserialize, Serialize};
+
+use crate::types::{QueryTypeResponse, ReqlType};
+use crate::Command;
+
+use super::point::Point;
+
+#[derive(Serialize, Deserialize, Clone)]
+pub struct Polygon {
+    #[serde(rename = "$reql_type$")]
+    pub reql_type: ReqlType,
+    pub coordinates: Vec<Vec<[f64; 2]>>,
+    #[serde(rename = "type")]
+    pub typ: QueryTypeResponse,
+
+    #[serde(skip_deserializing, skip_serializing)]
+    command: Option<Command>,
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Polygon).with_arg(self).into_arg()
+impl Polygon {
+    pub fn new(points: &[Point]) -> Self {
+        assert!(points.len() >= 3);
+        let mut command = Command::new(TermType::Polygon);
+        let mut coordinates: Vec<[f64; 2]> = Vec::new();
+
+        for point in points.iter() {
+            command = command.with_arg(point.command.clone().unwrap());
+            coordinates.push(point.coordinates);
+        }
+
+        Self {
+            coordinates: vec![coordinates],
+            command: Some(command),
+            reql_type: ReqlType::Geometry,
+            typ: QueryTypeResponse::Polygon,
+        }
+    }
+
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Self>> {
+        self.make_query(arg).try_next().await
+    }
+
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Self>> {
+        self.command
+            .unwrap()
+            .into_arg::<()>()
+            .into_cmd()
+            .run::<_, Self>(arg)
+    }
+}
+
+impl Debug for Polygon {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Polygon")
+            .field("reql_type", &self.reql_type)
+            .field("coordinates", &self.coordinates)
+            .field("typ", &self.typ)
+            .finish()
+    }
+}
+
+impl PartialEq for Polygon {
+    fn eq(&self, other: &Self) -> bool {
+        self.coordinates == other.coordinates
+    }
+}
+
+impl PartialOrd for Polygon {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        self.coordinates.partial_cmp(&other.coordinates)
     }
 }

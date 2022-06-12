@@ -764,13 +764,12 @@ impl r {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::{Value, json};
-    /// use reql_rust::types::Point;
     /// 
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let points = [
-    ///         Point::new(-122.423246, 37.779388),
-    ///         Point::new(-121.886420, 37.329898),
+    ///         r.point(-122.423246, 37.779388),
+    ///         r.point(-121.886420, 37.329898),
     ///     ];
     /// 
     ///     let _ = r.table::<Value>("geo")
@@ -877,8 +876,73 @@ impl r {
         cmd::point::Point::new(longitude, latitude)
     }
 
-    pub fn polygon(self, arg: impl cmd::polygon::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a geometry object of type Polygon from three or more [Point](#method.point).
+    /// 
+    /// Note you can also use [Polygon](crate::types::Polygon) as alternative.
+    /// 
+    /// ## Example
+    /// 
+    /// Define a line.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{Value, json};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let rectangle = [
+    ///         r.point(-122.423246, 37.779388),
+    ///         r.point(-122.423246, 37.329898),
+    ///         r.point(-121.886420, 37.329898),
+    ///         r.point(-121.886420, 37.779388),
+    ///     ];
+    /// 
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 101,
+    ///             "route": r.polygon(&rectangle)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Define a point with Point.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{Polygon, Point};
+    /// use serde_json::{Value, json};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let rectangle = [
+    ///         Point::new(-122.423246, 37.779388),
+    ///         Point::new(-122.423246, 37.329898),
+    ///         Point::new(-121.886420, 37.329898),
+    ///         Point::new(-121.886420, 37.779388),
+    ///     ];
+    /// 
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": Polygon::new(&rectangle)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn polygon(self, points: &[cmd::point::Point]) -> cmd::polygon::Polygon {
+        cmd::polygon::Polygon::new(points)
     }
 
     /// Grant or deny access permissions for a user account, globally or on a per-database or per-table basis.
