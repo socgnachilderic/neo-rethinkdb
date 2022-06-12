@@ -867,7 +867,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::sum::SumBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [sum](#methods.sum) for more informations
+    /// See [sum](#method.sum) for more informations
     /// 
     /// ## Example
     /// 
@@ -889,7 +889,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::sum::SumBuilder::new_by_field(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [sum](#methods.sum) for more informations
+    /// See [sum](#method.sum) for more informations
     /// 
     /// ## Example
     /// 
@@ -924,7 +924,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::avg::AvgBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [avg](#methods.avg) for more informations
+    /// See [avg](#method.avg) for more informations
     /// 
     /// ## Example
     /// 
@@ -946,7 +946,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::avg::AvgBuilder::new_by_field(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [avg](#methods.avg) for more informations
+    /// See [avg](#method.avg) for more informations
     /// 
     /// ## Example
     /// 
@@ -1001,7 +1001,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::min::MinBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [min](#methods.min) for more informations
+    /// See [min](#method.min) for more informations
     /// 
     /// Return the element of the sequence with the smallest value in that field.
     /// 
@@ -1025,7 +1025,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::min::MinBuilder::new_by_value(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [min](#methods.min) for more informations
+    /// See [min](#method.min) for more informations
     /// 
     /// Ro apply the function to every element within the sequence and return the element which returns the smallest value from the function, 
     /// ignoring any elements where the function produces a non-existence error;
@@ -1083,7 +1083,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::max::MaxBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [max](#methods.max) for more informations
+    /// See [max](#method.max) for more informations
     /// 
     /// Return the element of the sequence with the largest value in that field.
     /// 
@@ -1107,7 +1107,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::max::MaxBuilder::new_by_value(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [max](#methods.max) for more informations
+    /// See [max](#method.max) for more informations
     /// 
     /// To apply the function to every element within the sequence and return the element which returns the largest value from the function, 
     /// ignoring any elements where the function produces a non-existence error;

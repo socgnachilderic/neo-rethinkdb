@@ -76,7 +76,6 @@ use ql2::term::TermType;
 
 pub use prelude::Func;
 use serde::{de::DeserializeOwned, Serialize};
-use types::Point;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub use connection::*;
@@ -753,8 +752,70 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn line(self, arg: impl cmd::line::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a geometry object of type Line from two or more [Point](#method.point).
+    /// 
+    /// Note you can also use [Line](crate::types::Line) as alternative.
+    /// 
+    /// ## Example
+    /// 
+    /// Define a line.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{Value, json};
+    /// use reql_rust::types::Point;
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let points = [
+    ///         Point::new(-122.423246, 37.779388),
+    ///         Point::new(-121.886420, 37.329898),
+    ///     ];
+    /// 
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 101,
+    ///             "route": r.line(&points)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Example
+    /// 
+    /// Define a point with Point.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{Line, Point};
+    /// use serde_json::{Value, json};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let points = [
+    ///         Point::new(-122.423246, 37.779388),
+    ///         Point::new(-121.886420, 37.329898),
+    ///     ];
+    /// 
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": Line::new(&points)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn line(self, points: &[cmd::point::Point]) -> cmd::line::Line {
+        cmd::line::Line::new(points)
     }
 
     /// Construct a geometry object of type Point. 
@@ -812,8 +873,8 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    pub fn point(self, longitude: f64, latitude: f64) -> cmd::point::PointBuilder {
-        cmd::point::PointBuilder::new(Point::new(longitude, latitude))
+    pub fn point(self, longitude: f64, latitude: f64) -> cmd::point::Point {
+        cmd::point::Point::new(longitude, latitude)
     }
 
     pub fn polygon(self, arg: impl cmd::polygon::Arg) -> Command {

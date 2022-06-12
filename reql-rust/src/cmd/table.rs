@@ -924,8 +924,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// or change any other configuration aspect for the table or the database.
     /// 
     /// A table will lose availability temporarily after rebalance is called; 
-    /// use the [wait](#methods.wait) command to wait for the table to become available again, 
-    /// or [status](#methods.status) to check if the table is available for writing.
+    /// use the [wait](#method.wait) command to wait for the table to become available again, 
+    /// or [status](#method.status) to check if the table is available for writing.
     /// 
     /// RethinkDB automatically rebalances tables when the number of shards are increased, 
     /// and as long as your documents have evenly distributed primary keys—such as the default UUIDs—it is rarely necessary to call `rebalance` manually. 
@@ -938,10 +938,10 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// The return value of rebalance is an object with two fields:
     /// * `rebalanced` : the number of tables rebalanced.
     /// * `status_changes` : a list of new and old table status values. Each element of the list will be an object with two fields:
-    ///     - `old_val` : The table’s [status](#methods.status) value before rebalance was executed.
+    ///     - `old_val` : The table’s [status](#method.status) value before rebalance was executed.
     ///     - `new_val` : The table’s `status` value after `rebalance` was executed. (This value will almost always indicate the table is unavailable.)
     /// 
-    /// See the [status](#methods.status) command for an explanation of the objects returned in the `old_val` and `new_val` fields.
+    /// See the [status](#method.status) command for an explanation of the objects returned in the `old_val` and `new_val` fields.
     /// 
     /// ## Example
     /// 
