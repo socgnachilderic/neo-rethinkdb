@@ -18,7 +18,7 @@ pub struct Line {
     pub typ: QueryTypeResponse,
 
     #[serde(skip_deserializing, skip_serializing)]
-    command: Option<Command>,
+    pub(crate) command: Option<Command>,
 }
 
 impl Line {
