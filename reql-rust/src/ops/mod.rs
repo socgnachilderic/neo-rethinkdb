@@ -210,6 +210,13 @@ pub trait ReqlOpsString: ReqlOps {
 pub trait ReqlOpsObject<T>: ReqlOps {}
 
 pub trait ReqlOpsGeometry: ReqlOps {
+    fn includes<A>(&self, geometry: A) -> cmd::includes::IncludesBuilder<bool>
+    where
+        A: ReqlOpsGeometry + Serialize,
+    {
+        cmd::includes::IncludesBuilder::new(geometry)._with_parent(self.get_parent())
+    }
+
     fn intersects<T>(&self, geometry: T) -> cmd::intersects::geometry::IntersectsBuilder
     where
         T: ReqlOpsGeometry + Serialize,

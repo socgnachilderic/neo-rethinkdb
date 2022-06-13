@@ -4,7 +4,7 @@ pub mod geometry {
     use serde::Serialize;
 
     use crate::cmd::run;
-    use crate::{Command, ops::ReqlOpsGeometry};
+    use crate::{ops::ReqlOpsGeometry, Command};
 
     #[derive(Debug, Clone)]
     pub struct IntersectsBuilder(pub(crate) Command);
@@ -20,12 +20,9 @@ pub mod geometry {
         pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<bool>> {
             self.make_query(arg).try_next().await
         }
-    
+
         pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<bool>> {
-            self.0
-                .into_arg::<()>()
-                .into_cmd()
-                .run::<_, bool>(arg)
+            self.0.into_arg::<()>().into_cmd().run::<_, bool>(arg)
         }
 
         pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -36,34 +33,41 @@ pub mod geometry {
 }
 
 pub mod sequence {
+    use std::marker::PhantomData;
+
     use futures::{Stream, TryStreamExt};
     use ql2::term::TermType;
+    use serde::de::DeserializeOwned;
     use serde::Serialize;
-    use serde_json::Value;
 
     use crate::cmd::run;
-    use crate::{Command, ops::ReqlOpsGeometry};
+    use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsGeometry, ReqlOpsSequence};
+    use crate::types::Sequence;
+    use crate::Command;
 
     #[derive(Debug, Clone)]
-    pub struct IntersectsBuilder(pub(crate) Command);
+    pub struct IntersectsBuilder<T>(pub(crate) Command, PhantomData<T>);
 
-    impl IntersectsBuilder {
-        pub(crate) fn new<T: ReqlOpsGeometry + Serialize>(sequence: &[T]) -> Self {
+    impl<T: ReqlOpsGeometry + Serialize + DeserializeOwned + Unpin> IntersectsBuilder<T> {
+        pub(crate) fn new(sequence: &[T]) -> Self {
             let arg = Command::from_json(sequence);
             let command = Command::new(TermType::Intersects).with_arg(arg);
 
-            Self(command)
+            Self(command, PhantomData)
         }
 
-        pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Value>> {
+        pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Sequence<T>>> {
             self.make_query(arg).try_next().await
         }
-    
-        pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Value>> {
+
+        pub fn make_query(
+            self,
+            arg: impl run::Arg,
+        ) -> impl Stream<Item = crate::Result<Sequence<T>>> {
             self.0
                 .into_arg::<()>()
                 .into_cmd()
-                .run::<_, Value>(arg)
+                .run::<_, Sequence<T>>(arg)
         }
 
         pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -71,16 +75,14 @@ pub mod sequence {
             self
         }
     }
+
+    impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for IntersectsBuilder<T> {}
+
+    impl<T> ReqlOpsDocManipulation for IntersectsBuilder<T> {}
+
+    impl<T> ReqlOps for IntersectsBuilder<T> {
+        fn get_parent(&self) -> Command {
+            self.0.clone()
+        }
+    }
 }
-
-
-
-// pub trait Arg {
-//     fn arg(self) -> cmd::Arg<()>;
-// }
-
-// impl Arg for Command {
-//     fn arg(self) -> cmd::Arg<()> {
-//         Self::new(TermType::Intersects).with_arg(self).into_arg()
-//     }
-// }

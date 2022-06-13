@@ -394,10 +394,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn includes(self, arg: impl includes::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
     where
         A: run::Arg,
