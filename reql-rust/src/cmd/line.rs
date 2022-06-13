@@ -52,6 +52,38 @@ impl Line {
             .into_cmd()
             .run::<_, Self>(arg)
     }
+
+    /// Convert a Line object into a Polygon object. 
+    /// If the last point does not specify the same coordinates as the first point, `polygon` will close the polygon by connecting them.
+    /// 
+    /// ## Example
+    /// 
+    /// Create a line object and then convert it to a polygon.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let rectangle = [
+    ///         r.point(-122.423246,37.779388),
+    ///         r.point(-122.423246,37.329898),
+    ///         r.point(-121.886420,37.329898),
+    ///         r.point(-121.886420,37.779388),
+    ///     ];
+    /// 
+    ///     let _ = r.line(&rectangle)
+    ///         .fill()
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn fill(&self) -> super::fill::FillBuilder {
+        super::fill::FillBuilder::new()._with_parent(self.get_parent())
+    }
 }
 
 impl ReqlOpsGeometry for Line { }

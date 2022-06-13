@@ -91,7 +91,7 @@ impl Polygon {
     ///    Ok(())
     /// }
     /// ```
-    pub fn polygon_sub(self, polygon: &Polygon) -> PolygonSubBuilder {
+    pub fn polygon_sub(&self, polygon: &Polygon) -> PolygonSubBuilder {
         PolygonSubBuilder::new(polygon)._with_parent(self.command.clone().unwrap())
     }
 }

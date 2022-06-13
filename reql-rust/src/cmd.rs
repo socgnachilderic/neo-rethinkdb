@@ -378,10 +378,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn fill(self) -> Self {
-        Self::new(TermType::Fill).with_parent(self)
-    }
-
     pub fn to_geojson(self) -> Self {
         Self::new(TermType::ToGeojson).with_parent(self)
     }
