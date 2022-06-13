@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use crate::ops::{ReqlOps, ReqlOpsGeometry};
-use crate::types::{GeoType, ReqlType};
+use crate::types::{GeoType, ReqlType, GeoJson};
 use crate::Command;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -21,23 +21,16 @@ pub struct ReqlGeoJson<T> {
     pub(crate) command: Option<Command>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct GeoJson<T: Serialize + Copy> {
-    #[serde(rename = "type")]
-    pub typ: GeoType,
-    pub coordinates: T,
-}
-
-impl<T: Unpin + Serialize + DeserializeOwned + Copy> ReqlGeoJson<T> {
+impl<T: Unpin + Serialize + DeserializeOwned + Clone> ReqlGeoJson<T> {
     pub fn new(geojson: &GeoJson<T>) -> Self {
-        let arg = Command::from_json(geojson.clone());
+        let arg = Command::from_json(geojson);
         let command = Command::new(TermType::Geojson).with_arg(arg);
 
         Self {
             command: Some(command),
             reql_type: ReqlType::Geometry,
             typ: geojson.typ,
-            coordinates: geojson.coordinates,
+            coordinates: geojson.coordinates.clone(),
         }
     }
 
@@ -51,12 +44,6 @@ impl<T: Unpin + Serialize + DeserializeOwned + Copy> ReqlGeoJson<T> {
             .into_arg::<()>()
             .into_cmd()
             .run::<_, Self>(arg)
-    }
-}
-
-impl<T: Serialize + Copy> GeoJson<T> {
-    pub fn new(typ: GeoType, coordinates: T) -> Self {
-        Self { typ, coordinates }
     }
 }
 

@@ -9,7 +9,6 @@ pub use group_stream::{GroupStream, GroupItem};
 pub use crate::cmd::point::Point;
 pub use crate::cmd::line::Line;
 pub use crate::cmd::polygon::Polygon;
-pub use crate::cmd::geojson::GeoJson;
 use serde::{Deserialize, Serialize, Serializer};
 
 mod document;
@@ -205,6 +204,19 @@ pub struct ShardType<R> {
 pub struct ShardReplicasType {
     pub server: Cow<'static, str>,
     pub state: Cow<'static, str>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct GeoJson<T: Serialize + Clone> {
+    #[serde(rename = "type")]
+    pub typ: GeoType,
+    pub coordinates: T,
+}
+
+impl<T: Serialize + Clone> GeoJson<T> {
+    pub fn new(typ: GeoType, coordinates: T) -> Self {
+        Self { typ, coordinates }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]

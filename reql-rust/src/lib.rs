@@ -781,7 +781,7 @@ impl r {
     /// ```
     pub fn geojson<T>(self, geojson: &GeoJson<T>) -> cmd::geojson::ReqlGeoJson<T>
     where
-        T: Unpin + Serialize + DeserializeOwned + Copy,
+        T: Unpin + Serialize + DeserializeOwned + Clone,
     {
         cmd::geojson::ReqlGeoJson::new(geojson)
     }

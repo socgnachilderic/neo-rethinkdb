@@ -259,6 +259,35 @@ pub trait ReqlOpsGeometry: ReqlOps {
         cmd::distance::DistanceBuilder::new(geometry)._with_parent(self.get_parent())
     }
 
+    /// Convert a ReQL geometry object to a [GeoJSON](https://geojson.org/) object.
+    /// 
+    /// ## Example
+    /// 
+    /// Compute the distance between two points on the Earth in kilometers.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{Unit, GeoJson};
+    /// 
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    /// 
+    ///     let _ = r.point(-122.423246, 37.779388)
+    ///         .to_geojson::<GeoJson<[f64; 2]>>()
+    ///         .run(&session)
+    ///         .await?;
+    /// 
+    ///     Ok(())
+    /// }
+    /// ```
+    fn to_geojson<A>(&self) -> cmd::to_geojson::ToGeoJsonBuilder<A>
+    where
+        A: Unpin + Serialize + DeserializeOwned + Clone,
+    {
+        cmd::to_geojson::ToGeoJsonBuilder::new()._with_parent(self.get_parent())
+    }
+
     fn includes<A>(&self, geometry: A) -> cmd::includes::IncludesBuilder<bool>
     where
         A: ReqlOpsGeometry + Serialize,
