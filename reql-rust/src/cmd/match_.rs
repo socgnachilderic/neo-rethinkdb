@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use regex::Regex;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct MatchBuilder(pub(crate) Command);
@@ -34,7 +34,7 @@ impl MatchBuilder {
 
 impl ReqlOpsDocManipulation for MatchBuilder { }
 
-impl SuperOps for MatchBuilder {
+impl ReqlOps for MatchBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

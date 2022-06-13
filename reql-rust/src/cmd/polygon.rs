@@ -4,8 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{QueryTypeResponse, ReqlType};
 use crate::Command;
+use crate::ops::{ReqlOpsGeometry, ReqlOps};
+use crate::types::{QueryTypeResponse, ReqlType};
 
 use super::point::Point;
 use super::polygon_sub::PolygonSubBuilder;
@@ -92,6 +93,14 @@ impl Polygon {
     /// ```
     pub fn polygon_sub(self, polygon: &Polygon) -> PolygonSubBuilder {
         PolygonSubBuilder::new(polygon)._with_parent(self.command.clone().unwrap())
+    }
+}
+
+impl ReqlOpsGeometry for Polygon { }
+
+impl ReqlOps for Polygon {
+    fn get_parent(&self) -> Command {
+        self.command.clone().unwrap()
     }
 }
 

@@ -4,8 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
-use crate::types::{QueryTypeResponse, ReqlType};
 use crate::Command;
+use crate::ops::{ReqlOps, ReqlOpsGeometry};
+use crate::types::{QueryTypeResponse, ReqlType};
 
 use super::point::Point;
 
@@ -50,6 +51,14 @@ impl Line {
             .into_arg::<()>()
             .into_cmd()
             .run::<_, Self>(arg)
+    }
+}
+
+impl ReqlOpsGeometry for Line { }
+
+impl ReqlOps for Line {
+    fn get_parent(&self) -> Command {
+        self.command.clone().unwrap()
     }
 }
 

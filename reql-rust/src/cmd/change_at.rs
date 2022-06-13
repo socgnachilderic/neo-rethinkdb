@@ -4,7 +4,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct ChangeAtBuilder(pub(crate) Command);
@@ -38,7 +38,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for ChangeAtBui
 
 impl ReqlOpsDocManipulation for ChangeAtBuilder { }
 
-impl SuperOps for ChangeAtBuilder {
+impl ReqlOps for ChangeAtBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

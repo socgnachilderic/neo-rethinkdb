@@ -4,7 +4,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct BracketBuilder(pub(crate) Command);
@@ -35,7 +35,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for BracketBuil
 
 impl ReqlOpsDocManipulation for BracketBuilder { }
 
-impl SuperOps for BracketBuilder {
+impl ReqlOps for BracketBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Command, Func};
-use crate::ops::{ReqlOpsObject, SuperOps};
+use crate::ops::{ReqlOpsObject, ReqlOps};
 
 use super::StaticString;
 
@@ -68,7 +68,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> MinBuilder<T> {
 
 impl<T> ReqlOpsObject<T> for MinBuilder<T> {}
 
-impl<T> SuperOps for MinBuilder<T> {
+impl<T> ReqlOps for MinBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

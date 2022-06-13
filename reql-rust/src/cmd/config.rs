@@ -3,7 +3,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 
 use crate::Command;
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::types::{ConfigChangeValue, WritingResponseType};
 
 #[derive(Debug, Clone)]
@@ -41,7 +41,7 @@ impl ConfigBuilder {
     }
 }
 
-impl SuperOps for ConfigBuilder {
+impl ReqlOps for ConfigBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

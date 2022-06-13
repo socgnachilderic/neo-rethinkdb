@@ -4,7 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOpsArray, ReqlOps, ReqlOpsDocManipulation};
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -51,7 +51,7 @@ impl KeysBuilder {
 impl ReqlOpsArray for KeysBuilder { }
 impl ReqlOpsDocManipulation for KeysBuilder { }
 
-impl SuperOps for KeysBuilder {
+impl ReqlOps for KeysBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

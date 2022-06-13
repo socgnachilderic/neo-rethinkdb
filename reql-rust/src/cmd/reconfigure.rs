@@ -6,7 +6,7 @@ use ql2::term::TermType;
 use serde::{Serialize, Serializer};
 
 use crate::Command;
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::types::{Replicas, EmergencyRepair, ReconfigureResponseType};
 
 #[derive(Debug, Clone)]
@@ -69,7 +69,7 @@ impl ReconfigureBuilder {
     }
 }
 
-impl SuperOps for ReconfigureBuilder {
+impl ReqlOps for ReconfigureBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

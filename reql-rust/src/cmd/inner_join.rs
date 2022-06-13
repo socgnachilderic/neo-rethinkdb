@@ -8,7 +8,7 @@ use crate::{Command, Func};
 use crate::ops::{ReqlOpsJoin, ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::types::{Document, Sequence, JoinResponseType};
 
-use super::{run, table::TableBuilder, SuperOps};
+use super::{run, table::TableBuilder, ReqlOps};
 
 #[derive(Debug, Clone)]
 pub struct InnerJoinBuilder<A, T>(
@@ -58,7 +58,7 @@ impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for InnerJoi
 impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for InnerJoinBuilder<A, T> { }
 impl<A, T> ReqlOpsDocManipulation for InnerJoinBuilder<A, T> { }
 
-impl<A, T> SuperOps for InnerJoinBuilder<A, T> {
+impl<A, T> ReqlOps for InnerJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

@@ -71,7 +71,7 @@ pub mod prelude;
 mod proto;
 pub mod types;
 
-use prelude::SuperOps;
+use prelude::ReqlOps;
 use ql2::term::TermType;
 
 pub use prelude::Func;
@@ -650,7 +650,7 @@ impl r {
     /// ```
     pub fn union<A, T>(self, sequence: &[&A]) -> cmd::union::UnionBuilder<T>
     where
-        A: SuperOps,
+        A: ReqlOps,
         T: Unpin + Serialize + DeserializeOwned,
     {
         cmd::union::UnionBuilder::new(sequence)
@@ -745,10 +745,6 @@ impl r {
     }
 
     pub fn geojson(self, arg: impl cmd::geojson::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn intersects(self, arg: impl cmd::intersects::Arg) -> Command {
         arg.arg().into_cmd()
     }
 

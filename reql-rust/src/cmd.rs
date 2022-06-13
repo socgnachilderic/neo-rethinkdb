@@ -162,7 +162,7 @@ pub mod without;
 pub mod year;
 pub mod zip;
 
-use crate::ops::{SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation};
 use crate::Command;
 use async_native_tls::TlsStream;
 use async_net::TcpStream;
@@ -398,10 +398,6 @@ impl<'a> Command {
         arg.arg().into_cmd().with_parent(self)
     }
 
-    pub fn intersects(self, arg: impl intersects::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
     where
         A: run::Arg,
@@ -413,7 +409,7 @@ impl<'a> Command {
 
 impl ReqlOpsDocManipulation for Command {}
 
-impl SuperOps for Command {
+impl ReqlOps for Command {
     fn get_parent(&self) -> Command {
         self.clone()
     }

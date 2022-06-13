@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct SetUnionBuilder<T>(
@@ -39,7 +39,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SetUnionBui
 
 impl<T> ReqlOpsDocManipulation for SetUnionBuilder<T> { }
 
-impl<T> SuperOps for SetUnionBuilder<T> {
+impl<T> ReqlOps for SetUnionBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

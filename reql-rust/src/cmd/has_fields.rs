@@ -4,7 +4,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct HasFieldsBuilder(pub(crate) Command);
@@ -35,7 +35,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for HasFieldsBu
 
 impl ReqlOpsDocManipulation for HasFieldsBuilder { }
 
-impl SuperOps for HasFieldsBuilder {
+impl ReqlOps for HasFieldsBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

@@ -3,7 +3,7 @@ use std::borrow::Cow;
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -38,7 +38,7 @@ impl DowncaseBuilder {
     }
 }
 
-impl SuperOps for DowncaseBuilder {
+impl ReqlOps for DowncaseBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

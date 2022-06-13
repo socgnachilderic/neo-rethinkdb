@@ -2,7 +2,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
 use crate::Command;
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::types::StatusResponseType;
 
 #[derive(Debug, Clone)]
@@ -35,7 +35,7 @@ impl StatusBuilder {
     }
 }
 
-impl SuperOps for StatusBuilder {
+impl ReqlOps for StatusBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

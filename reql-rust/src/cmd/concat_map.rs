@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOpsArray, ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
@@ -45,7 +45,7 @@ impl<A: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<A> for ConcatMapBu
 impl<T> ReqlOpsDocManipulation for ConcatMapBuilder<T> { }
 impl<A> ReqlOpsArray for ConcatMapBuilder<A> { }
 
-impl<A> SuperOps for ConcatMapBuilder<A> {
+impl<A> ReqlOps for ConcatMapBuilder<A> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct SetIntersectionBuilder<T>(
@@ -38,7 +38,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> SetIntersectionBuilder<T> {
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SetIntersectionBuilder<T> { }
 impl<T> ReqlOpsDocManipulation for SetIntersectionBuilder<T> { }
 
-impl<T> SuperOps for SetIntersectionBuilder<T> {
+impl<T> ReqlOps for SetIntersectionBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

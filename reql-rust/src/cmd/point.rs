@@ -5,6 +5,7 @@ use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::{MAX_LATITUDE_VALUE, MAX_LONGITUDE_VALUE};
+use crate::ops::{ReqlOpsGeometry, ReqlOps};
 use crate::types::{QueryTypeResponse, ReqlType};
 use crate::Command;
 
@@ -49,6 +50,14 @@ impl Point {
             .into_arg::<()>()
             .into_cmd()
             .run::<_, Self>(arg)
+    }
+}
+
+impl ReqlOpsGeometry for Point { }
+
+impl ReqlOps for Point {
+    fn get_parent(&self) -> Command {
+        self.command.clone().unwrap()
     }
 }
 

@@ -4,7 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
@@ -41,7 +41,7 @@ impl<A: Unpin + DeserializeOwned> ReduceBuilder<A> {
     }
 }
 
-impl<A> SuperOps for ReduceBuilder<A> {
+impl<A> ReqlOps for ReduceBuilder<A> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

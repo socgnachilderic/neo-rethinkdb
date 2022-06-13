@@ -4,7 +4,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct SpliceAtBuilder(pub(crate) Command);
@@ -38,7 +38,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SpliceAtBui
 
 impl ReqlOpsDocManipulation for SpliceAtBuilder { }
 
-impl SuperOps for SpliceAtBuilder {
+impl ReqlOps for SpliceAtBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

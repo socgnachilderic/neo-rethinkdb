@@ -8,7 +8,7 @@ use crate::{Command, Func};
 use crate::ops::{ReqlOpsJoin, ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::types::{Document, Sequence, JoinResponseType};
 
-use super::{run, table::TableBuilder, SuperOps};
+use super::{run, table::TableBuilder, ReqlOps};
 
 #[derive(Debug, Clone)]
 pub struct EqJoinBuilder<A, T>(
@@ -80,7 +80,7 @@ impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for EqJoinBu
 impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for EqJoinBuilder<A, T> { }
 impl<A, T> ReqlOpsDocManipulation for EqJoinBuilder<A, T> { }
 
-impl<A, T> SuperOps for EqJoinBuilder<A, T> {
+impl<A, T> ReqlOps for EqJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

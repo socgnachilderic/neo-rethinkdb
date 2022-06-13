@@ -9,7 +9,7 @@ use crate::{Command, Func};
 use crate::ops::{ReqlOpsSequence, ReqlOpsDocManipulation};
 use crate::types::{IdentifierFormat, ReadMode, Document, Sequence};
 
-use super::{run, SuperOps};
+use super::{run, ReqlOps};
 
 #[derive(Debug, Clone)]
 pub struct TableBuilder<T>(
@@ -1104,7 +1104,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsDocManipulation for TableBuilder<T> { }
 
-impl<T: Unpin + Serialize + DeserializeOwned> SuperOps for TableBuilder<T> {
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOps for TableBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

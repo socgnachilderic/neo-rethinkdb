@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct WithoutBuilder<T>(
@@ -38,7 +38,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> WithoutBuilder<T> {
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for WithoutBuilder<T> { }
 impl<T> ReqlOpsDocManipulation for WithoutBuilder<T> { }
 
-impl<T> SuperOps for WithoutBuilder<T> {
+impl<T> ReqlOps for WithoutBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }
