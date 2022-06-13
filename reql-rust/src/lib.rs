@@ -740,10 +740,6 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn distance(self, arg: impl cmd::distance::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
     pub fn geojson(self, arg: impl cmd::geojson::Arg) -> Command {
         arg.arg().into_cmd()
     }

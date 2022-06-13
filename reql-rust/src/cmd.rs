@@ -374,10 +374,6 @@ impl<'a> Command {
         Self::new(TermType::ToJsonString).with_parent(self)
     }
 
-    pub fn distance(self, arg: impl distance::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn to_geojson(self) -> Self {
         Self::new(TermType::ToGeojson).with_parent(self)
     }

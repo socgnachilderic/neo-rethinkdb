@@ -50,7 +50,6 @@ pub struct WritingResponseType<T> {
     /// Each object will have two keys: {new_val: <new value>, old_val: <old value>}.
     pub changes: Option<Vec<ConfigChange<T>>>,
 
-
     /// For an update operation.
     /// For an insert operation.
     pub deleted: Option<u32>,
@@ -316,4 +315,25 @@ pub enum Status {
 pub enum EmergencyRepair {
     UnsafeRollback,
     UnsafeRollbackOrErase,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum Unit {
+    #[serde(rename = "m")]
+    Meter,
+    #[serde(rename = "km")]
+    Kilometer,
+    #[serde(rename = "mi")]
+    InternationalMile,
+    #[serde(rename = "nm")]
+    NauticalMile,
+    #[serde(rename = "ft")]
+    InternationalFoot,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum GeoSystem {
+    #[serde(rename = "unit_sphere")]
+    UnitSphere,
+    WGS84,
 }

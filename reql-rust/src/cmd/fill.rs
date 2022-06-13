@@ -4,6 +4,7 @@ use ql2::term::TermType;
 use crate::Command;
 use crate::types::Polygon;
 
+#[derive(Debug, Clone)]
 pub struct FillBuilder(pub(crate) Command);
 
 impl FillBuilder {
