@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Command;
 use crate::ops::{ReqlOpsGeometry, ReqlOps};
-use crate::types::{QueryTypeResponse, ReqlType};
+use crate::types::{GeoType, ReqlType};
 
 use super::point::Point;
 use super::polygon_sub::PolygonSubBuilder;
@@ -17,7 +17,7 @@ pub struct Polygon {
     pub reql_type: ReqlType,
     pub coordinates: Vec<Vec<[f64; 2]>>,
     #[serde(rename = "type")]
-    pub typ: QueryTypeResponse,
+    pub typ: GeoType,
 
     #[serde(skip_deserializing, skip_serializing)]
     pub(crate) command: Option<Command>,
@@ -38,7 +38,7 @@ impl Polygon {
             coordinates: vec![coordinates],
             command: Some(command),
             reql_type: ReqlType::Geometry,
-            typ: QueryTypeResponse::Polygon,
+            typ: GeoType::Polygon,
         }
     }
 

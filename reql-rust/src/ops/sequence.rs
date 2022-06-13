@@ -216,7 +216,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// each row of the left-hand sequence will be compared with
     /// each row of the right-hand sequence  to find all pairs of rows which satisfy the predicate.
     /// Each matched pair of rows of both sequences are combined  into a result row.
-    /// In most cases, you will want to follow the join with [zip](self::ReqlOpsJoin::zip) to combine the left and right results.
+    /// In most cases, you will want to follow the join with [zip](super::ReqlOpsJoin::zip) to combine the left and right results.
     ///
     /// ```text
     /// Note that inner_join is slower and much less efficient than using eq_join or concat_map with get_all.
@@ -271,7 +271,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// The returned sequence represents a union of the left-hand sequence and the right-hand sequence:
     /// all documents in the left-hand sequence will be returned,
     /// each matched with a document in the right-hand sequence if one satisfies the predicate condition.
-    /// In most cases, you will want to follow the join with [zip](self::ReqlOpsJoin::zip) to combine the left and right results.
+    /// In most cases, you will want to follow the join with [zip](super::ReqlOpsJoin::zip) to combine the left and right results.
     ///
     /// ```
     /// use reql_rust::prelude::*;
@@ -322,7 +322,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// The result set of `eq_join` is a stream or array of objects. 
     /// Each object in the returned set will be an object of the form { "left": <left-document>, "right": <right-document> }, 
     /// where the values of left and right will be the joined documents. 
-    /// Use the [zip](self::ReqlOpsJoin::zip) command to merge the left and right fields together.
+    /// Use the [zip](super::ReqlOpsJoin::zip) command to merge the left and right fields together.
     /// 
     /// The results from `eq_join` are, by default, not ordered. Providing [with_ordered(true)](cmd::eq_join::EqJoinBuilder::with_ordered) 
     /// will cause `eq_join` to order the output based on the left side input stream. 

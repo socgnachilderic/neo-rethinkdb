@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::Command;
 use crate::ops::{ReqlOps, ReqlOpsGeometry};
-use crate::types::{QueryTypeResponse, ReqlType};
+use crate::types::{GeoType, ReqlType};
 
 use super::point::Point;
 
@@ -16,7 +16,7 @@ pub struct Line {
     pub reql_type: ReqlType,
     pub coordinates: Vec<[f64; 2]>,
     #[serde(rename = "type")]
-    pub typ: QueryTypeResponse,
+    pub typ: GeoType,
 
     #[serde(skip_deserializing, skip_serializing)]
     pub(crate) command: Option<Command>,
@@ -37,7 +37,7 @@ impl Line {
             coordinates,
             command: Some(command),
             reql_type: ReqlType::Geometry,
-            typ: QueryTypeResponse::LineString,
+            typ: GeoType::LineString,
         }
     }
 

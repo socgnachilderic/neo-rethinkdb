@@ -9,6 +9,7 @@ pub use group_stream::{GroupStream, GroupItem};
 pub use crate::cmd::point::Point;
 pub use crate::cmd::line::Line;
 pub use crate::cmd::polygon::Polygon;
+pub use crate::cmd::geojson::GeoJson;
 use serde::{Deserialize, Serialize, Serializer};
 
 mod document;
@@ -25,7 +26,7 @@ pub enum ReqlType {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub enum QueryTypeResponse {
+pub enum GeoType {
     LineString,
     Point,
     Polygon,

@@ -9,7 +9,7 @@ use crate::Command;
 #[derive(Debug, Clone)]
 pub struct DistanceBuilder(pub(crate) Command, pub(crate) DistanceOption);
 
-#[derive(Debug, Clone, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Serialize, Default)]
 #[non_exhaustive]
 pub struct DistanceOption {
     #[serde(skip_serializing_if = "Option::is_none")]

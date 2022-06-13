@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::constants::{MAX_LATITUDE_VALUE, MAX_LONGITUDE_VALUE};
 use crate::ops::{ReqlOpsGeometry, ReqlOps};
-use crate::types::{QueryTypeResponse, ReqlType};
+use crate::types::{GeoType, ReqlType};
 use crate::Command;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -15,7 +15,7 @@ pub struct Point {
     pub reql_type: ReqlType,
     pub coordinates: [f64; 2],
     #[serde(rename = "type")]
-    pub typ: QueryTypeResponse,
+    pub typ: GeoType,
 
     #[serde(skip_deserializing, skip_serializing)]
     pub(crate) command: Option<Command>,
@@ -35,7 +35,7 @@ impl Point {
         Self {
             reql_type: ReqlType::Geometry,
             coordinates: [longitude, latitude],
-            typ: QueryTypeResponse::Point,
+            typ: GeoType::Point,
             command: Some(command),
         }
     }
