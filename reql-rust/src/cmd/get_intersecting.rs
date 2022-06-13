@@ -6,7 +6,6 @@ use ql2::term::TermType;
 use serde::Serialize;
 
 use crate::ops::ReqlOpsGeometry;
-use crate::types::Polygon;
 use crate::Command;
 
 use super::StaticString;
@@ -33,15 +32,15 @@ impl<A: Serialize + ReqlOpsGeometry> GetIntersectingBuilder<A> {
         Self(command, PhantomData)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Polygon>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<serde_json::Value>> {
         self.make_query(arg).try_next().await
     }
 
     pub fn make_query(
         self,
         arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<Polygon>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, Polygon>(arg)
+    ) -> impl Stream<Item = crate::Result<serde_json::Value>> {
+        self.0.into_arg::<()>().into_cmd().run::<_, serde_json::Value>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {

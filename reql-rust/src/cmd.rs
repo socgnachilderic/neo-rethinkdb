@@ -374,10 +374,6 @@ impl<'a> Command {
         Self::new(TermType::ToJsonString).with_parent(self)
     }
 
-    pub fn get_nearest(self, arg: impl get_nearest::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
     where
         A: run::Arg,

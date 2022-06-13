@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::ops::{ReqlOpsDocManipulation, ReqlOpsGeometry, ReqlOpsSequence};
-use crate::types::{Document, IdentifierFormat, ReadMode, Sequence};
+use crate::types::{Document, IdentifierFormat, ReadMode, Sequence, Point};
 use crate::{Command, Func};
 
 use super::{run, ReqlOps};
@@ -872,7 +872,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// }
     /// ```
     pub fn get_intersecting<A>(
-        self,
+        &self,
         geometry: &A,
         index: &'static str,
     ) -> super::get_intersecting::GetIntersectingBuilder<A>
@@ -881,6 +881,48 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     {
         super::get_intersecting::GetIntersectingBuilder::new(geometry, index)
             ._with_parent(self.get_parent())
+    }
+
+    /// Return a list of documents closest to a specified point based on a geospatial index, sorted in order of increasing distance.
+    /// 
+    /// Optional methods are:
+    /// 
+    /// - [with_max_results(max_results: usize)](crate::cmd::get_nearest::GetNearestBuilder::with_max_results)
+    /// the maximum number of results to return (default 100).
+    /// - [with_unit(unit: reql_rust::types::Unit)](crate::cmd::get_nearest::GetNearestBuilder::with_unit)
+    /// Unit for the distance. Possible values are
+    /// `Unit::Meter` (the default), `Unit::Kilometer`, `Unit::InternationalMile`, `Unit::NauticalMile`, `Unit::InternationalFoot`.
+    /// - [with_max_dist(max_dist: usize)](crate::cmd::get_nearest::GetNearestBuilder::with_max_dist)
+    /// the maximum distance from an object to the specified point (default 100 km).
+    /// - [with_geo_system(geo_system: reql_rust::types::GeoSystem)](crate::cmd::get_nearest::GetNearestBuilder::with_geo_system)
+    /// the reference ellipsoid to use for geographic coordinates. 
+    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry, 
+    /// or `GeoSystem::UnitSphere`, a perfect sphere of 1 meter radius.
+    /// 
+    /// The return value will be an array of two-item objects with the keys `dist` and `doc`, 
+    /// set to the distance between the specified point and the document 
+    /// (in the units specified with `unit`, defaulting to meters) and the document itself, respectively. 
+    /// The array will be sorted by the values of `dist`.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let secret_base = r.point(-122.422876, 37.777128);
+    ///     
+    ///     r.table::<serde_json::Value>("hideouts")
+    ///         .get_nearest(&secret_base, "location")
+    ///         .with_max_results(45)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn get_nearest(&self, point: &Point, index: &'static str) -> super::get_nearest::GetNearestBuilder {
+        super::get_nearest::GetNearestBuilder::new(point, index)._with_parent(self.get_parent())
     }
 
     /// Grant or deny access permissions for a user account, per-table basis.
@@ -907,7 +949,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
+    pub fn grant(&self, username: &str) -> super::grant::GrantBuilder {
         super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
     }
 
@@ -952,8 +994,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn config(self) -> super::config::ConfigBuilder {
-        super::config::ConfigBuilder::new()._with_parent(self.into())
+    pub fn config(&self) -> super::config::ConfigBuilder {
+        super::config::ConfigBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Rebalances the shards of a table. When called on a database, all the tables in that database will be rebalanced.
@@ -998,7 +1040,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
+    pub fn rebalance(&self) -> super::rebalance::RebalanceBuilder {
         super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
     }
 
@@ -1067,7 +1109,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
+    pub fn reconfigure(&self) -> super::reconfigure::ReconfigureBuilder {
         super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
     }
 
@@ -1093,7 +1135,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn status(self) -> super::status::StatusBuilder {
+    pub fn status(&self) -> super::status::StatusBuilder {
         super::status::StatusBuilder::new()._with_parent(self.get_parent())
     }
 
@@ -1135,7 +1177,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn wait(self) -> super::wait::WaitBuilder {
+    pub fn wait(&self) -> super::wait::WaitBuilder {
         super::wait::WaitBuilder::new()._with_parent(self.get_parent())
     }
 }
