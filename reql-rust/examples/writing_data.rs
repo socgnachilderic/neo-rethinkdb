@@ -32,10 +32,10 @@ async fn main() -> Result<()> {
 
     let posts = vec![post_2, post_3];
 
-    let result = my_table.insert(&[post_1]).run(&conn).await?;
+    let result = my_table.insert(&post_1).run(&conn).await?;
     dbg!(result);
 
-    let result = my_table.insert(&posts).run(&conn).await?;
+    let result = my_table.insert_many(&posts).run(&conn).await?;
     dbg!(result);
 
     let result = my_table

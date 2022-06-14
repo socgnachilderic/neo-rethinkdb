@@ -227,7 +227,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     ///
     /// Return a list of all matchups between Marvel and DC heroes in which the DC hero could beat the Marvel hero in a fight.
     ///
-    /// ```
+    /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
@@ -273,7 +273,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// each matched with a document in the right-hand sequence if one satisfies the predicate condition.
     /// In most cases, you will want to follow the join with [zip](super::ReqlOpsJoin::zip) to combine the left and right results.
     ///
-    /// ```
+    /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
@@ -391,7 +391,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// 
     /// Join these tables using `user_id` on the users table and `id` on the posts table:
     /// 
-    /// ```
+    /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
@@ -442,7 +442,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// 
     /// ## Example
     /// 
-    /// ```
+    /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
@@ -500,7 +500,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     ///         Users { id: 3, user: "jane".to_string(), email: "jane@foo.com".to_string(), posts: Some([2, 3, 6]) },
     ///     ];
     /// 
-    ///     user_table.insert(&users).run(&session).await?;
+    ///     user_table.insert_many(&users).run(&session).await?;
     /// 
     ///     let _ = user_table.with_fields::<serde_json::Value>(&["id", "user"])
     ///         .run(&session)
@@ -523,7 +523,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// 
     /// Construct a sequence of all posts wroten by Marvel users. The field posts is an array of one or more posts.
     /// 
-    /// ```
+    /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
@@ -544,7 +544,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     ///         Users { id: 3, user: "jane".to_string(), posts: Some([2, 3, 6]) },
     ///     ];
     /// 
-    ///     user_table.insert(&users).run(&session).await?;
+    ///     user_table.insert_many(&users).run(&session).await?;
     /// 
     ///     let _ = user_table.concat_map::<serde_json::Value>(func!(|row| row.bracket("posts")))
     ///         .run(&session)
@@ -1115,7 +1115,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// 
     /// Which unique villains have been vanquished by Marvel heroes?
     /// 
-    /// ```
+    /// ```ignore
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
     /// 

@@ -72,12 +72,11 @@ mod proto;
 pub mod types;
 
 use prelude::ReqlOps;
-use ql2::term::TermType;
 
 pub use prelude::Func;
 use serde::{de::DeserializeOwned, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
-use types::{GeoJson, Point, Polygon, Line};
+use types::{GeoJson, Point, Polygon, Line, DateTime};
 
 pub use connection::*;
 pub use err::*;
@@ -681,8 +680,35 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn now(self) -> Command {
-        Command::new(TermType::Now)
+    /// Return a time object representing the current time in UTC. 
+    /// The command now() is computed once when the server receives the query, 
+    /// so multiple instances of r.now() will always return the same time inside a query.
+    /// 
+    /// ## Example
+    ///
+    /// Add a new user with the time at which he subscribed.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{json, Value};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("users")
+    ///         .table::<Value>("users")
+    ///         .insert(&json!({
+    ///             "name": "John",
+    ///             "subscription_date": r.now()
+    ///         }))
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn now(self) -> DateTime {
+        DateTime::now()
     }
 
     pub fn time(self, arg: impl cmd::time::Arg) -> Command {
@@ -760,6 +786,7 @@ impl r {
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
+    /// use serde_json::{Value, json};
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
@@ -769,12 +796,12 @@ impl r {
     ///         .await?
     ///         .unwrap();
     ///     
-    ///     r.table::<serde_json::Value>("geo")
-    ///         .insert(&[serde_json::json!({
+    ///     r.table::<Value>("geo")
+    ///         .insert(&json!({
     ///             "id": "sfo",
     ///             "name": "Mont Cameroun",
     ///             "neighborhood": circle
-    ///         })])
+    ///         }))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -797,6 +824,7 @@ impl r {
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
+    /// use serde_json::{Value, json};
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
@@ -806,12 +834,12 @@ impl r {
     ///         .await?
     ///         .unwrap();
     ///     
-    ///     r.table::<serde_json::Value>("geo")
-    ///         .insert(&[serde_json::json!({
+    ///     r.table::<Value>("geo")
+    ///         .insert(&json!({
     ///             "id": "sfo",
     ///             "name": "Mont Cameroun",
     ///             "neighborhood": circle_unfill
-    ///         })])
+    ///         }))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -849,11 +877,11 @@ impl r {
     ///     );
     ///
     ///     let _ = r.table::<Value>("geo")
-    ///         .insert(&[json!({
+    ///         .insert(&json!({
     ///             "id": "sfo",
     ///             "name": "Yaounde",
     ///             "location": r.geojson(&geo_json)
-    ///         })])
+    ///         }))
     ///         .run(&session)
     ///         .await?;
     ///
@@ -888,10 +916,10 @@ impl r {
     ///     ];
     ///
     ///     let _ = r.table::<Value>("geo")
-    ///         .insert(&[json!({
+    ///         .insert(&json!({
     ///             "id": 101,
     ///             "route": r.line(&points)
-    ///         })])
+    ///         }))
     ///         .run(&session)
     ///         .await?;
     ///
@@ -917,11 +945,11 @@ impl r {
     ///     ];
     ///
     ///     let _ = r.table::<Value>("geo")
-    ///         .insert(&[json!({
+    ///         .insert(&json!({
     ///             "id": 1,
     ///             "name": "Yaounde",
     ///             "location": Line::new(&points)
-    ///         })])
+    ///         }))
     ///         .run(&session)
     ///         .await?;
     ///
@@ -951,11 +979,11 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("geo")
-    ///         .insert(&[json!({
+    ///         .insert(&json!({
     ///             "id": 1,
     ///             "name": "Yaounde",
     ///             "location": r.point(-122.423246, 37.779388)
-    ///         })])
+    ///         }))
     ///         .run(&session)
     ///         .await?;
     ///
@@ -976,11 +1004,11 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("geo")
-    ///         .insert(&[json!({
+    ///         .insert(&json!({
     ///             "id": 1,
     ///             "name": "Yaounde",
     ///             "location": Point::new(-122.423246, 37.779388)
-    ///         })])
+    ///         }))
     ///         .run(&session)
     ///         .await?;
     ///
@@ -1014,10 +1042,10 @@ impl r {
     ///     ];
     ///
     ///     let _ = r.table::<Value>("geo")
-    ///         .insert(&[json!({
+    ///         .insert(&json!({
     ///             "id": 101,
     ///             "route": r.polygon(&rectangle)
-    ///         })])
+    ///         }))
     ///         .run(&session)
     ///         .await?;
     ///
@@ -1045,11 +1073,11 @@ impl r {
     ///     ];
     ///
     ///     let _ = r.table::<Value>("geo")
-    ///         .insert(&[json!({
+    ///         .insert(&json!({
     ///             "id": 1,
     ///             "name": "Yaounde",
     ///             "location": Polygon::new(&rectangle)
-    ///         })])
+    ///         }))
     ///         .run(&session)
     ///         .await?;
     ///

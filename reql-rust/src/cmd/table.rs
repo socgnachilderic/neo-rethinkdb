@@ -117,7 +117,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///
     /// Create a simple index based on the nested field `author > name`.
     ///
-    /// ```
+    /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
@@ -162,7 +162,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///
     /// Create a compound index based on the fields `postId` and `date`.
     ///
-    /// ```
+    /// ```ignore
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
@@ -561,7 +561,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         super::get_write_hook::GetWriteBuilder::new()._with_parent(self.get_parent())
     }
 
-    ///
+    /// Insert one data.
+    /// 
     /// ## Example
     ///
     /// Insert a document into the table `posts`.
@@ -586,7 +587,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         content: "Dolor sit amet".to_string()
     ///     };
     ///     
-    ///     r.table("posts").insert(&[post]).run(&conn).await?;
+    ///     r.table("posts").insert(&post).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -627,7 +628,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         content: "Dolor sit amet".to_string(),
     ///     };
     ///     
-    ///     r.table("posts").insert(&[post]).run(&conn).await?;
+    ///     r.table("posts").insert(&post).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
@@ -648,6 +649,11 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///    "unchanged": 0
     /// }
     /// ```
+    pub fn insert(&self, document: &T) -> super::insert::InsertBuilder<T> {
+        super::insert::InsertBuilder::new(document)._with_parent(self.get_parent())
+    }
+
+    /// Insert many data.
     ///
     /// ## Example
     ///
@@ -670,6 +676,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         id: "william".to_string(),
     ///         email: "william@rethinkdb.com".to_string()
     ///     };
+    /// 
     ///     let user_2 = Users {
     ///         id: "lara".to_string(),
     ///         email: "lara@rethinkdb.com".to_string()
@@ -677,13 +684,14 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///
     ///     let users = vec![user_1, user_2];
     ///     
-    ///     r.table("posts").insert(&users).run(&conn).await?;
+    ///     r.table("posts").insert_many(&users).run(&conn).await?;
     ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn insert(&self, documents: &[T]) -> super::insert::InsertBuilder<T> {
-        super::insert::InsertBuilder::new(documents)._with_parent(self.get_parent())
+    pub fn insert_many(&self, documents: &[T]) -> super::insert::InsertBuilder<T> {
+        assert!(documents.len() > 0);
+        super::insert::InsertBuilder::new_many(documents)._with_parent(self.get_parent())
     }
 
     /// `sync` ensures that writes on a given table are written to permanent storage.

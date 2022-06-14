@@ -5,6 +5,8 @@ pub(crate) const DEFAULT_AUTHENTICATION_METHOD: &'static str = "SCRAM-SHA-256";
 pub(crate) const DATA_SIZE: usize = 4;
 pub(crate) const TOKEN_SIZE: usize = 8;
 pub(crate) const HEADER_SIZE: usize = DATA_SIZE + TOKEN_SIZE;
+pub(crate) const NANOS_PER_SEC: i128 = 1_000_000_000;
+pub(crate) const NANOS_PER_MSEC: i128 = 1_000_000;
 
 pub const DEFAULT_RETHINKDB_HOSTNAME: &'static str = "localhost";
 pub const DEFAULT_RETHINKDB_DBNAME: &'static str = "test";
