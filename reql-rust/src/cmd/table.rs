@@ -856,17 +856,21 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///
     /// Which of the locations in a list of parks intersect `circle`?
     /// 
-    /// ```ignore
+    /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// use reql_rust::types::{Circle, Point, GeoType};
+    /// use reql_rust::types::{Point, Unit};
     ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     let point = Point::new(-117.220406, 32.719464);
-    ///     let circle = Circle::new(&point, 10).with_unit(GeoType::InternationalMile).run(&conn);
+    ///     let circle = r.circle(&point, 10)
+    ///         .with_unit(Unit::InternationalMile)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap();
     ///     
-    ///     r.table::<serde_json::Value>("parks").get_intersecting(&circle1, "area").run(&conn).await?;
+    ///     r.table::<serde_json::Value>("parks").get_intersecting(&circle, "area").run(&conn).await?;
     ///
     ///     Ok(())
     /// }

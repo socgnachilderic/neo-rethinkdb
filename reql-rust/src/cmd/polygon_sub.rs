@@ -2,6 +2,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
 use crate::Command;
+use crate::ops::{ReqlOpsGeometry, ReqlOps};
 use crate::types::Polygon;
 
 pub struct PolygonSubBuilder(pub(crate) Command);
@@ -27,5 +28,13 @@ impl PolygonSubBuilder {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl ReqlOpsGeometry for PolygonSubBuilder {}
+
+impl ReqlOps for PolygonSubBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }

@@ -77,7 +77,7 @@ use ql2::term::TermType;
 pub use prelude::Func;
 use serde::{de::DeserializeOwned, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
-use types::GeoJson;
+use types::{GeoJson, Point, Polygon, Line};
 
 pub use connection::*;
 pub use err::*;
@@ -737,8 +737,89 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn circle(self, arg: impl cmd::circle::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a circular polygon.
+    /// A circle in RethinkDB is a polygon **approximating** a circle of a given radius around a given center, 
+    /// consisting of a specified number of vertices (default 32).
+    /// 
+    /// Optional methods available with `circle` are:
+    /// 
+    /// - [with_num_vertices(num_vertices: &usize)](crate::cmd::circle::CircleBuilder::with_num_vertices):
+    /// the number of vertices in the polygon or line. Defaults to 32.
+    /// - [with_geo_system(geo_system: reql_rust::types::GeoSystem)](crate::cmd::circle::CircleBuilder::with_geo_system):
+    /// the reference ellipsoid to use for geographic coordinates. 
+    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry, 
+    /// or `GeoSystem::UnitSphere`, a perfect sphere of 1 meter radius.
+    /// - [with_unit(unit: reql_rust::types::Unit)](crate::cmd::circle::CircleBuilder::with_unit)
+    /// Unit for the distance. Possible values are
+    /// `Unit::Meter` (the default), `Unit::Kilometer`, `Unit::InternationalMile`, `Unit::NauticalMile`, `Unit::InternationalFoot`.
+    /// 
+    /// ## Example
+    ///
+    /// Define a circle.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let point = r.point(-122.422876, 37.777128);
+    ///     let circle = r.circle(&point, 10)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap();
+    ///     
+    ///     r.table::<serde_json::Value>("geo")
+    ///         .insert(&[serde_json::json!({
+    ///             "id": "sfo",
+    ///             "name": "Mont Cameroun",
+    ///             "neighborhood": circle
+    ///         })])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn circle(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Polygon> {
+        cmd::circle::CircleBuilder::new(point, radius)
+    }
+
+
+    /// Construct a circular line.
+    /// 
+    /// See [circle](#method.circle) for more information.
+    /// 
+    /// ## Example
+    ///
+    /// Define a circle_unfill.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let point = r.point(-122.422876, 37.777128);
+    ///     let circle_unfill = r.circle_unfill(&point, 10)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap();
+    ///     
+    ///     r.table::<serde_json::Value>("geo")
+    ///         .insert(&[serde_json::json!({
+    ///             "id": "sfo",
+    ///             "name": "Mont Cameroun",
+    ///             "neighborhood": circle_unfill
+    ///         })])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn circle_unfill(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Line> {
+        cmd::circle::CircleBuilder::new(point, radius).with_fill(false)
     }
 
     /// Convert a [GeoJSON](https://geojson.org/) object to a ReQL geometry object.

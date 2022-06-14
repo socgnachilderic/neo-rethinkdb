@@ -2,6 +2,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
 use crate::Command;
+use crate::ops::{ReqlOpsGeometry, ReqlOps};
 use crate::types::Polygon;
 
 #[derive(Debug, Clone)]
@@ -31,3 +32,10 @@ impl FillBuilder {
     }
 }
 
+impl ReqlOpsGeometry for FillBuilder {}
+
+impl ReqlOps for FillBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
+    }
+}

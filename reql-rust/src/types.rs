@@ -1,19 +1,19 @@
-
 use std::{borrow::Cow, collections::HashMap};
 
-#[doc(inline)]
-pub use reql_rust_types::*;
-pub use document::Document;
-pub use sequence::Sequence;
-pub use group_stream::{GroupStream, GroupItem};
-pub use crate::cmd::point::Point;
-pub use crate::cmd::line::Line;
-pub use crate::cmd::polygon::Polygon;
 use serde::{Deserialize, Serialize, Serializer};
 
+pub use crate::cmd::line::Line;
+pub use crate::cmd::point::Point;
+pub use crate::cmd::polygon::Polygon;
+pub use document::Document;
+pub use group_stream::{GroupItem, GroupStream};
+#[doc(inline)]
+pub use reql_rust_types::*;
+pub use sequence::Sequence;
+
 mod document;
-mod sequence;
 mod group_stream;
+mod sequence;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -46,7 +46,7 @@ pub struct DbResponseType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct WritingResponseType<T> {
-    /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation. 
+    /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation.
     /// Each object will have two keys: {new_val: <new value>, old_val: <old value>}.
     pub changes: Option<Vec<ConfigChange<T>>>,
 
@@ -104,7 +104,6 @@ pub struct WriteHookResponseType {
     pub query: Cow<'static, str>,
 }
 
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct UngroupResponseType<G, V> {
@@ -114,12 +113,12 @@ pub struct UngroupResponseType<G, V> {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyncResponseType {
-    synced: u8
+    synced: u8,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct WaitResponseType {
-    ready: u32
+    ready: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -144,7 +143,7 @@ pub struct RebalanceResponseType {
 pub struct ReconfigureResponseType {
     pub reconfigured: u8,
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
-    pub status_changes: Vec<ConfigChange<StatusResponseType>>
+    pub status_changes: Vec<ConfigChange<StatusResponseType>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

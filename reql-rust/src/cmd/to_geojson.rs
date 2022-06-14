@@ -6,6 +6,7 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 use crate::Command;
+use crate::ops::{ReqlOpsGeometry, ReqlOps};
 use crate::types::GeoJson;
 
 #[derive(Debug, Clone)]
@@ -32,5 +33,13 @@ impl<T: Unpin + Serialize + DeserializeOwned + Clone> ToGeoJsonBuilder<T> {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl<T> ReqlOpsGeometry for ToGeoJsonBuilder<T> {}
+
+impl<T> ReqlOps for ToGeoJsonBuilder<T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }
