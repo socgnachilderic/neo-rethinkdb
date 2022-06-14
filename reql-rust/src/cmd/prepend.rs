@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct PrependBuilder<T>(
@@ -38,7 +38,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> PrependBuilder<T> {
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for PrependBuilder<T> { }
 impl<T> ReqlOpsDocManipulation for PrependBuilder<T> { }
 
-impl<T> SuperOps for PrependBuilder<T> {
+impl<T> ReqlOps for PrependBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

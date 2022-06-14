@@ -5,11 +5,11 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use crate::ops::{ReqlOpsDocManipulation, ReqlOpsGeometry, ReqlOpsSequence};
+use crate::types::{Document, IdentifierFormat, ReadMode, Sequence, Point};
 use crate::{Command, Func};
-use crate::ops::{ReqlOpsSequence, ReqlOpsDocManipulation};
-use crate::types::{IdentifierFormat, ReadMode, Document, Sequence};
 
-use super::{run, SuperOps};
+use super::{run, ReqlOps};
 
 #[derive(Debug, Clone)]
 pub struct TableBuilder<T>(
@@ -39,7 +39,10 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(&self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<Sequence<Document<T>>>> {
+    pub fn make_query(
+        &self,
+        arg: impl run::Arg,
+    ) -> impl Stream<Item = crate::Result<Sequence<Document<T>>>> {
         self.get_parent()
             .with_opts(self.1)
             .into_arg::<()>()
@@ -795,7 +798,10 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    pub fn get_all(&self, values: &[impl Serialize]) -> super::get_all::GetAllBuilder<Sequence<Document<T>>> {
+    pub fn get_all(
+        &self,
+        values: &[impl Serialize],
+    ) -> super::get_all::GetAllBuilder<Sequence<Document<T>>> {
         super::get_all::GetAllBuilder::new(values)._with_parent(self.get_parent())
     }
 
@@ -827,10 +833,11 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     /// ## Example
     ///
     /// Sort the result in descending order based on the `created_at` column.
+    /// 
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let mut conn = r.connection().connect().await?;
     ///     
@@ -839,23 +846,101 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///     Ok(())
     /// }
     /// ```
-    ///
     pub fn order_by(&self) -> super::order_by::OrderByBuilder<T> {
         super::order_by::OrderByBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// Grant or deny access permissions for a user account, per-table basis.
-    /// 
-    /// See [r::grant](crate::r::grant) for more information
-    /// 
+    /// Get all documents where the given geometry object intersects the geometry object of the requested geospatial index.
+    ///
     /// ## Example
+    ///
+    /// Which of the locations in a list of parks intersect `circle`?
     /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::{Point, Unit};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let point = Point::new(-117.220406, 32.719464);
+    ///     let circle = r.circle(&point, 10)
+    ///         .with_unit(Unit::InternationalMile)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap();
+    ///     
+    ///     r.table::<serde_json::Value>("parks").get_intersecting(&circle, "area").run(&conn).await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn get_intersecting<A>(
+        &self,
+        geometry: &A,
+        index: &'static str,
+    ) -> super::get_intersecting::GetIntersectingBuilder<A>
+    where
+        A: ReqlOpsGeometry + Serialize,
+    {
+        super::get_intersecting::GetIntersectingBuilder::new(geometry, index)
+            ._with_parent(self.get_parent())
+    }
+
+    /// Return a list of documents closest to a specified point based on a geospatial index, sorted in order of increasing distance.
+    /// 
+    /// Optional methods are:
+    /// 
+    /// - [with_max_results(max_results: usize)](crate::cmd::get_nearest::GetNearestBuilder::with_max_results)
+    /// the maximum number of results to return (default 100).
+    /// - [with_unit(unit: reql_rust::types::Unit)](crate::cmd::get_nearest::GetNearestBuilder::with_unit)
+    /// Unit for the distance. Possible values are
+    /// `Unit::Meter` (the default), `Unit::Kilometer`, `Unit::InternationalMile`, `Unit::NauticalMile`, `Unit::InternationalFoot`.
+    /// - [with_max_dist(max_dist: usize)](crate::cmd::get_nearest::GetNearestBuilder::with_max_dist)
+    /// the maximum distance from an object to the specified point (default 100 km).
+    /// - [with_geo_system(geo_system: reql_rust::types::GeoSystem)](crate::cmd::get_nearest::GetNearestBuilder::with_geo_system)
+    /// the reference ellipsoid to use for geographic coordinates. 
+    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry, 
+    /// or `GeoSystem::UnitSphere`, a perfect sphere of 1 meter radius.
+    /// 
+    /// The return value will be an array of two-item objects with the keys `dist` and `doc`, 
+    /// set to the distance between the specified point and the document 
+    /// (in the units specified with `unit`, defaulting to meters) and the document itself, respectively. 
+    /// The array will be sorted by the values of `dist`.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let secret_base = r.point(-122.422876, 37.777128);
+    ///     
+    ///     r.table::<serde_json::Value>("hideouts")
+    ///         .get_nearest(&secret_base, "location")
+    ///         .with_max_results(45)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn get_nearest(&self, point: &Point, index: &'static str) -> super::get_nearest::GetNearestBuilder {
+        super::get_nearest::GetNearestBuilder::new(point, index)._with_parent(self.get_parent())
+    }
+
+    /// Grant or deny access permissions for a user account, per-table basis.
+    ///
+    /// See [r::grant](crate::r::grant) for more information
+    ///
+    /// ## Example
+    ///
     /// Deny write permissions from the `chatapp` account for the `admin` table.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("users")
@@ -864,126 +949,126 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         .permit_write(false)
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
+    pub fn grant(&self, username: &str) -> super::grant::GrantBuilder {
         super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
     }
 
     /// Query (read and/or update) the configurations for individual tables.
-    /// 
-    /// The `config` command is a shorthand way to access the `table_config` 
-    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables). 
-    /// It will return the single row from the system that corresponds to the database configuration, 
+    ///
+    /// The `config` command is a shorthand way to access the `table_config`
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables).
+    /// It will return the single row from the system that corresponds to the database configuration,
     /// as if [get](super::table::TableBuilder::get) had been called on the system table with the UUID of the table in question.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Get the configuration for the `users` table.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::Value;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("users").config().run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Change the write acknowledgement requirement of the `users` table.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::ReadMode;
     /// use serde_json::{json, Value};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("users").config().update(json!({ "write_acks": ReadMode::Single })).run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn config(self) -> super::config::ConfigBuilder {
-        super::config::ConfigBuilder::new()._with_parent(self.into())
+    pub fn config(&self) -> super::config::ConfigBuilder {
+        super::config::ConfigBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Rebalances the shards of a table. When called on a database, all the tables in that database will be rebalanced.
-    /// 
-    /// The `rebalance` command operates by measuring the distribution of primary keys within a table and picking split points 
-    /// that will give each shard approximately the same number of documents. It won’t change the number of shards within a table, 
+    ///
+    /// The `rebalance` command operates by measuring the distribution of primary keys within a table and picking split points
+    /// that will give each shard approximately the same number of documents. It won’t change the number of shards within a table,
     /// or change any other configuration aspect for the table or the database.
-    /// 
-    /// A table will lose availability temporarily after rebalance is called; 
-    /// use the [wait](#methods.wait) command to wait for the table to become available again, 
-    /// or [status](#methods.status) to check if the table is available for writing.
-    /// 
-    /// RethinkDB automatically rebalances tables when the number of shards are increased, 
-    /// and as long as your documents have evenly distributed primary keys—such as the default UUIDs—it is rarely necessary to call `rebalance` manually. 
+    ///
+    /// A table will lose availability temporarily after rebalance is called;
+    /// use the [wait](#method.wait) command to wait for the table to become available again,
+    /// or [status](#method.status) to check if the table is available for writing.
+    ///
+    /// RethinkDB automatically rebalances tables when the number of shards are increased,
+    /// and as long as your documents have evenly distributed primary keys—such as the default UUIDs—it is rarely necessary to call `rebalance` manually.
     /// Cases where `rebalance` may need to be called include:
-    /// 
+    ///
     /// - Tables with unevenly distributed primary keys, such as incrementing integers
     /// - Changing a table’s primary key type
     /// - Increasing the number of shards on an empty table, then using non-UUID primary keys in that table
-    /// 
+    ///
     /// The return value of rebalance is an object with two fields:
     /// * `rebalanced` : the number of tables rebalanced.
     /// * `status_changes` : a list of new and old table status values. Each element of the list will be an object with two fields:
-    ///     - `old_val` : The table’s [status](#methods.status) value before rebalance was executed.
+    ///     - `old_val` : The table’s [status](#method.status) value before rebalance was executed.
     ///     - `new_val` : The table’s `status` value after `rebalance` was executed. (This value will almost always indicate the table is unavailable.)
-    /// 
-    /// See the [status](#methods.status) command for an explanation of the objects returned in the `old_val` and `new_val` fields.
-    /// 
+    ///
+    /// See the [status](#method.status) command for an explanation of the objects returned in the `old_val` and `new_val` fields.
+    ///
     /// ## Example
-    /// 
+    ///
     /// Rebalance a table.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::Value;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("users").rebalance().run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
+    pub fn rebalance(&self) -> super::rebalance::RebalanceBuilder {
         super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Reconfigure a table’s sharding and replication. Use the following methods:
-    /// 
+    ///
     /// * `with_shards(u8)` : the number of shards, an integer from 1-64. Required.
     /// * `with_replicas(reql_rust::types::Replicas)` : either an integer or a mapping object. Required.
     ///     - If `Replicas::Int`, it specifies the number of replicas per shard. Specifying more replicas than there are servers will return an error.
     ///     - If `Replicas::Map`,  it specifies key-value pairs of server tags and the number of replicas to assign to those servers:
-    ///     `{tag1: 2, tag2: 4, tag3: 2, ...}` . For more information about server tags, read 
+    ///     `{tag1: 2, tag2: 4, tag3: 2, ...}` . For more information about server tags, read
     ///     [Administration tools](https://rethinkdb.com/docs/administration-tools/).
     /// * `with_dry_run(bool)` : if true the generated configuration will not be applied to the table, only returned.
     /// * `with_emergency_repair(reql_rust::types::EmergencyRepair)` : Used for the Emergency Repair mode. See the separate section below.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Rebalance a table.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::Replicas;
     /// use serde_json::Value;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("superheroes")
@@ -992,24 +1077,24 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         .with_replicas(Replicas::Int(1))
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Reconfigure a table, specifying replicas by server tags.
-    /// 
+    ///
     /// ```
     /// use std::collections::HashMap;
     /// use std::borrow::Cow;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::Replicas;
     /// use serde_json::Value;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("superheroes")
@@ -1024,67 +1109,67 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         })
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
+    pub fn reconfigure(&self) -> super::reconfigure::ReconfigureBuilder {
         super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Return the status of a table.
-    /// 
-    /// The return value is an object providing information about the table’s shards, replicas and replica readiness states. 
+    ///
+    /// The return value is an object providing information about the table’s shards, replicas and replica readiness states.
     /// For a more complete discussion of the object fields, read about the `table_status` table in
     /// [System tables](https://rethinkdb.com/docs/system-tables/#status-tables).
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Get a table’s status.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::Value;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("users").status().run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn status(self) -> super::status::StatusBuilder {
+    pub fn status(&self) -> super::status::StatusBuilder {
         super::status::StatusBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// Wait for a table to be ready. 
-    /// A table may be temporarily unavailable after creation, rebalancing or reconfiguring. 
+    /// Wait for a table to be ready.
+    /// A table may be temporarily unavailable after creation, rebalancing or reconfiguring.
     /// The `wait` command blocks until the given table is fully up to date.
-    /// 
+    ///
     /// The `wait` command use two optional methods:
-    /// 
+    ///
     /// - `with_wait_for(reql_rust::types::WaitFor)` : a string indicating a table status to wait on before returning, one of
     /// `WaitFor::ReadyForOutdatedReads`, `WaitFor::ReadyForReads`, `WaitFor::ReadyForWrites`,
     /// `WaitFor::AllReplicasReady`. The default is `WaitFor::AllReplicasReady`.
     /// - `with_timeout(std::time::Duration)` : a number indicating maximum time, in seconds, to wait for the table to be ready.
     /// If this value is exceeded, a ReqlRuntimeError will be thrown.A value of 0 means no timeout. The default is 0 (no timeout).
-    /// 
+    ///
     /// The return value is an object consisting of a single field, ready.
     /// The value is an integer indicating the number of tables waited for.
     /// It will always be 1 when wait is called on a table.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Wait on a table to be ready.
-    /// 
+    ///
     /// ```
     /// use std::time::Duration;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::Value;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Value>("superheroes")
@@ -1092,19 +1177,19 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
     ///         .with_timeout(Duration::from_secs(10))
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    pub fn wait(self) -> super::wait::WaitBuilder {
+    pub fn wait(&self) -> super::wait::WaitBuilder {
         super::wait::WaitBuilder::new()._with_parent(self.get_parent())
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> { }
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsDocManipulation for TableBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<Document<T>> for TableBuilder<T> {}
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsDocManipulation for TableBuilder<T> {}
 
-impl<T: Unpin + Serialize + DeserializeOwned> SuperOps for TableBuilder<T> {
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOps for TableBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

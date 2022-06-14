@@ -162,7 +162,7 @@ pub mod without;
 pub mod year;
 pub mod zip;
 
-use crate::ops::{SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation};
 use crate::Command;
 use async_native_tls::TlsStream;
 use async_net::TcpStream;
@@ -374,38 +374,6 @@ impl<'a> Command {
         Self::new(TermType::ToJsonString).with_parent(self)
     }
 
-    pub fn distance(self, arg: impl distance::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn fill(self) -> Self {
-        Self::new(TermType::Fill).with_parent(self)
-    }
-
-    pub fn to_geojson(self) -> Self {
-        Self::new(TermType::ToGeojson).with_parent(self)
-    }
-
-    pub fn get_intersecting(self, arg: impl get_intersecting::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn get_nearest(self, arg: impl get_nearest::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn includes(self, arg: impl includes::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn intersects(self, arg: impl intersects::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
-    pub fn polygon_sub(self, arg: impl polygon_sub::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn run<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<T>>
     where
         A: run::Arg,
@@ -417,7 +385,7 @@ impl<'a> Command {
 
 impl ReqlOpsDocManipulation for Command {}
 
-impl SuperOps for Command {
+impl ReqlOps for Command {
     fn get_parent(&self) -> Command {
         self.clone()
     }

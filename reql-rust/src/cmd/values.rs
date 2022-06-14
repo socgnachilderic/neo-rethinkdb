@@ -3,7 +3,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::ops::{ReqlOpsArray, SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOpsArray, ReqlOps, ReqlOpsDocManipulation};
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -50,7 +50,7 @@ impl ValuesBuilder {
 impl ReqlOpsArray for ValuesBuilder { }
 impl ReqlOpsDocManipulation for ValuesBuilder { }
 
-impl SuperOps for ValuesBuilder {
+impl ReqlOps for ValuesBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

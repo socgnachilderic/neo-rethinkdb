@@ -71,12 +71,13 @@ pub mod prelude;
 mod proto;
 pub mod types;
 
-use prelude::SuperOps;
+use prelude::ReqlOps;
 use ql2::term::TermType;
 
 pub use prelude::Func;
 use serde::{de::DeserializeOwned, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
+use types::{GeoJson, Point, Polygon, Line};
 
 pub use connection::*;
 pub use err::*;
@@ -119,7 +120,7 @@ impl r {
     /// - [with_user(username: &'static str, password: &'static str)](cmd::connect::ConnectionBuilder::with_user): the user account and password to connect as (default `"admin", ""`).
     /// - [with_timeout(timeout: std::time::Duration)](cmd::connect::ConnectionBuilder::with_timeout): timeout period in seconds for the connection to be opened.
     /// - [with_ssl(ssl_context: SslContext)](cmd::connect::ConnectionBuilder::with_ssl): a hash of options to support SSL connections.
-    /// 
+    ///
     ///
     /// # Example
     ///
@@ -650,7 +651,7 @@ impl r {
     /// ```
     pub fn union<A, T>(self, sequence: &[&A]) -> cmd::union::UnionBuilder<T>
     where
-        A: SuperOps,
+        A: ReqlOps,
         T: Unpin + Serialize + DeserializeOwned,
     {
         cmd::union::UnionBuilder::new(sequence)
@@ -736,51 +737,346 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    pub fn circle(self, arg: impl cmd::circle::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a circular polygon.
+    /// A circle in RethinkDB is a polygon **approximating** a circle of a given radius around a given center, 
+    /// consisting of a specified number of vertices (default 32).
+    /// 
+    /// Optional methods available with `circle` are:
+    /// 
+    /// - [with_num_vertices(num_vertices: &usize)](crate::cmd::circle::CircleBuilder::with_num_vertices):
+    /// the number of vertices in the polygon or line. Defaults to 32.
+    /// - [with_geo_system(geo_system: reql_rust::types::GeoSystem)](crate::cmd::circle::CircleBuilder::with_geo_system):
+    /// the reference ellipsoid to use for geographic coordinates. 
+    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry, 
+    /// or `GeoSystem::UnitSphere`, a perfect sphere of 1 meter radius.
+    /// - [with_unit(unit: reql_rust::types::Unit)](crate::cmd::circle::CircleBuilder::with_unit)
+    /// Unit for the distance. Possible values are
+    /// `Unit::Meter` (the default), `Unit::Kilometer`, `Unit::InternationalMile`, `Unit::NauticalMile`, `Unit::InternationalFoot`.
+    /// 
+    /// ## Example
+    ///
+    /// Define a circle.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let point = r.point(-122.422876, 37.777128);
+    ///     let circle = r.circle(&point, 10)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap();
+    ///     
+    ///     r.table::<serde_json::Value>("geo")
+    ///         .insert(&[serde_json::json!({
+    ///             "id": "sfo",
+    ///             "name": "Mont Cameroun",
+    ///             "neighborhood": circle
+    ///         })])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn circle(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Polygon> {
+        cmd::circle::CircleBuilder::new(point, radius)
     }
 
-    pub fn distance(self, arg: impl cmd::distance::Arg) -> Command {
-        arg.arg().into_cmd()
+
+    /// Construct a circular line.
+    /// 
+    /// See [circle](#method.circle) for more information.
+    /// 
+    /// ## Example
+    ///
+    /// Define a circle_unfill.
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result, Session};
+    /// use reql_rust::prelude::*;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     let point = r.point(-122.422876, 37.777128);
+    ///     let circle_unfill = r.circle_unfill(&point, 10)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap();
+    ///     
+    ///     r.table::<serde_json::Value>("geo")
+    ///         .insert(&[serde_json::json!({
+    ///             "id": "sfo",
+    ///             "name": "Mont Cameroun",
+    ///             "neighborhood": circle_unfill
+    ///         })])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn circle_unfill(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Line> {
+        cmd::circle::CircleBuilder::new(point, radius).with_fill(false)
     }
 
-    pub fn geojson(self, arg: impl cmd::geojson::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Convert a [GeoJSON](https://geojson.org/) object to a ReQL geometry object.
+    /// RethinkDB only allows conversion of GeoJSON objects which have ReQL equivalents: Point, LineString, and Polygon. 
+    /// MultiPoint, MultiLineString, and MultiPolygon are not supported. 
+    /// (You could, however, store multiple points, lines and polygons in an array and use a geospatial multi index with them.)
+    /// 
+    /// Only longitude/latitude coordinates are supported. 
+    /// GeoJSON objects that use Cartesian coordinates, specify an altitude, 
+    /// or specify their own coordinate reference system will be rejected.
+    /// 
+    /// ## Example
+    ///
+    /// Define a line.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{GeoType, GeoJson};
+    /// use serde_json::{Value, json};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let geo_json = GeoJson::new(
+    ///         GeoType::Point,
+    ///         [-122.423246, 37.779388],
+    ///     );
+    ///
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": "sfo",
+    ///             "name": "Yaounde",
+    ///             "location": r.geojson(&geo_json)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn geojson<T>(self, geojson: &GeoJson<T>) -> cmd::geojson::ReqlGeoJson<T>
+    where
+        T: Unpin + Serialize + DeserializeOwned + Clone,
+    {
+        cmd::geojson::ReqlGeoJson::new(geojson)
     }
 
-    pub fn intersects(self, arg: impl cmd::intersects::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a geometry object of type Line from two or more [Point](#method.point).
+    ///
+    /// Note you can also use [Line](crate::types::Line) as alternative.
+    ///
+    /// ## Example
+    ///
+    /// Define a line.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{Value, json};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let points = [
+    ///         r.point(-122.423246, 37.779388),
+    ///         r.point(-121.886420, 37.329898),
+    ///     ];
+    ///
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 101,
+    ///             "route": r.line(&points)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Define a point with Point.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{Line, Point};
+    /// use serde_json::{Value, json};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let points = [
+    ///         Point::new(-122.423246, 37.779388),
+    ///         Point::new(-121.886420, 37.329898),
+    ///     ];
+    ///
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": Line::new(&points)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn line(self, points: &[cmd::point::Point]) -> cmd::line::Line {
+        cmd::line::Line::new(points)
     }
 
-    pub fn line(self, arg: impl cmd::line::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a geometry object of type Point.
+    /// The point is specified by two floating point numbers,
+    /// the longitude (−180 to 180) and latitude (−90 to 90) of the point on a perfect sphere.
+    /// See [Geospatial](https://rethinkdb.com/docs/geo-support/python/) support for more information on ReQL’s coordinate system.
+    ///
+    /// Note you can also use [Point](crate::types::Point) as alternative.
+    ///
+    /// ## Example
+    ///
+    /// Define a point.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{Value, json};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": r.point(-122.423246, 37.779388)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Define a point with Point.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::Point;
+    /// use serde_json::{Value, json};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": Point::new(-122.423246, 37.779388)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn point(self, longitude: f64, latitude: f64) -> cmd::point::Point {
+        cmd::point::Point::new(longitude, latitude)
     }
 
-    pub fn point(self, arg: impl cmd::point::Arg) -> Command {
-        arg.arg().into_cmd()
-    }
-
-    pub fn polygon(self, arg: impl cmd::polygon::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Construct a geometry object of type Polygon from three or more [Point](#method.point).
+    ///
+    /// Note you can also use [Polygon](crate::types::Polygon) as alternative.
+    ///
+    /// ## Example
+    ///
+    /// Define a line.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{Value, json};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let rectangle = [
+    ///         r.point(-122.423246, 37.779388),
+    ///         r.point(-122.423246, 37.329898),
+    ///         r.point(-121.886420, 37.329898),
+    ///         r.point(-121.886420, 37.779388),
+    ///     ];
+    ///
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 101,
+    ///             "route": r.polygon(&rectangle)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// Define a point with Point.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::{Polygon, Point};
+    /// use serde_json::{Value, json};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let rectangle = [
+    ///         Point::new(-122.423246, 37.779388),
+    ///         Point::new(-122.423246, 37.329898),
+    ///         Point::new(-121.886420, 37.329898),
+    ///         Point::new(-121.886420, 37.779388),
+    ///     ];
+    ///
+    ///     let _ = r.table::<Value>("geo")
+    ///         .insert(&[json!({
+    ///             "id": 1,
+    ///             "name": "Yaounde",
+    ///             "location": Polygon::new(&rectangle)
+    ///         })])
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn polygon(self, points: &[cmd::point::Point]) -> cmd::polygon::Polygon {
+        cmd::polygon::Polygon::new(points)
     }
 
     /// Grant or deny access permissions for a user account, globally or on a per-database or per-table basis.
-    /// 
+    ///
     /// There are four different permissions that can be granted to an account:
-    /// 
+    ///
     /// - `read` allows reading the data in tables.
     /// - `write` allows modifying data, including inserting, replacing/updating, and deleting.
-    /// - `connect` allows a user to open HTTP connections via the http command. 
+    /// - `connect` allows a user to open HTTP connections via the http command.
     /// This permission can only be granted in global scope.
     /// - `config` allows users to create/drop secondary indexes on a table and changing the cluster configuration;
     /// to create and drop tables, if granted on a database; and to create and drop databases, if granted globally.
-    /// 
+    ///
     /// Permissions may be granted on a global scope, or granted for a specific table or database.
-    /// The scope is defined by calling `grant` on its own 
+    /// The scope is defined by calling `grant` on its own
     /// (e.g., `r.grant()`, on a table (`r.table().grant()`), or on a database (`r.db().grant()`).
-    /// 
+    ///
     /// The `grant` command returns an object of the following form:
-    /// 
+    ///
     /// ```text
     /// {
     ///     "granted": 1,
@@ -792,63 +1088,63 @@ impl r {
     ///     ]
     /// }
     /// ```
-    /// 
-    /// The `granted` field will always be `1`, and the `permissions_changes` list will have one object, 
+    ///
+    /// The `granted` field will always be `1`, and the `permissions_changes` list will have one object,
     /// describing the new permissions values and the old values they were changed from (which may be `None`).
-    /// 
-    /// Permissions that are not defined on a local scope will be inherited from the next largest scope. 
-    /// For example, a write operation on a table will first check if `write` permissions are explicitly 
-    /// set to `true` or `false` for that table and account combination; 
-    /// if they are not, the `write` permissions for the database will be used if those are explicitly set; 
+    ///
+    /// Permissions that are not defined on a local scope will be inherited from the next largest scope.
+    /// For example, a write operation on a table will first check if `write` permissions are explicitly
+    /// set to `true` or `false` for that table and account combination;
+    /// if they are not, the `write` permissions for the database will be used if those are explicitly set;
     /// and if neither table nor database permissions are set for that account, the global `write` permissions for that account will be used.
-    /// 
+    ///
     /// ## Note
-    /// 
-    /// For all accounts other than the special, system-defined `admin` account, 
-    /// permissions that are not explicitly set in any scope will effectively be `false`. 
-    /// When you create a new user account by inserting a record into the [system table](https://rethinkdb.com/docs/system-tables/#users), 
+    ///
+    /// For all accounts other than the special, system-defined `admin` account,
+    /// permissions that are not explicitly set in any scope will effectively be `false`.
+    /// When you create a new user account by inserting a record into the [system table](https://rethinkdb.com/docs/system-tables/#users),
     /// that account will have **no** permissions until they are explicitly granted.
-    /// 
+    ///
     /// For a full description of permissions, read [Permissions and user accounts](https://rethinkdb.com/docs/permissions-and-accounts/).
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Grant `chatapp` the ability to use HTTP connections.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.grant("chatapp")
     ///         .permit_connect(true)
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Grant a `monitor` account read-only access to all databases.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.grant("monitor")
     ///         .permit_read(true)
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// See also:
     /// - [r::db::grant](cmd::db::DbBuilder::grant)
     /// - [r::table::grant](cmd::table::TableBuilder::grant)

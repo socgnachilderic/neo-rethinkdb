@@ -3,7 +3,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 
 use crate::Command;
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::types::GrantResponseType;
 
 #[derive(Debug, Clone)]
@@ -67,7 +67,7 @@ impl GrantBuilder {
     }
 }
 
-impl SuperOps for GrantBuilder {
+impl ReqlOps for GrantBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

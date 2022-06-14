@@ -5,7 +5,7 @@ use ql2::term::TermType;
 
 use crate::{Command, ops::ReqlOpsArray};
 
-use super::SuperOps;
+use super::ReqlOps;
 
 #[derive(Debug, Clone)]
 pub struct TableListBuilder(pub(crate) Command);
@@ -41,7 +41,7 @@ impl TableListBuilder {
 
 impl ReqlOpsArray for TableListBuilder { }
 
-impl SuperOps for TableListBuilder {
+impl ReqlOps for TableListBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

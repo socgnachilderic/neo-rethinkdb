@@ -3,7 +3,7 @@ use ql2::term::TermType;
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct SplitBuilder(pub(crate) Command);
@@ -37,7 +37,7 @@ impl SplitBuilder {
 
 impl ReqlOpsDocManipulation for SplitBuilder { }
 
-impl SuperOps for SplitBuilder {
+impl ReqlOps for SplitBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

@@ -4,7 +4,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{SuperOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct DeleteAtBuilder(pub(crate) Command);
@@ -41,7 +41,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for DeleteAtBui
 
 impl ReqlOpsDocManipulation for DeleteAtBuilder { }
 
-impl SuperOps for DeleteAtBuilder {
+impl ReqlOps for DeleteAtBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

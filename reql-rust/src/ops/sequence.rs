@@ -1,47 +1,14 @@
-use regex::Regex;
-use serde::de::DeserializeOwned;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
-use crate::Command;
-use crate::Func;
-
-use crate::cmd;
+use crate::{cmd, Func};
 use crate::cmd::table::TableBuilder;
+
 use crate::types::Document;
 use crate::types::Sequence;
 use crate::types::WritingResponseType;
 
-pub trait ReqlOpsJoin<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsSequence<T> {
-    /// Used to ‘zip’ up the result of a join by merging the ‘right’ fields into ‘left’ fields of each member of the sequence.
-    /// 
-    /// ## Example
-    /// 
-    /// ‘zips up’ the sequence by merging the left and right fields produced by a join.
-    /// 
-    /// ```
-    /// use reql_rust::prelude::*;
-    /// use reql_rust::{r, Result};
-    /// use serde::{Serialize, Deserialize};
-    /// use serde_json::Value;
-    ///
-    /// async fn example() -> Result<()> {
-    ///     let session = r.connection().connect().await?;
-    ///     let _ = r.table::<Value>("marvel")
-    ///         .eq_join(
-    ///             "main_dc_collaborator",
-    ///             &r.table::<Value>("dc"),
-    ///         )
-    ///         .zip()
-    ///         .run(&session)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn zip(&self) -> cmd::zip::ZipBuilder {
-        cmd::zip::ZipBuilder::new()._with_parent(self.get_parent())
-    }
-}
+use super::{ReqlOpsDocManipulation, ReqlOps, ReqlOpsGeometry};
 
 pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocManipulation {
     /// Turn a query into a changefeed, an infinite stream of objects
@@ -249,7 +216,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// each row of the left-hand sequence will be compared with
     /// each row of the right-hand sequence  to find all pairs of rows which satisfy the predicate.
     /// Each matched pair of rows of both sequences are combined  into a result row.
-    /// In most cases, you will want to follow the join with [zip](self::ReqlOpsJoin::zip) to combine the left and right results.
+    /// In most cases, you will want to follow the join with [zip](super::ReqlOpsJoin::zip) to combine the left and right results.
     ///
     /// ```text
     /// Note that inner_join is slower and much less efficient than using eq_join or concat_map with get_all.
@@ -304,7 +271,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// The returned sequence represents a union of the left-hand sequence and the right-hand sequence:
     /// all documents in the left-hand sequence will be returned,
     /// each matched with a document in the right-hand sequence if one satisfies the predicate condition.
-    /// In most cases, you will want to follow the join with [zip](self::ReqlOpsJoin::zip) to combine the left and right results.
+    /// In most cases, you will want to follow the join with [zip](super::ReqlOpsJoin::zip) to combine the left and right results.
     ///
     /// ```
     /// use reql_rust::prelude::*;
@@ -355,7 +322,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// The result set of `eq_join` is a stream or array of objects. 
     /// Each object in the returned set will be an object of the form { "left": <left-document>, "right": <right-document> }, 
     /// where the values of left and right will be the joined documents. 
-    /// Use the [zip](self::ReqlOpsJoin::zip) command to merge the left and right fields together.
+    /// Use the [zip](super::ReqlOpsJoin::zip) command to merge the left and right fields together.
     /// 
     /// The results from `eq_join` are, by default, not ordered. Providing [with_ordered(true)](cmd::eq_join::EqJoinBuilder::with_ordered) 
     /// will cause `eq_join` to order the output based on the left side input stream. 
@@ -794,7 +761,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     /// ```
     fn union<A, B>(&self, sequence: &[&A]) -> cmd::union::UnionBuilder<Sequence<Document<B>>>
     where
-        A: SuperOps,
+        A: ReqlOps,
         B: Unpin + Serialize + DeserializeOwned,
     {
         assert!(sequence.len() > 0);
@@ -867,7 +834,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::sum::SumBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [sum](#methods.sum) for more informations
+    /// See [sum](#method.sum) for more informations
     /// 
     /// ## Example
     /// 
@@ -889,7 +856,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::sum::SumBuilder::new_by_field(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [sum](#methods.sum) for more informations
+    /// See [sum](#method.sum) for more informations
     /// 
     /// ## Example
     /// 
@@ -924,7 +891,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::avg::AvgBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [avg](#methods.avg) for more informations
+    /// See [avg](#method.avg) for more informations
     /// 
     /// ## Example
     /// 
@@ -946,7 +913,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::avg::AvgBuilder::new_by_field(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [avg](#methods.avg) for more informations
+    /// See [avg](#method.avg) for more informations
     /// 
     /// ## Example
     /// 
@@ -1001,7 +968,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::min::MinBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [min](#methods.min) for more informations
+    /// See [min](#method.min) for more informations
     /// 
     /// Return the element of the sequence with the smallest value in that field.
     /// 
@@ -1025,7 +992,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::min::MinBuilder::new_by_value(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [min](#methods.min) for more informations
+    /// See [min](#method.min) for more informations
     /// 
     /// Ro apply the function to every element within the sequence and return the element which returns the smallest value from the function, 
     /// ignoring any elements where the function produces a non-existence error;
@@ -1083,7 +1050,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::max::MaxBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// See [max](#methods.max) for more informations
+    /// See [max](#method.max) for more informations
     /// 
     /// Return the element of the sequence with the largest value in that field.
     /// 
@@ -1107,7 +1074,7 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
         cmd::max::MaxBuilder::new_by_value(field_name)._with_parent(self.get_parent())
     }
 
-    /// See [max](#methods.max) for more informations
+    /// See [max](#method.max) for more informations
     /// 
     /// To apply the function to every element within the sequence and return the element which returns the largest value from the function, 
     /// ignoring any elements where the function produces a non-existence error;
@@ -1281,734 +1248,18 @@ pub trait ReqlOpsSequence<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsDocMa
     fn values(&self) -> cmd::values::ValuesBuilder {
         cmd::values::ValuesBuilder::new()._with_parent(self.get_parent())
     }
-}
 
-pub trait ReqlOpsDocManipulation: SuperOps {
-    /// Plucks out one or more attributes from either an object or a sequence of objects (projection).
-    /// 
-    /// ## Example
-    /// 
-    /// We just need information about IronMan’s reactor and not the rest of the document.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::Value;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .get("IronMan")
-    ///         .pluck::<_, Value>(["reactorState", "reactorPower"])
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    /// 
-    /// ## Example
-    /// 
-    /// For the hero beauty contest we only care about certain qualities.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::Value;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .pluck::<_, Value>(["beauty", "muscleTone", "charm"])
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    /// 
-    /// ## Example
-    /// 
-    /// Pluck can also be used on nested objects.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::{json, Value};
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .pluck::<_, Value>(json!({
-    ///             "abilities": {
-    ///                 "damage": true,
-    ///                 "mana_cost": true
-    ///             },
-    ///             "weapons": true
-    ///         }))
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    /// 
-    /// ## Example
-    /// 
-    /// Pluck can also be used on nested objects.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::{json, Value};
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .pluck::<_, Value>(
-    ///             json!({ "abilities": [ "damage", "mana cost" ] }),
-    ///             "weapons"
-    ///         )
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn pluck<A, B>(&self, fields: A) -> cmd::pluck::PluckBuilder<B>
+    fn includes<A>(&self, geometry: A) -> cmd::includes::IncludesBuilder<Sequence<A>>
     where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
+        A: ReqlOpsGeometry + Serialize + DeserializeOwned + Unpin,
     {
-        cmd::pluck::PluckBuilder::new(fields)._with_parent(self.get_parent())
+        cmd::includes::IncludesBuilder::new(geometry)._with_parent(self.get_parent())
     }
-
-    /// The opposite of pluck; takes an object or a sequence of objects, 
-    /// and returns them with the specified fields or paths removed.
-    /// 
-    /// ## Example
-    /// 
-    /// Since we don’t need it for this computation we’ll save bandwidth and 
-    /// leave out the list of IronMan’s romantic conquests.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::Value;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .get("IronMan")
-    ///         .without::<_, Value>("personalVictoriesList")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    /// 
-    /// ## Example
-    /// 
-    /// Without their prized weapons, our enemies will quickly be vanquished.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::Value;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .without::<_, Value>("weapons")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    /// 
-    /// ## Example
-    /// 
-    /// Nested objects can be used to remove the damage subfield from the weapons and abilities fields.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::{json, Value};
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .without::<_, Value>(json!({
-    ///             "abilities": {
-    ///                 "damage": true
-    ///             },
-    ///             "weapons": {
-    ///                 "damage": true
-    ///             }
-    ///         }))
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    /// 
-    /// ## Example
-    /// 
-    /// The nested syntax can quickly become overly verbose so there’s a shorthand for it.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// use serde_json::{json, Value};
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<Value>("marvel")
-    ///         .without::<_, Value>(json!({ 
-    ///             "weapons", "damage",
-    ///             "abilities": "damage"
-    ///         }))
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn without<A, B>(&self, fields: A) -> cmd::without::WithoutBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::without::WithoutBuilder::new(fields)._with_parent(self.get_parent())
-    }
-
-    /// Append a value to an array.
-    /// 
-    /// ## Example
-    /// 
-    /// Retrieve Iron Man’s equipment list with the addition of some new boots.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("ironman")
-    ///         .bracket("opponents")
-    ///         .append("newBoots")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn append<A, B>(&self, value: A) -> cmd::append::AppendBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::append::AppendBuilder::new(value)._with_parent(self.get_parent())
-    }
-
-    /// Prepend a value to an array.
-    /// 
-    /// ## Example
-    /// 
-    /// Retrieve Iron Man’s equipment list with the addition of some new boots.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("ironman")
-    ///         .bracket("opponents")
-    ///         .prepend("newBoots")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn prepend<A, B>(&self, value: A) -> cmd::prepend::PrependBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::prepend::PrependBuilder::new(value)._with_parent(self.get_parent())
-    }
-
-    /// Remove the elements of one array from another array.
-    /// 
-    /// ## Example
-    /// 
-    /// Retrieve Iron Man’s equipment list without boots.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("IronMan")
-    ///         .bracket("equipment")
-    ///         .prepend("Boots")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn difference<A, B>(&self, values: &[A]) -> cmd::difference::DifferenceBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::difference::DifferenceBuilder::new(values)._with_parent(self.get_parent())
-    }
-
-    /// Add a value to an array and return it as a set (an array with distinct values).
-    /// 
-    /// ## Example
-    /// 
-    /// Retrieve Iron Man’s equipment list with the addition of some new boots.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("IronMan")
-    ///         .bracket("equipment")
-    ///         .setInsert("newBoots")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn set_insert<A, B>(&self, value: A) -> cmd::set_insert::SetInsertBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::set_insert::SetInsertBuilder::new(value)._with_parent(self.get_parent())
-    }
-
-    /// Perform a set intersection of two arrays, returning an array with all unique items from both.
-    /// 
-    /// ## Example
-    /// 
-    /// Retrieve Iron Man’s equipment list with the addition of some new boots and an arc reactor.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("IronMan")
-    ///         .bracket("equipment")
-    ///         .set_union(&["newBoots", "arc_reactor"])
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn set_union<A, B>(&self, values: &[A]) -> cmd::set_union::SetUnionBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::set_union::SetUnionBuilder::new(values)._with_parent(self.get_parent())
-    }
-
-    /// Intersect two arrays returning values that occur in both of them as a set (an array with distinct values).
-    /// 
-    /// ## Example
-    /// 
-    /// Check which pieces of equipment Iron Man has from a fixed list.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("IronMan")
-    ///         .bracket("equipment")
-    ///         .set_intersection(&["newBoots", "arc_reactor"])
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn set_intersection<A, B>(&self, values: &[A]) -> cmd::set_intersection::SetIntersectionBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::set_intersection::SetIntersectionBuilder::new(values)._with_parent(self.get_parent())
-    }
-
-    /// Remove the elements of one array from another and return them as a set (an array with distinct values).
-    /// 
-    /// ## Example
-    /// 
-    /// Check which pieces of equipment Iron Man has, excluding a fixed list.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("IronMan")
-    ///         .bracket("equipment")
-    ///         .set_intersection(&["newBoots", "arc_reactor"])
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn set_difference<A, B>(&self, values: &[A]) -> cmd::set_difference::SetDifferenceBuilder<B>
-    where
-        A: Serialize,
-        B: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::set_difference::SetDifferenceBuilder::new(values)._with_parent(self.get_parent())
-    }
-
-    /// Get a single field from an object. If called on a sequence, 
-    /// gets that field from every object in the sequence, skipping objects that lack it.
-    /// 
-    /// ```text
-    /// Under most circumstances, you’ll want to use getField (or its shorthand g) or nth rather than bracket. 
-    /// The bracket term may be useful in situations where you are unsure of the data type returned by the term you are calling bracket on.
-    /// ```
-    /// 
-    /// ## Example
-    /// 
-    /// Check which pieces of equipment Iron Man has, excluding a fixed list.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("IronMan")
-    ///         .bracket("firstAppearance")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn bracket(&self, attr: impl Serialize) -> cmd::bracket::BracketBuilder {
-        cmd::bracket::BracketBuilder::new(attr)._with_parent(self.get_parent())
-    }
-
-    /// Get a single field from an object. If called on a sequence, 
-    /// gets that field from every object in the sequence, skipping objects that lack it.
-    /// 
-    /// ## Example
-    /// 
-    /// What was Iron Man’s first appearance in a comic?
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("marvel")
-    ///         .get("IronMan")
-    ///         .get_field("firstAppearance")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn get_field(&self, field: &str) -> cmd::get_field::GetFieldBuilder {
-        cmd::get_field::GetFieldBuilder::new(field)._with_parent(self.get_parent())
-    }
-
-    fn has_fields(&self, fields: impl Serialize) -> cmd::has_fields::HasFieldsBuilder {
-        cmd::has_fields::HasFieldsBuilder::new(fields)._with_parent(self.get_parent())
-    }
-
-}
-
-pub trait ReqlOpsGroupedStream<G, V>: SuperOps
-where
-    G: Unpin + Serialize + DeserializeOwned,
-    V: Unpin + Serialize + DeserializeOwned,
-{
-    /// Takes a grouped stream or grouped data and turns it into an array of objects representing the groups. 
-    /// Any commands chained after `ungroup` will operate on this array, rather than operating on each group individually. 
-    /// This is useful if you want to e.g. order the groups by the value of their reduction.
-    /// 
-    /// The format of the array returned by `ungroup` is the same as the default native format 
-    /// of grouped data in the JavaScript driver and Data Explorer.
-    /// 
-    /// ## Example
-    /// 
-    /// Select users and all their posts.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("posts")
-    ///         .group::<u8>(&["user_id"])
-    ///         .ungroup()
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn ungroup(&self) -> cmd::ungroup::UngroupBuilder<G, V> {
-        cmd::ungroup::UngroupBuilder::new()._with_parent(self.get_parent())
-    }
-}
-
-pub trait ReqlOpsArray: SuperOps {
-    /// Insert a value in to an array at a given index. Returns the modified array.
-    /// 
-    /// ## Example
-    /// 
-    /// Hulk decides to join the avengers.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.expr(&["Iron Man", "Spider-Man"])
-    ///         .insert_at(1, "Hulk")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn insert_at(&self, offset: usize, value: impl Serialize) -> cmd::insert_at::InsertAtBuilder {
-        cmd::insert_at::InsertAtBuilder::new(offset, value)._with_parent(self.get_parent())
-    }
-
-    /// Insert several values in to an array at a given index. Returns the modified array.
-    /// 
-    /// ## Example
-    /// 
-    /// Hulk and Thor decide to join the avengers.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.expr(&["Iron Man", "Spider-Man"])
-    ///         .splice_at(1, &["Hulk", "Thor"])
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn splice_at(&self, offset: usize, values: &[impl Serialize]) -> cmd::splice_at::SpliceAtBuilder {
-        cmd::splice_at::SpliceAtBuilder::new(offset, values)._with_parent(self.get_parent())
-    }
-
-    /// Remove one or more elements from an array at a given index. Returns the modified array.
-    /// 
-    /// ## Example
-    /// 
-    /// Delete the second element of an array.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r..expr(['a','b','c','d','e','f'])
-    ///         .delete_at(1, None)
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn delete_at(&self, offset: isize, end_offset: Option<isize>) -> cmd::delete_at::DeleteAtBuilder {
-        cmd::delete_at::DeleteAtBuilder::new(offset, end_offset)._with_parent(self.get_parent())
-    }
-
-    /// Change a value in an array at a given index. Returns the modified array.
-    /// 
-    /// ## Example
-    /// 
-    /// Bruce Banner hulks out.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.expr(&["Iron Man", "Bruce", "Spider-Man"])
-    ///         .change_at(1, "Hulk")
-    ///         .run(&conn)
-    ///         .await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn change_at(&self, offset: usize, value: impl Serialize) -> cmd::change_at::ChangeAtBuilder {
-        cmd::change_at::ChangeAtBuilder::new(offset, value)._with_parent(self.get_parent())
-    }
-}
-
-pub trait ReqlOpsString: SuperOps {
-    fn match_(&self, regex: Regex) -> cmd::match_::MatchBuilder {
-        cmd::match_::MatchBuilder::new(regex)._with_parent(self.get_parent())
-    }
-
-    fn split(&self, separator: Option<&str>, max_splits: Option<&str>) -> cmd::split::SplitBuilder {
-        cmd::split::SplitBuilder::new(separator, max_splits)._with_parent(self.get_parent())
-    }
-
-    fn upcase(&self) -> cmd::upcase::UpcaseBuilder {
-        cmd::upcase::UpcaseBuilder::new()._with_parent(self.get_parent())
-    }
-
-    fn downcase(&self) -> cmd::downcase::DowncaseBuilder {
-        cmd::downcase::DowncaseBuilder::new()._with_parent(self.get_parent())
-    }
-}
-pub trait ReqlOpsObject<T>: SuperOps {
     
-}
-
-pub trait SuperOps {
-    fn get_parent(&self) -> Command;
-
-    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
-    /// 
-    /// ## Example
-    /// 
-    /// Count the number of users.
-    /// 
-    /// ```
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("table").count().run(&conn).await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn count(&self) -> cmd::count::CountBuilder {
-        cmd::count::CountBuilder::new()._with_parent(self.get_parent())
-    }
-
-    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
-    /// 
-    /// It returns the number of elements in the sequence equal to that value or where the function returns `true` . 
-    /// On a binary object, `count` returns the size of the object in bytes; on strings, count returns the string’s length. 
-    /// This is determined by counting the number of Unicode codepoints in the string, counting combining codepoints separately.
-    /// 
-    /// ## Example
-    /// 
-    /// Count the number of 18 year old users.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("table").bracket("age").count_by_value(18).run(&conn).await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn count_by_value(&self, value: impl Serialize) -> cmd::count::CountBuilder {
-        cmd::count::CountBuilder::new_by_value(value)._with_parent(self.get_parent())
-    }
-
-    /// Counts the number of elements in a sequence or key/value pairs in an object, or returns the size of a string or binary object.
-    /// 
-    /// It returns the number of elements in the sequence equal to that value or where the function returns `true` . 
-    /// On a binary object, `count` returns the size of the object in bytes; on strings, count returns the string’s length. 
-    /// This is determined by counting the number of Unicode codepoints in the string, counting combining codepoints separately.
-    /// 
-    /// ## Example
-    /// 
-    /// Count the number of 18 year old users.
-    /// 
-    /// ```ignore
-    /// use reql_rust::{r, Result, Session};
-    /// use reql_rust::prelude::*;
-    /// 
-    /// async fn example() -> Result<()> {
-    ///     let mut conn = r.connection().connect().await?;
-    ///     
-    ///     r.table::<serde_json::Value>("table").count_by_func(func!(|age| age.gt(18))).run(&conn).await?;
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
-    fn count_by_func(&self, func: Func) -> cmd::count::CountBuilder {
-        cmd::count::CountBuilder::new_by_func(func)._with_parent(self.get_parent())
+    fn intersects<A>(&self, sequence: &[A]) -> cmd::intersects::sequence::IntersectsBuilder<A>
+    where
+        A: ReqlOpsGeometry + Serialize + DeserializeOwned + Unpin,
+    {
+        cmd::intersects::sequence::IntersectsBuilder::new(sequence)
     }
 }

@@ -5,7 +5,7 @@ use ql2::term::TermType;
 
 use crate::{Command, ops::ReqlOpsArray};
 
-use super::{run, SuperOps};
+use super::{run, ReqlOps};
 
 #[derive(Debug, Clone)]
 pub struct IndexListBuilder(pub(crate) Command);
@@ -38,7 +38,7 @@ impl IndexListBuilder {
 
 impl ReqlOpsArray for IndexListBuilder { }
 
-impl SuperOps for IndexListBuilder {
+impl ReqlOps for IndexListBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

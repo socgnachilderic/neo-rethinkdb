@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Command, Func, Result};
-use crate::ops::{ReqlOpsGroupedStream, SuperOps};
+use crate::ops::{ReqlOpsGroupedStream, ReqlOps};
 use crate::types::GroupStream;
 
 use super::StaticString;
@@ -92,7 +92,7 @@ where
     V: Unpin + Serialize + DeserializeOwned,
 {}
 
-impl<G, V> SuperOps for GroupBuilder<G, V> {
+impl<G, V> ReqlOps for GroupBuilder<G, V> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

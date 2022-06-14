@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::Serialize;
 
 use crate::{Command, Func};
-use crate::ops::{ReqlOpsSequence, SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOpsSequence, ReqlOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct FoldBuilder<A, B>(
@@ -56,7 +56,7 @@ impl<A, B: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<B> for FoldBuil
 
 impl<A, B> ReqlOpsDocManipulation for FoldBuilder<A, B> { }
 
-impl<A, B> SuperOps for FoldBuilder<A, B> {
+impl<A, B> ReqlOps for FoldBuilder<A, B> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

@@ -2,7 +2,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
 use crate::Command;
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::types::RebalanceResponseType;
 
 #[derive(Debug, Clone)]
@@ -35,7 +35,7 @@ impl RebalanceBuilder {
     }
 }
 
-impl SuperOps for RebalanceBuilder {
+impl ReqlOps for RebalanceBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

@@ -1,16 +1,35 @@
-
 use std::{borrow::Cow, collections::HashMap};
 
-#[doc(inline)]
-pub use reql_rust_types::*;
-pub use document::Document;
-pub use sequence::Sequence;
-pub use group_stream::{GroupStream, GroupItem};
 use serde::{Deserialize, Serialize, Serializer};
 
+pub use crate::cmd::line::Line;
+pub use crate::cmd::point::Point;
+pub use crate::cmd::polygon::Polygon;
+pub use document::Document;
+pub use group_stream::{GroupItem, GroupStream};
+#[doc(inline)]
+pub use reql_rust_types::*;
+pub use sequence::Sequence;
+
 mod document;
-mod sequence;
 mod group_stream;
+mod sequence;
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ReqlType {
+    Geometry,
+    GroupStream,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[non_exhaustive]
+pub enum GeoType {
+    LineString,
+    Point,
+    Polygon,
+}
 
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -27,10 +46,9 @@ pub struct DbResponseType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct WritingResponseType<T> {
-    /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation. 
+    /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation.
     /// Each object will have two keys: {new_val: <new value>, old_val: <old value>}.
     pub changes: Option<Vec<ConfigChange<T>>>,
-
 
     /// For an update operation.
     /// For an insert operation.
@@ -86,7 +104,6 @@ pub struct WriteHookResponseType {
     pub query: Cow<'static, str>,
 }
 
-
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
 pub struct UngroupResponseType<G, V> {
@@ -96,12 +113,12 @@ pub struct UngroupResponseType<G, V> {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct SyncResponseType {
-    synced: u8
+    synced: u8,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct WaitResponseType {
-    ready: u32
+    ready: u32,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -126,7 +143,7 @@ pub struct RebalanceResponseType {
 pub struct ReconfigureResponseType {
     pub reconfigured: u8,
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
-    pub status_changes: Vec<ConfigChange<StatusResponseType>>
+    pub status_changes: Vec<ConfigChange<StatusResponseType>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -186,6 +203,19 @@ pub struct ShardType<R> {
 pub struct ShardReplicasType {
     pub server: Cow<'static, str>,
     pub state: Cow<'static, str>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct GeoJson<T: Serialize + Clone> {
+    #[serde(rename = "type")]
+    pub typ: GeoType,
+    pub coordinates: T,
+}
+
+impl<T: Serialize + Clone> GeoJson<T> {
+    pub fn new(typ: GeoType, coordinates: T) -> Self {
+        Self { typ, coordinates }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -297,4 +327,25 @@ pub enum Status {
 pub enum EmergencyRepair {
     UnsafeRollback,
     UnsafeRollbackOrErase,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum Unit {
+    #[serde(rename = "m")]
+    Meter,
+    #[serde(rename = "km")]
+    Kilometer,
+    #[serde(rename = "mi")]
+    InternationalMile,
+    #[serde(rename = "nm")]
+    NauticalMile,
+    #[serde(rename = "ft")]
+    InternationalFoot,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum GeoSystem {
+    #[serde(rename = "unit_sphere")]
+    UnitSphere,
+    WGS84,
 }

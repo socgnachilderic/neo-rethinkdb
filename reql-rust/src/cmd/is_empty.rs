@@ -1,7 +1,7 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::ops::SuperOps;
+use crate::ops::ReqlOps;
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -36,7 +36,7 @@ impl IsEmptyBuilder {
     }
 }
 
-impl SuperOps for IsEmptyBuilder {
+impl ReqlOps for IsEmptyBuilder {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

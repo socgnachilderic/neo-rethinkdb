@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::Serialize;
 use serde::de::DeserializeOwned;
 
-use crate::ops::{SuperOps, ReqlOpsObject};
+use crate::ops::{ReqlOps, ReqlOpsObject};
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -43,7 +43,7 @@ impl<T: Unpin + DeserializeOwned> NthBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsObject<T> for NthBuilder<T> { }
 
-impl<T> SuperOps for NthBuilder<T> {
+impl<T> ReqlOps for NthBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

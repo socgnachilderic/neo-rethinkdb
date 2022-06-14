@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::{Command, Result};
-use crate::ops::{SuperOps, ReqlOpsArray};
+use crate::ops::{ReqlOps, ReqlOpsArray};
 use crate::types::Interleave;
 
 #[derive(Debug, Clone)]
@@ -22,7 +22,7 @@ pub(crate) struct UnionOption {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> UnionBuilder<T> {
-    pub(crate) fn new(values: &[&impl SuperOps]) -> Self {        
+    pub(crate) fn new(values: &[&impl ReqlOps]) -> Self {        
         let mut command = Command::new(TermType::Union);
 
         for val in values {
@@ -58,7 +58,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> UnionBuilder<T> {
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsArray for UnionBuilder<T> { }
 
-impl<T> SuperOps for UnionBuilder<T> {
+impl<T> ReqlOps for UnionBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }

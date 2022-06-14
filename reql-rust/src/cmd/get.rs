@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::Command;
-use crate::ops::{ReqlOpsSequence, SuperOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOpsSequence, ReqlOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct GetBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
@@ -37,7 +37,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for GetBuilder<
 
 impl<T> ReqlOpsDocManipulation for GetBuilder<T> { }
 
-impl<T> SuperOps for GetBuilder<T> {
+impl<T> ReqlOps for GetBuilder<T> {
     fn get_parent(&self) -> Command {
         self.0.clone()
     }
