@@ -94,9 +94,10 @@ pub enum ReqlDriverError {
     ConnectionBroken,
     ConnectionLocked,
     Io(io::ErrorKind, String),
-    Tls(String),
     Json(Arc<serde_json::Error>),
     Other(String),
+    Time(String),
+    Tls(String),
 }
 
 impl From<ReqlDriverError> for ReqlError {
@@ -115,9 +116,10 @@ impl fmt::Display for ReqlDriverError {
                 "another query is running a changefeed on this connection"
             ),
             Self::Io(_, error) => write!(f, "{}", error),
-            Self::Tls(error) => write!(f, "{}", error),
             Self::Json(error) => write!(f, "{}", error),
             Self::Other(msg) => write!(f, "{}", msg),
+            Self::Time(error) => write!(f, "{}", error),
+            Self::Tls(error) => write!(f, "{}", error),
         }
     }
 }
@@ -139,3 +141,10 @@ impl From<async_native_tls::Error> for ReqlError {
         ReqlDriverError::Tls(err.to_string()).into()
     }
 }
+
+impl From<time::error::ComponentRange> for ReqlError {
+    fn from(err: time::error::ComponentRange) -> Self {
+        ReqlDriverError::Time(err.to_string()).into()
+    }
+}
+

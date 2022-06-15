@@ -1,11 +1,11 @@
 use std::ops::Deref;
 
 use serde::{de, ser};
-use serde::{Serialize, Deserialize, Deserializer, Serializer};
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use time::macros::time;
-use time::{OffsetDateTime, format_description, UtcOffset, Date, PrimitiveDateTime};
+use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
-use crate::constants::{NANOS_PER_SEC, NANOS_PER_MSEC};
+use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -33,6 +33,11 @@ impl DateTime {
         }
 
         Self(primetive_datetime.assume_offset(timezone))
+    }
+
+    pub(crate) fn epoch_time(timestamp: i64) -> crate::Result<Self> {
+        let time = OffsetDateTime::from_unix_timestamp(timestamp)?;
+        Ok(Self(time))
     }
 }
 

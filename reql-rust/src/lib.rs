@@ -696,8 +696,7 @@ impl r {
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.db("users")
-    ///         .table::<Value>("users")
+    ///     let _ = r.table::<Value>("users")
     ///         .insert(&json!({
     ///             "name": "John",
     ///             "subscription_date": r.now()
@@ -722,21 +721,20 @@ impl r {
     /// 
     /// ## Example
     ///
-    /// Update the birthdate of the user “John” to November 3rd, 1986 UTC.
+    /// Update the birthdate of the user “Ali” to November 3rd, 1986 UTC.
     ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::{json, Value};
-    /// use time::macros::{date, offset, time};
+    /// use time::macros::{date, offset};
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    ///     let _ = r.db("users")
-    ///         .table::<Value>("users")
+    ///     let _ = r.table::<Value>("users")
     ///         .get("Ali")
     ///         .update(&json!({
-    ///             "birthdate": r.time(date!(2022-12-01), offset!(UTC), Some(time!(12:00)))
+    ///             "birthdate": r.time(date!(1986-11-03), offset!(UTC), None)
     ///         }))
     ///         .run(&session)
     ///         .await?;
@@ -748,8 +746,34 @@ impl r {
         DateTime::time(date, timezone, time)
     }
 
-    pub fn epoch_time(self, arg: impl cmd::epoch_time::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Create a time object based on seconds since epoch. 
+    /// The first argument is a double and will be rounded to three decimal places (millisecond-precision).
+    /// 
+    /// ## Example
+    ///
+    /// Update the birthdate of the user “Ali” to November 3rd, 1986 UTC.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{json, Value};
+    /// use time::macros::{date, offset};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("users")
+    ///         .get("Ali")
+    ///         .update(&json!({
+    ///             "birthdate": r.epoch_time(531360000)
+    ///         }))
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn epoch_time(self, timestamp: i64) -> crate::Result<DateTime>  {
+        DateTime::epoch_time(timestamp)
     }
 
     pub fn iso8601(self, arg: impl cmd::iso8601::Arg) -> Command {
