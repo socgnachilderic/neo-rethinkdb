@@ -5,7 +5,7 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use time::macros::time;
 use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
-use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC};
+use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
 
 #[derive(Debug, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -38,6 +38,25 @@ impl DateTime {
     pub(crate) fn epoch_time(timestamp: i64) -> crate::Result<Self> {
         let time = OffsetDateTime::from_unix_timestamp(timestamp)?;
         Ok(Self(time))
+    }
+
+    pub(crate) fn iso8601(
+        iso_datetime: &str,
+        default_timezone: Option<UtcOffset>,
+    ) -> crate::Result<Self> {
+        let mut datetime = iso_datetime.to_string();
+
+        if let Some(timezone) = default_timezone {
+            let timezone_format = format_description::parse(TIMEZONE_FORMAT)?;
+            let timezone = timezone.format(&timezone_format)?;
+            
+            datetime = format!("{}{}", datetime, timezone);
+            dbg!(&datetime);
+        }
+
+        let datetime = OffsetDateTime::parse(&datetime, &format_description::well_known::Rfc3339)?;
+
+        Ok(Self(datetime))
     }
 }
 

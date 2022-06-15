@@ -7,6 +7,7 @@ pub(crate) const TOKEN_SIZE: usize = 8;
 pub(crate) const HEADER_SIZE: usize = DATA_SIZE + TOKEN_SIZE;
 pub(crate) const NANOS_PER_SEC: i128 = 1_000_000_000;
 pub(crate) const NANOS_PER_MSEC: i128 = 1_000_000;
+pub(crate) const TIMEZONE_FORMAT: &'static str = "[offset_hour sign:mandatory]:[offset_minute]";
 
 pub const DEFAULT_RETHINKDB_HOSTNAME: &'static str = "localhost";
 pub const DEFAULT_RETHINKDB_DBNAME: &'static str = "test";

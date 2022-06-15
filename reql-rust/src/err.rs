@@ -148,3 +148,21 @@ impl From<time::error::ComponentRange> for ReqlError {
     }
 }
 
+impl From<time::error::Parse> for ReqlError {
+    fn from(err: time::error::Parse) -> Self {
+        ReqlDriverError::Time(err.to_string()).into()
+    }
+}
+
+impl From<time::error::InvalidFormatDescription> for ReqlError {
+    fn from(err: time::error::InvalidFormatDescription) -> Self {
+        ReqlDriverError::Time(err.to_string()).into()
+    }
+}
+
+impl From<time::error::Format> for ReqlError {
+    fn from(err: time::error::Format) -> Self {
+        ReqlDriverError::Time(err.to_string()).into()
+    }
+}
+

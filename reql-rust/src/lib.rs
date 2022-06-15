@@ -75,9 +75,9 @@ use prelude::ReqlOps;
 
 pub use prelude::Func;
 use serde::{de::DeserializeOwned, Serialize};
-use time::{Date, UtcOffset, Time};
 use std::sync::atomic::{AtomicU64, Ordering};
-use types::{GeoJson, Point, Polygon, Line, DateTime};
+use time::{Date, Time, UtcOffset};
+use types::{DateTime, GeoJson, Line, Point, Polygon};
 
 pub use connection::*;
 pub use err::*;
@@ -681,10 +681,10 @@ impl r {
         arg.arg().into_cmd()
     }
 
-    /// Return a time object representing the current time in UTC. 
-    /// The command now() is computed once when the server receives the query, 
+    /// Return a time object representing the current time in UTC.
+    /// The command now() is computed once when the server receives the query,
     /// so multiple instances of r.now() will always return the same time inside a query.
-    /// 
+    ///
     /// ## Example
     ///
     /// Add a new user with the time at which he subscribed.
@@ -712,13 +712,13 @@ impl r {
     }
 
     /// Create a time object for a specific time.
-    /// 
+    ///
     /// A few restrictions exist on the arguments:
-    /// 
+    ///
     /// - `date`: is a [time::Date](https://time-rs.github.io/api/time/struct.Date.html)
     /// - `timezone`: is a [time::UtcOffset](https://time-rs.github.io/api/time/struct.UtcOffset.html)
     /// - `time`: is a [Option<time::Time>](https://time-rs.github.io/api/time/struct.Time.html)
-    /// 
+    ///
     /// ## Example
     ///
     /// Update the birthdate of the user “Ali” to November 3rd, 1986 UTC.
@@ -746,8 +746,42 @@ impl r {
         DateTime::time(date, timezone, time)
     }
 
-    /// Create a time object based on seconds since epoch. 
+    /// Create a time object based on seconds since epoch.
     /// The first argument is a double and will be rounded to three decimal places (millisecond-precision).
+    ///
+    /// ## Example
+    ///
+    /// Update the birthdate of the user “Ali” to November 3rd, 1986 UTC.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{json, Value};
+    /// use time::macros::{date, offset};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.table::<Value>("users")
+    ///         .get("Ali")
+    ///         .update(&json!({
+    ///             "birthdate": r.epoch_time(531360000)?
+    ///         }))
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn epoch_time(self, timestamp: i64) -> crate::Result<DateTime> {
+        DateTime::epoch_time(timestamp)
+    }
+
+    /// Create a time object based on an ISO 8601 date-time string (e.g. ‘2013-01-01T01:01:01+00:00’). 
+    /// RethinkDB supports all valid ISO 8601 formats except for week dates. 
+    /// Read more about the ISO 8601 format at [Wikipedia](https://en.wikipedia.org/wiki/ISO_8601).
+    /// 
+    /// If you pass an ISO 8601 string without a time zone,
+    /// you must specify the time zone with the defaultTimezone argument.
     /// 
     /// ## Example
     ///
@@ -764,7 +798,7 @@ impl r {
     ///     let _ = r.table::<Value>("users")
     ///         .get("Ali")
     ///         .update(&json!({
-    ///             "birthdate": r.epoch_time(531360000)
+    ///             "birthdate": r.iso8601("1986-11-03T08:30:00-07:00", None)?
     ///         }))
     ///         .run(&session)
     ///         .await?;
@@ -772,12 +806,12 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    pub fn epoch_time(self, timestamp: i64) -> crate::Result<DateTime>  {
-        DateTime::epoch_time(timestamp)
-    }
-
-    pub fn iso8601(self, arg: impl cmd::iso8601::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn iso8601(
+        self,
+        iso_datetime: &str,
+        default_timezone: Option<UtcOffset>,
+    ) -> crate::Result<DateTime> {
+        DateTime::iso8601(iso_datetime, default_timezone)
     }
 
     pub fn do_(self, func: Func) -> cmd::do_::DoBuilder {
@@ -821,25 +855,25 @@ impl r {
     }
 
     /// Construct a circular polygon.
-    /// A circle in RethinkDB is a polygon **approximating** a circle of a given radius around a given center, 
+    /// A circle in RethinkDB is a polygon **approximating** a circle of a given radius around a given center,
     /// consisting of a specified number of vertices (default 32).
-    /// 
+    ///
     /// Optional methods available with `circle` are:
-    /// 
+    ///
     /// - [with_num_vertices(num_vertices: &usize)](crate::cmd::circle::CircleBuilder::with_num_vertices):
     /// the number of vertices in the polygon or line. Defaults to 32.
     /// - [with_geo_system(geo_system: reql_rust::types::GeoSystem)](crate::cmd::circle::CircleBuilder::with_geo_system):
-    /// the reference ellipsoid to use for geographic coordinates. 
-    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry, 
+    /// the reference ellipsoid to use for geographic coordinates.
+    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry,
     /// or `GeoSystem::UnitSphere`, a perfect sphere of 1 meter radius.
     /// - [with_unit(unit: reql_rust::types::Unit)](crate::cmd::circle::CircleBuilder::with_unit)
     /// Unit for the distance. Possible values are
     /// `Unit::Meter` (the default), `Unit::Kilometer`, `Unit::InternationalMile`, `Unit::NauticalMile`, `Unit::InternationalFoot`.
-    /// 
+    ///
     /// ## Example
     ///
     /// Define a circle.
-    /// 
+    ///
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
@@ -869,15 +903,14 @@ impl r {
         cmd::circle::CircleBuilder::new(point, radius)
     }
 
-
     /// Construct a circular line.
-    /// 
+    ///
     /// See [circle](#method.circle) for more information.
-    /// 
+    ///
     /// ## Example
     ///
     /// Define a circle_unfill.
-    /// 
+    ///
     /// ```
     /// use reql_rust::{r, Result, Session};
     /// use reql_rust::prelude::*;
@@ -908,14 +941,14 @@ impl r {
     }
 
     /// Convert a [GeoJSON](https://geojson.org/) object to a ReQL geometry object.
-    /// RethinkDB only allows conversion of GeoJSON objects which have ReQL equivalents: Point, LineString, and Polygon. 
-    /// MultiPoint, MultiLineString, and MultiPolygon are not supported. 
+    /// RethinkDB only allows conversion of GeoJSON objects which have ReQL equivalents: Point, LineString, and Polygon.
+    /// MultiPoint, MultiLineString, and MultiPolygon are not supported.
     /// (You could, however, store multiple points, lines and polygons in an array and use a geospatial multi index with them.)
-    /// 
-    /// Only longitude/latitude coordinates are supported. 
-    /// GeoJSON objects that use Cartesian coordinates, specify an altitude, 
+    ///
+    /// Only longitude/latitude coordinates are supported.
+    /// GeoJSON objects that use Cartesian coordinates, specify an altitude,
     /// or specify their own coordinate reference system will be rejected.
-    /// 
+    ///
     /// ## Example
     ///
     /// Define a line.
