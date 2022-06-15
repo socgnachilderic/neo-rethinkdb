@@ -2,7 +2,8 @@ use std::ops::Deref;
 
 use serde::{de, ser};
 use serde::{Serialize, Deserialize, Deserializer, Serializer};
-use time::{OffsetDateTime, format_description, UtcOffset};
+use time::macros::time;
+use time::{OffsetDateTime, format_description, UtcOffset, Date, PrimitiveDateTime};
 
 use crate::constants::{NANOS_PER_SEC, NANOS_PER_MSEC};
 
@@ -22,6 +23,16 @@ pub struct DateTime(OffsetDateTime);
 impl DateTime {
     pub(crate) fn now() -> Self {
         Self(OffsetDateTime::now_utc())
+    }
+
+    pub(crate) fn time(date: Date, timezone: UtcOffset, time: Option<time::Time>) -> Self {
+        let mut primetive_datetime = PrimitiveDateTime::new(date, time!(0:00));
+
+        if let Some(time) = time {
+            primetive_datetime = primetive_datetime.replace_time(time);
+        }
+
+        Self(primetive_datetime.assume_offset(timezone))
     }
 }
 

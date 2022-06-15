@@ -75,6 +75,7 @@ use prelude::ReqlOps;
 
 pub use prelude::Func;
 use serde::{de::DeserializeOwned, Serialize};
+use time::{Date, UtcOffset, Time};
 use std::sync::atomic::{AtomicU64, Ordering};
 use types::{GeoJson, Point, Polygon, Line, DateTime};
 
@@ -711,8 +712,40 @@ impl r {
         DateTime::now()
     }
 
-    pub fn time(self, arg: impl cmd::time::Arg) -> Command {
-        arg.arg().into_cmd()
+    /// Create a time object for a specific time.
+    /// 
+    /// A few restrictions exist on the arguments:
+    /// 
+    /// - `date`: is a [time::Date](https://time-rs.github.io/api/time/struct.Date.html)
+    /// - `timezone`: is a [time::UtcOffset](https://time-rs.github.io/api/time/struct.UtcOffset.html)
+    /// - `time`: is a [Option<time::Time>](https://time-rs.github.io/api/time/struct.Time.html)
+    /// 
+    /// ## Example
+    ///
+    /// Update the birthdate of the user “John” to November 3rd, 1986 UTC.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{json, Value};
+    /// use time::macros::{date, offset, time};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.db("users")
+    ///         .table::<Value>("users")
+    ///         .get("Ali")
+    ///         .update(&json!({
+    ///             "birthdate": r.time(date!(2022-12-01), offset!(UTC), Some(time!(12:00)))
+    ///         }))
+    ///         .run(&session)
+    ///         .await?;
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn time(self, date: Date, timezone: UtcOffset, time: Option<Time>) -> DateTime {
+        DateTime::time(date, timezone, time)
     }
 
     pub fn epoch_time(self, arg: impl cmd::epoch_time::Arg) -> Command {
