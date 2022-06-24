@@ -127,6 +127,10 @@ impl DateTime {
         self.0.offset()
     }
 
+    pub fn during(&self, start_time: &DateTime, end_time: &DateTime) -> bool {
+        self.le(start_time) && self.gt(end_time)
+    }
+
     fn create_datetime_command(
         mut self,
         offset_datetime: Option<OffsetDateTime>,

@@ -282,13 +282,13 @@ impl<'a> Command {
         Self::new(TermType::Floor).with_parent(self)
     }
 
-    pub fn timezone(self) -> Self {
-        Self::new(TermType::Timezone).with_parent(self)
-    }
+    // pub fn timezone(self) -> Self {
+    //     Self::new(TermType::Timezone).with_parent(self)
+    // }
 
-    pub fn during(self, arg: impl during::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
+    // pub fn during(self, arg: impl during::Arg) -> Self {
+    //     arg.arg().into_cmd().with_parent(self)
+    // }
 
     pub fn date(self) -> Self {
         Self::new(TermType::Date).with_parent(self)
