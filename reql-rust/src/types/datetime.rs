@@ -40,7 +40,7 @@ impl DateTime {
 
     pub(crate) fn now() -> Self {
         let offset_datetime = OffsetDateTime::now_utc();
-        Self::default().create_datetime_command(offset_datetime, TermType::Now)
+        Self::default().create_datetime_command(Some(offset_datetime), Some(TermType::Now))
     }
 
     pub(crate) fn time(date: Date, timezone: UtcOffset, time: Option<time::Time>) -> Self {
@@ -51,12 +51,12 @@ impl DateTime {
         }
 
         let offset_datetime = primetive_datetime.assume_offset(timezone);
-        Self::default().create_datetime_command(offset_datetime, TermType::Time)
+        Self::default().create_datetime_command(Some(offset_datetime), Some(TermType::Time))
     }
 
     pub(crate) fn epoch_time(timestamp: i64) -> crate::Result<Self> {
         let offset_datetime = OffsetDateTime::from_unix_timestamp(timestamp)?;
-        Ok(Self::default().create_datetime_command(offset_datetime, TermType::EpochTime))
+        Ok(Self::default().create_datetime_command(Some(offset_datetime), Some(TermType::EpochTime)))
     }
 
     pub(crate) fn iso8601(
@@ -73,7 +73,7 @@ impl DateTime {
         }
 
         let datetime = OffsetDateTime::parse(&datetime, &format_description::well_known::Rfc3339)?;
-        Ok(Self::default().create_datetime_command(datetime, TermType::Iso8601))
+        Ok(Self::default().create_datetime_command(Some(datetime), Some(TermType::Iso8601)))
     }
 
     /// Return a new time object with a different timezone. While the time stays the same,
@@ -101,17 +101,45 @@ impl DateTime {
         let datetime = self.0.clone().replace_offset(timezone);
 
         self.clone()
-            .create_datetime_command(datetime, TermType::InTimezone)
+            .create_datetime_command(Some(datetime), Some(TermType::InTimezone))
+    }
+
+    /// Return the timezone of the time object.
+    ///
+    /// ## Example
+    ///
+    /// Return Timezone “-07:00”.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::{json, Value};
+    /// use time::macros::offset;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let _ = r.now().in_timezone(offset!(-07:00)).timezone();
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn timezone(&self) -> UtcOffset {
+        self.0.offset()
     }
 
     fn create_datetime_command(
         mut self,
-        offset_datetime: OffsetDateTime,
-        term_type: TermType,
+        offset_datetime: Option<OffsetDateTime>,
+        term_type: Option<TermType>,
     ) -> Self {
-        let command = Command::new(term_type);
-        self.0 = offset_datetime;
-        self.1 = Some(command);
+        if let Some(term_type) = term_type {
+            let command = Command::new(term_type);
+            self.1 = Some(command);
+        }
+
+        if let Some(offset_datetime) = offset_datetime {
+            self.0 = offset_datetime
+        }
 
         self
     }
