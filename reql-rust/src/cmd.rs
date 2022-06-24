@@ -290,9 +290,9 @@ impl<'a> Command {
     //     arg.arg().into_cmd().with_parent(self)
     // }
 
-    pub fn date(self) -> Self {
-        Self::new(TermType::Date).with_parent(self)
-    }
+    // pub fn date(self) -> Self {
+    //     Self::new(TermType::Date).with_parent(self)
+    // }
 
     pub fn time_of_day(self) -> Self {
         Self::new(TermType::TimeOfDay).with_parent(self)

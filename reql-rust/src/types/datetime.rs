@@ -131,6 +131,13 @@ impl DateTime {
         self.le(start_time) && self.gt(end_time)
     }
 
+    pub fn date(&self) -> Self {
+        let datetime = self.0.clone().replace_time(time!(12:00));
+
+        self.clone()
+            .create_datetime_command(Some(datetime), Some(TermType::Date))
+    }
+
     fn create_datetime_command(
         mut self,
         offset_datetime: Option<OffsetDateTime>,
