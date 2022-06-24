@@ -294,9 +294,9 @@ impl<'a> Command {
     //     Self::new(TermType::Date).with_parent(self)
     // }
 
-    pub fn time_of_day(self) -> Self {
-        Self::new(TermType::TimeOfDay).with_parent(self)
-    }
+    // pub fn time_of_day(self) -> Self {
+    //     Self::new(TermType::TimeOfDay).with_parent(self)
+    // }
 
     pub fn year(self) -> Self {
         Self::new(TermType::Year).with_parent(self)

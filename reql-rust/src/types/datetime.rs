@@ -138,6 +138,11 @@ impl DateTime {
             .create_datetime_command(Some(datetime), Some(TermType::Date))
     }
 
+    pub fn time_of_day(&self) -> u32 {
+        let day: u32 = self.0.day().into();
+        day * 60 * 60
+    }
+
     fn create_datetime_command(
         mut self,
         offset_datetime: Option<OffsetDateTime>,
