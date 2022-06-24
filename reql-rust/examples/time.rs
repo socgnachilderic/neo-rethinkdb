@@ -33,5 +33,8 @@ async fn main() -> Result<()> {
         "date": r.iso8601("1986-11-03T08:30:00", Some(offset!(+07:00)))?
     })).run(&conn).await?;
 
+    let result = r.now().in_timezone(offset!(-08:00));
+    dbg!(result);
+
     Ok(())
 }

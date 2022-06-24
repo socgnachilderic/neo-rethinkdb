@@ -1,4 +1,3 @@
-use reql_rust::prelude::*;
 use reql_rust::r;
 
 #[tokio::test]

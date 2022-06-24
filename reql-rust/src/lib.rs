@@ -757,7 +757,6 @@ impl r {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::{json, Value};
-    /// use time::macros::{date, offset};
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
@@ -791,7 +790,7 @@ impl r {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::{json, Value};
-    /// use time::macros::{date, offset};
+    /// use time::macros::offset;
     ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;

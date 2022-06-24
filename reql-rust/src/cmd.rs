@@ -282,10 +282,6 @@ impl<'a> Command {
         Self::new(TermType::Floor).with_parent(self)
     }
 
-    pub fn in_timezone(self, arg: impl in_timezone::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    }
-
     pub fn timezone(self) -> Self {
         Self::new(TermType::Timezone).with_parent(self)
     }
