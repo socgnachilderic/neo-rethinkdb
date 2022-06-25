@@ -210,7 +210,6 @@ pub trait ReqlOpsString: ReqlOps {
 pub trait ReqlOpsObject<T>: ReqlOps {}
 
 pub trait ReqlOpsGeometry: ReqlOps {
-
     /// Compute the distance between a point and another geometry object.
     /// At least one of the geometry objects specified must be a point.
     /// 

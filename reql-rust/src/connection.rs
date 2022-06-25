@@ -11,10 +11,10 @@ use std::ops::Drop;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, AtomicBool, Ordering};
 use tracing::trace;
-use reql_rust_types::ServerInfo;
 
 use crate::cmd::TcpStreamConnection;
 use crate::proto::{Payload, Query};
+use crate::types::ServerInfo;
 use crate::{Result, err, ReqlDriverError, r};
 use super::cmd::run::Response;
 use super::cmd::StaticString;
@@ -222,7 +222,8 @@ impl Session {
     /// Return server information.
     /// 
     /// ```
-    /// use reql_rust::{r, Result, types::ServerInfo};
+    /// use reql_rust::{r, Result};
+    /// use reql_rust::types::ServerInfo;
     /// 
     /// async fn example() -> Result<ServerInfo> {
     ///     let session = r.connection().connect().await?;

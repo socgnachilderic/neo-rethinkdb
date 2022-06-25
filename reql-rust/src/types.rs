@@ -1,6 +1,7 @@
 use std::{borrow::Cow, collections::HashMap};
 
 use serde::{Deserialize, Serialize, Serializer};
+use uuid::Uuid;
 
 pub use crate::cmd::line::Line;
 pub use crate::cmd::point::Point;
@@ -8,12 +9,14 @@ pub use crate::cmd::polygon::Polygon;
 pub use document::Document;
 pub use group_stream::{GroupItem, GroupStream};
 #[doc(inline)]
-pub use reql_rust_types::*;
+pub use reql_rust_types::Binary;
 pub use sequence::Sequence;
+pub use datetime::DateTime;
 
 mod document;
 mod group_stream;
 mod sequence;
+mod datetime;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -31,6 +34,14 @@ pub enum GeoType {
     Polygon,
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[non_exhaustive]
+pub struct ServerInfo {
+    pub id: Uuid,
+    pub proxy: bool,
+    pub name: Option<String>,
+}
+
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
@@ -46,32 +57,16 @@ pub struct DbResponseType {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct WritingResponseType<T> {
-    /// if return_changes is set to true, this will be an array of objects, one for each objected affected by the update operation.
-    /// Each object will have two keys: {new_val: <new value>, old_val: <old value>}.
+    pub inserted: u32,
+    pub replaced: u32,
+    pub unchanged: u32,
+    pub skipped: u32,
+    pub deleted: u32,
+    pub errors: u32,
+    pub first_error: Option<String>,
+    pub generated_keys: Option<Vec<Uuid>>,
+    pub warnings: Option<Vec<String>>,
     pub changes: Option<Vec<ConfigChange<T>>>,
-
-    /// For an update operation.
-    /// For an insert operation.
-    pub deleted: Option<u32>,
-    /// The number of errors encountered while performing the insert, update.
-    pub errors: Option<u32>,
-    /// If errors were encountered, contains the text of the first error.
-    pub first_error: Option<Cow<'static, str>>,
-    /// A list of generated primary keys for inserted documents whose primary keys were not specified (capped to 100,000).
-    pub generated_keys: Option<Vec<Cow<'static, str>>>,
-    /// The number of documents successfully inserted.
-    pub inserted: Option<u32>,
-
-    /// The number of documents updated when `conflict` is set to `"replace"` or `"update"`.
-    pub replaced: Option<u32>,
-    /// The number of documents that were skipped because the document didn’t exist.
-    /// For an insert operation.
-    pub skipped: Option<u32>,
-    /// The number of documents that would have been modified except the new value was the same as the old value.
-    /// The number of documents updated when `conflict` is set to `"replace"` or `"update"`.
-    pub unchanged: Option<u32>,
-    /// If the field generated_keys is truncated, you will get the warning `“Too many generated keys (<X>), array truncated to 100000.”`.
-    pub warnings: Option<u32>,
 }
 
 /// Structure of return data in `index` table

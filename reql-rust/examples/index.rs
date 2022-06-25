@@ -1,5 +1,4 @@
 use reql_rust::cmd::table::TableBuilder;
-use reql_rust::prelude::*;
 use reql_rust::{r, Result, Session};
 
 #[tokio::main]

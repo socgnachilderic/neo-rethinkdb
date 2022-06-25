@@ -33,8 +33,14 @@ pub(crate) struct InsertOption {
 }
 
 impl<T: Unpin + Serialize + DeserializeOwned> InsertBuilder<T> {
-    pub(crate) fn new(documents: &[T]) -> Self {
-        assert!(documents.len() > 0);
+    pub(crate) fn new(document: &T) -> Self {
+        let args = Command::from_json(document);
+        let command = Command::new(TermType::Insert).with_arg(args);
+
+        Self(command, InsertOption::default(), None, PhantomData)
+    }
+    
+    pub(crate) fn new_many(documents: &[T]) -> Self {
         let args = Command::from_json(documents);
         let command = Command::new(TermType::Insert).with_arg(args);
 
@@ -121,7 +127,7 @@ mod tests {
             item: "bar".to_string(),
         };
 
-        let query = r.table::<Document>("foo").insert(&[document]);
+        let query = r.table::<Document>("foo").insert(&document);
         let serialised = cmd::serialise(&query.into());
         let expected = r#"[56,[[15,["foo"]],{"item":"bar"}]]"#;
         assert_eq!(serialised, expected);
