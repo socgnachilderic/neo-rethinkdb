@@ -298,45 +298,45 @@ impl<'a> Command {
     //     Self::new(TermType::TimeOfDay).with_parent(self)
     // }
 
-    pub fn year(self) -> Self {
-        Self::new(TermType::Year).with_parent(self)
-    }
+    // pub fn year(self) -> Self {
+    //     Self::new(TermType::Year).with_parent(self)
+    // }
 
-    pub fn month(self) -> Self {
-        Self::new(TermType::Month).with_parent(self)
-    }
+    // pub fn month(self) -> Self {
+    //     Self::new(TermType::Month).with_parent(self)
+    // }
 
-    pub fn day(self) -> Self {
-        Self::new(TermType::Day).with_parent(self)
-    }
+    // pub fn day(self) -> Self {
+    //     Self::new(TermType::Day).with_parent(self)
+    // }
 
-    pub fn day_of_week(self) -> Self {
-        Self::new(TermType::DayOfWeek).with_parent(self)
-    }
+    // pub fn day_of_week(self) -> Self {
+    //     Self::new(TermType::DayOfWeek).with_parent(self)
+    // }
 
-    pub fn day_of_year(self) -> Self {
-        Self::new(TermType::DayOfYear).with_parent(self)
-    }
+    // pub fn day_of_year(self) -> Self {
+    //     Self::new(TermType::DayOfYear).with_parent(self)
+    // }
 
-    pub fn hours(self) -> Self {
-        Self::new(TermType::Hours).with_parent(self)
-    }
+    // pub fn hours(self) -> Self {
+    //     Self::new(TermType::Hours).with_parent(self)
+    // }
 
-    pub fn minutes(self) -> Self {
-        Self::new(TermType::Minutes).with_parent(self)
-    }
+    // pub fn minutes(self) -> Self {
+    //     Self::new(TermType::Minutes).with_parent(self)
+    // }
 
-    pub fn seconds(self) -> Self {
-        Self::new(TermType::Seconds).with_parent(self)
-    }
+    // pub fn seconds(self) -> Self {
+    //     Self::new(TermType::Seconds).with_parent(self)
+    // }
 
-    pub fn to_iso8601(self) -> Self {
-        Self::new(TermType::ToIso8601).with_parent(self)
-    }
+    // pub fn to_iso8601(self) -> Self {
+    //     Self::new(TermType::ToIso8601).with_parent(self)
+    // }
 
-    pub fn to_epoch_time(self) -> Self {
-        Self::new(TermType::ToEpochTime).with_parent(self)
-    }
+    // pub fn to_epoch_time(self) -> Self {
+    //     Self::new(TermType::ToEpochTime).with_parent(self)
+    // }
 
     pub fn binary(self, arg: impl binary::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)

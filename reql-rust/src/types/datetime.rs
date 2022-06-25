@@ -143,6 +143,46 @@ impl DateTime {
         day * 60 * 60
     }
 
+    pub fn year(&self) -> i32 {
+        self.0.date().year()
+    }
+
+    pub fn month(&self) -> time::Month {
+        self.0.date().month()
+    }
+
+    pub fn day(&self) -> u8 {
+        self.0.date().day()
+    }
+
+    pub fn day_of_week(&self) -> time::Weekday {
+        self.0.date().weekday()
+    }
+
+    pub fn day_of_year(&self) -> u16 {
+        self.0.date().ordinal()
+    }
+
+    pub fn hours(&self) -> u8 {
+        self.0.time().hour()
+    }
+
+    pub fn minutes(&self) -> u8 {
+        self.0.time().minute()
+    }
+
+    pub fn seconds(&self) -> u8 {
+        self.0.time().second()
+    }
+
+    pub fn to_iso8601(&self) -> String {
+        self.0.format(&format_description::well_known::Rfc3339).unwrap()
+    }
+
+    pub fn to_epoch_time(&self) -> i64 {
+        self.0.unix_timestamp()
+    }
+
     fn create_datetime_command(
         mut self,
         offset_datetime: Option<OffsetDateTime>,
