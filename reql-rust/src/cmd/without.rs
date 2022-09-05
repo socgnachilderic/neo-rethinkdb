@@ -26,7 +26,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> WithoutBuilder<T> {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {        
-        self.0.into_arg::<()>().into_cmd().run::<_, T>(arg)
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -40,6 +40,12 @@ impl<T> ReqlOpsDocManipulation for WithoutBuilder<T> { }
 
 impl<T> ReqlOps for WithoutBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for WithoutBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

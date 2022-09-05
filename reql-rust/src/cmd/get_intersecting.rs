@@ -5,7 +5,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::ops::{ReqlOpsGeometry, ReqlOps};
+use crate::ops::{ReqlOps, ReqlOpsGeometry};
 use crate::Command;
 
 use super::StaticString;
@@ -40,7 +40,7 @@ impl<A: Serialize + ReqlOpsGeometry> GetIntersectingBuilder<A> {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<serde_json::Value>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, serde_json::Value>(arg)
+        self.get_parent().run::<_, serde_json::Value>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -53,6 +53,12 @@ impl<T> ReqlOpsGeometry for GetIntersectingBuilder<T> {}
 
 impl<T> ReqlOps for GetIntersectingBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for GetIntersectingBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

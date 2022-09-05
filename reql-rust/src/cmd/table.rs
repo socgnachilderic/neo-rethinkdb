@@ -5,11 +5,11 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::ops::{ReqlOpsDocManipulation, ReqlOpsGeometry, ReqlOpsSequence};
+use crate::ops::{ReqlOpsDocManipulation, ReqlOpsGeometry, ReqlOpsSequence, ReqlOps};
 use crate::types::{Document, IdentifierFormat, ReadMode, Sequence, Point};
 use crate::{Command, Func};
 
-use super::{run, ReqlOps};
+use super::run;
 
 #[derive(Debug, Clone)]
 pub struct TableBuilder<T>(
@@ -43,11 +43,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
         &self,
         arg: impl run::Arg,
     ) -> impl Stream<Item = crate::Result<Sequence<Document<T>>>> {
-        self.get_parent()
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Sequence<Document<T>>>(arg)
+        self.get_parent().run::<_, Sequence<Document<T>>>(arg)
     }
 
     pub fn with_read_mode(mut self, read_mode: ReadMode) -> Self {
@@ -1199,23 +1195,20 @@ impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsDocManipulation for TableBu
 
 impl<T: Unpin + Serialize + DeserializeOwned> ReqlOps for TableBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
-    }
-}
-
-impl<T> Into<Command> for TableBuilder<T> {
-    fn into(self) -> Command {
-        self.0
+        self.0.clone().with_opts(self.1)
+            .into_arg::<()>()
+            .into_cmd()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::{cmd, r};
+    use crate::prelude::ReqlOps;
 
     #[test]
     fn r_table() {
-        let query = r.table::<serde_json::Value>("foo").into();
+        let query = r.table::<serde_json::Value>("foo").get_parent();
         let serialised = cmd::serialise(&query);
         let expected = r#"[15,["foo"]]"#;
         assert_eq!(serialised, expected);
@@ -1223,7 +1216,7 @@ mod tests {
 
     #[test]
     fn r_db_table() {
-        let query = r.db("foo").table::<serde_json::Value>("bar").into();
+        let query = r.db("foo").table::<serde_json::Value>("bar").get_parent();
         let serialised = cmd::serialise(&query);
         let expected = r#"[15,[[14,["foo"]],"bar"]]"#;
         assert_eq!(serialised, expected);

@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::Command;
 use crate::ops::ReqlOps;
-use crate::types::{WaitResponseType, WaitFor};
+use crate::types::{WaitFor, WaitResponseType};
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct WaitBuilder(pub(crate) Command, pub(crate) WaitOption);
@@ -35,11 +35,7 @@ impl WaitBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<WaitResponseType>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, WaitResponseType>(arg)
+        self.get_parent().run::<_, WaitResponseType>(arg)
     }
 
     pub fn with_wait_for(mut self, wait_for: WaitFor) -> Self {
@@ -60,6 +56,16 @@ impl WaitBuilder {
 
 impl ReqlOps for WaitBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0
+            .clone()
+            .with_opts(&self.1)
+            .into_arg::<()>()
+            .into_cmd()
+    }
+}
+
+impl Into<Command> for WaitBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

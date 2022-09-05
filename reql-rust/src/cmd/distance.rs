@@ -2,7 +2,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::ops::ReqlOpsGeometry;
+use crate::ops::{ReqlOps, ReqlOpsGeometry};
 use crate::types::{GeoSystem, Unit};
 use crate::Command;
 
@@ -31,11 +31,7 @@ impl DistanceBuilder {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<usize>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, usize>(arg)
+        self.get_parent().run::<_, usize>(arg)
     }
 
     pub fn with_geo_system(mut self, geo_system: GeoSystem) -> Self {
@@ -51,5 +47,17 @@ impl DistanceBuilder {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl ReqlOps for DistanceBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone().with_opts(&self.1).into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for DistanceBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

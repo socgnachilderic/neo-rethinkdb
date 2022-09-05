@@ -1,11 +1,10 @@
 use std::borrow::Cow;
 
-use futures::{TryStreamExt, Stream};
+use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::{Command, ops::ReqlOpsArray};
-
-use super::ReqlOps;
+use crate::Command;
+use crate::ops::{ReqlOps, ReqlOpsArray};
 
 #[derive(Debug, Clone)]
 pub struct DbListBuilder(pub(crate) Command);
@@ -28,17 +27,14 @@ impl DbListBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = Result<Vec<Cow<'static, str>>, crate::ReqlError>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Vec<Cow<'static, str>>>(arg)
+        self.get_parent().run::<_, Vec<Cow<'static, str>>>(arg)
     }
 }
 
-impl ReqlOpsArray for DbListBuilder { }
+impl ReqlOpsArray for DbListBuilder {}
 
 impl ReqlOps for DbListBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
     }
 }

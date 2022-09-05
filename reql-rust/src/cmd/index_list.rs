@@ -3,9 +3,10 @@ use std::borrow::Cow;
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::{Command, ops::ReqlOpsArray};
+use crate::ops::{ReqlOps, ReqlOpsArray};
+use crate::Command;
 
-use super::{run, ReqlOps};
+use super::run;
 
 #[derive(Debug, Clone)]
 pub struct IndexListBuilder(pub(crate) Command);
@@ -23,10 +24,7 @@ impl IndexListBuilder {
         self,
         arg: impl run::Arg,
     ) -> impl Stream<Item = crate::Result<Vec<Cow<'static, str>>>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Vec<Cow<'static, str>>>(arg)
+        self.get_parent().run::<_, Vec<Cow<'static, str>>>(arg)
     }
 
     #[doc(hidden)]
@@ -36,11 +34,16 @@ impl IndexListBuilder {
     }
 }
 
-impl ReqlOpsArray for IndexListBuilder { }
+impl ReqlOpsArray for IndexListBuilder {}
 
 impl ReqlOps for IndexListBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
     }
 }
 
+impl Into<Command> for IndexListBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
+    }
+}

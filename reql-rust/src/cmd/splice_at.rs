@@ -25,7 +25,7 @@ impl SpliceAtBuilder {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Value>> {        
-        self.0.into_arg::<()>().into_cmd().run::<_, Value>(arg)
+        self.get_parent().run::<_, Value>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -40,6 +40,12 @@ impl ReqlOpsDocManipulation for SpliceAtBuilder { }
 
 impl ReqlOps for SpliceAtBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for SpliceAtBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

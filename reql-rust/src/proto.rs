@@ -1,11 +1,14 @@
-use crate::cmd::run::{Db, Options};
-use crate::{err, r};
+use std::collections::{HashMap, VecDeque};
+use std::{fmt, str};
+
 use ql2::query::QueryType;
 use ql2::term::TermType;
 use serde::ser::{self, Serialize, Serializer};
 use serde_json::value::{Number, Value};
-use std::collections::{HashMap, VecDeque};
-use std::{fmt, str};
+
+use crate::cmd::run::{Db, Options};
+use crate::prelude::ReqlOps;
+use crate::{err, r};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub(crate) enum Datum {
@@ -39,20 +42,20 @@ impl Serialize for Datum {
     }
 }
 
-#[allow(array_into_iter)]
-#[allow(clippy::into_iter_on_ref)]
-impl<const N: usize> From<[Command; N]> for Command {
-    fn from(arr: [Command; N]) -> Self {
-        let mut query = Self::new(TermType::MakeArray);
-        // TODO remove this clone on Rust v1.53 once
-        // https://twitter.com/m_ou_se/status/1385966446254166020
-        // is available on stable
-        for arg in arr.into_iter().cloned() {
-            query = query.with_arg(arg);
-        }
-        query
-    }
-}
+// #[allow(array_into_iter)]
+// #[allow(clippy::into_iter_on_ref)]
+// impl<const N: usize> From<[Command; N]> for Command {
+//     fn from(arr: [Command; N]) -> Self {
+//         let mut query = Self::new(TermType::MakeArray);
+//         // TODO remove this clone on Rust v1.53 once
+//         // https://twitter.com/m_ou_se/status/1385966446254166020
+//         // is available on stable
+//         for arg in arr.into_iter().cloned() {
+//             query = query.with_arg(arg);
+//         }
+//         query
+//     }
+// }
 
 impl From<Value> for Datum {
     fn from(value: Value) -> Self {
@@ -315,6 +318,6 @@ impl Serialize for Db {
     {
         let Self(name) = self;
         let cmd = r.db(name.as_ref());
-        Query(&cmd.into()).serialize(serializer)
+        Query(&cmd.get_parent()).serialize(serializer)
     }
 }

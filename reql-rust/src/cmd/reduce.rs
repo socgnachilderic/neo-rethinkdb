@@ -23,7 +23,7 @@ impl<A: Unpin + DeserializeOwned> ReduceBuilder<A> {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<A>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, A>(arg)
+        self.get_parent().run::<_, A>(arg)
     }
 
     pub fn with_sequences(mut self, sequences: &[impl Serialize]) -> Self {
@@ -43,6 +43,12 @@ impl<A: Unpin + DeserializeOwned> ReduceBuilder<A> {
 
 impl<A> ReqlOps for ReduceBuilder<A> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for ReduceBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

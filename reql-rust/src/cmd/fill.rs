@@ -1,9 +1,9 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::Command;
-use crate::ops::{ReqlOpsGeometry, ReqlOps};
+use crate::ops::{ReqlOps, ReqlOpsGeometry};
 use crate::types::Polygon;
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct FillBuilder(pub(crate) Command);
@@ -23,7 +23,7 @@ impl FillBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<Polygon>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, Polygon>(arg)
+        self.get_parent().run::<_, Polygon>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -36,6 +36,12 @@ impl ReqlOpsGeometry for FillBuilder {}
 
 impl ReqlOps for FillBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for FillBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

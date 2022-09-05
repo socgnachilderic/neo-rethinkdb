@@ -8,15 +8,15 @@ pub use crate::cmd::point::Point;
 pub use crate::cmd::polygon::Polygon;
 pub use document::Document;
 pub use group_stream::{GroupItem, GroupStream};
-#[doc(inline)]
-pub use reql_rust_types::Binary;
 pub use sequence::Sequence;
 pub use datetime::DateTime;
+pub use binary::Binary;
 
 mod document;
 mod group_stream;
 mod sequence;
 mod datetime;
+mod binary;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]

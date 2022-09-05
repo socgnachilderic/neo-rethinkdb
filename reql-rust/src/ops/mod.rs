@@ -10,6 +10,16 @@ pub use sequence::ReqlOpsSequence;
 mod document;
 mod sequence;
 
+pub trait ReqlOpsCommand:
+    ReqlOps
+    + ReqlOpsDocManipulation
+    + ReqlOpsSequence<serde_json::Value>
+    + ReqlOpsJoin<serde_json::Value>
+    + ReqlOpsArray
+    + ReqlOpsString
+    + ReqlOpsGeometry
+{}
+
 pub trait ReqlOpsJoin<T: Unpin + Serialize + DeserializeOwned>: ReqlOpsSequence<T> {
     /// Used to ‘zip’ up the result of a join by merging the ‘right’ fields into ‘left’ fields of each member of the sequence.
     ///
@@ -212,42 +222,42 @@ pub trait ReqlOpsObject<T>: ReqlOps {}
 pub trait ReqlOpsGeometry: ReqlOps {
     /// Compute the distance between a point and another geometry object.
     /// At least one of the geometry objects specified must be a point.
-    /// 
+    ///
     /// Optional methods available with `distance` are:
-    /// 
+    ///
     /// - [with_geo_system(geo_system: reql_rust::types::GeoSystem)](crate::cmd::distance::DistanceBuilder::with_geo_system):
-    /// the reference ellipsoid to use for geographic coordinates. 
-    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry, 
+    /// the reference ellipsoid to use for geographic coordinates.
+    /// Possible values are `GeoSystem::WGS84` (the default), a common standard for Earth’s geometry,
     /// or `GeoSystem::UnitSphere`, a perfect sphere of 1 meter radius.
     /// - [with_unit(unit: reql_rust::types::Unit)](crate::cmd::distance::DistanceBuilder::with_unit):
-    /// Unit to return the distance in. Possible values are 
+    /// Unit to return the distance in. Possible values are
     /// `Unit::Meter` (the default), `Unit::Kilometer`, `Unit::InternationalMile`, `Unit::NauticalMile`, `Unit::InternationalFoot`.
-    /// 
-    /// If one of the objects is a polygon or a line, the point will be projected onto the line or polygon assuming 
-    /// a perfect sphere model before the distance is computed (using the model specified with geo_system). 
-    /// As a consequence, if the polygon or line is extremely large compared to Earth’s radius and 
-    /// the distance is being computed with the default WGS84 model, the results of distance should be considered 
+    ///
+    /// If one of the objects is a polygon or a line, the point will be projected onto the line or polygon assuming
+    /// a perfect sphere model before the distance is computed (using the model specified with geo_system).
+    /// As a consequence, if the polygon or line is extremely large compared to Earth’s radius and
+    /// the distance is being computed with the default WGS84 model, the results of distance should be considered
     /// approximate due to the deviation between the ellipsoid and spherical models.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Compute the distance between two points on the Earth in kilometers.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::Unit;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let point1 = r.point(-122.423246, 37.779388);
     ///     let point2 = r.point(-117.220406, 32.719464);
-    /// 
+    ///
     ///     let _ = point1.distance(point2)
     ///         .with_unit(Unit::Kilometer)
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
@@ -259,24 +269,24 @@ pub trait ReqlOpsGeometry: ReqlOps {
     }
 
     /// Convert a ReQL geometry object to a [GeoJSON](https://geojson.org/) object.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Compute the distance between two points on the Earth in kilometers.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::{Unit, GeoJson};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
-    /// 
+    ///
     ///     let _ = r.point(-122.423246, 37.779388)
     ///         .to_geojson::<GeoJson<[f64; 2]>>()
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```

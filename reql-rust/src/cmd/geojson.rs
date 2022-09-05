@@ -6,7 +6,7 @@ use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
 use crate::ops::{ReqlOps, ReqlOpsGeometry};
-use crate::types::{GeoType, ReqlType, GeoJson};
+use crate::types::{GeoJson, GeoType, ReqlType};
 use crate::Command;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -39,11 +39,7 @@ impl<T: Unpin + Serialize + DeserializeOwned + Clone> ReqlGeoJson<T> {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Self>> {
-        self.command
-            .unwrap()
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Self>(arg)
+        self.get_parent().run::<_, Self>(arg)
     }
 }
 
@@ -51,7 +47,13 @@ impl<T> ReqlOpsGeometry for ReqlGeoJson<T> {}
 
 impl<T> ReqlOps for ReqlGeoJson<T> {
     fn get_parent(&self) -> Command {
-        self.command.clone().unwrap()
+        self.command.clone().unwrap().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for ReqlGeoJson<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }
 

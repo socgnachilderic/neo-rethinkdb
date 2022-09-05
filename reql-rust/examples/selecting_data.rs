@@ -76,11 +76,11 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
-    // let result = post_table
-    //     .map::<String>(func!(|row| row.bracket("title")))
-    //     .run(&conn)
-    //     .await?;
-    // dbg!(result);
+    let result = post_table
+        .map::<String>(func!(|row| row.bracket("title")))
+        .run(&conn)
+        .await?;
+    dbg!(result);
 
     #[derive(Debug, Serialize, Deserialize)]
     struct NewPost {
@@ -243,13 +243,13 @@ async fn main() -> Result<()> {
         .await?;
     dbg!(result);
 
-    // let result = post_table
-    //     .get(1)
-    //     .bracket("title")
-    //     .append::<_, serde_json::Value>("title 1")
-    //     .run(&conn)
-    //     .await?;
-    // dbg!(result);
+    let result = post_table
+        .get(1)
+        .bracket("title")
+        .append::<_, serde_json::Value>("title 1")
+        .run(&conn)
+        .await?;
+    dbg!(result);
 
     // let result = post_table
     //     .get(1)
@@ -259,41 +259,41 @@ async fn main() -> Result<()> {
     //     .await?;
     // dbg!(result);
 
-    let result: String = post_table
-        .get(1)
-        .bracket("title")
-        .run(&conn)
-        .await?
-        .unwrap()
-        .parse();
-    dbg!(result);
+    // let result: String = post_table
+    //     .get(1)
+    //     .bracket("title")
+    //     .run(&conn)
+    //     .await?
+    //     .unwrap()
+    //     .parse();
+    // dbg!(result);
 
-    let result = post_table
-        .get(1)
-        .get_field("title")
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .get(1)
+    //     .get_field("title")
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
-    let result = post_table
-        .has_fields("title")
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .has_fields("title")
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
-    let result = post_table
-        .get(1)
-        .keys()
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .get(1)
+    //     .keys()
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
-    let result = post_table
-        .get(1)
-        .values()
-        .run(&conn)
-        .await?;
-    dbg!(result);
+    // let result = post_table
+    //     .get(1)
+    //     .values()
+    //     .run(&conn)
+    //     .await?;
+    // dbg!(result);
 
     tear_down(&conn).await?;
 

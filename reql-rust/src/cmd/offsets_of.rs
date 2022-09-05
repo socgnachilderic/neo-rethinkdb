@@ -2,10 +2,10 @@ use std::marker::PhantomData;
 
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-use crate::ops::{ReqlOpsArray, ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsArray, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
@@ -22,20 +22,12 @@ impl<T: Unpin + DeserializeOwned> OffsetsOfBuilder<T> {
         Self::constructor(func)
     }
 
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> crate::Result<Option<T>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<T>> {
-        self.0.into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -45,17 +37,23 @@ impl<T: Unpin + DeserializeOwned> OffsetsOfBuilder<T> {
 
     fn constructor(command: Command) -> Self {
         let command = Command::new(TermType::OffsetsOf).with_arg(command);
-        
+
         Self(command, PhantomData)
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for OffsetsOfBuilder<T> { }
-impl<T> ReqlOpsArray for OffsetsOfBuilder<T> { }
-impl<T> ReqlOpsDocManipulation for OffsetsOfBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for OffsetsOfBuilder<T> {}
+impl<T> ReqlOpsArray for OffsetsOfBuilder<T> {}
+impl<T> ReqlOpsDocManipulation for OffsetsOfBuilder<T> {}
 
 impl<T> ReqlOps for OffsetsOfBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for OffsetsOfBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

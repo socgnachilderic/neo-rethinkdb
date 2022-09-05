@@ -2,6 +2,5 @@
 members = [
     "reql-rust",
     "reql-rust-macros",
-    "reql-rust-types",
 ]
 

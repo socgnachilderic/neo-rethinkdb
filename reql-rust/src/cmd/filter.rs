@@ -4,8 +4,8 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::{Command, Func, Result};
-use crate::ops::{ReqlOpsSequence, ReqlOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct FilterBuilder<T>(
@@ -34,11 +34,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<T>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub fn with_default(mut self, default: bool) -> Self {
@@ -52,18 +48,22 @@ impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
     }
 }
 
-impl<T> Into<Command> for FilterBuilder<T> {
-    fn into(self) -> Command {
-        self.0
-    }
-}
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for FilterBuilder<T> {}
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for FilterBuilder<T> { }
-
-impl<T> ReqlOpsDocManipulation for FilterBuilder<T> { }
+impl<T> ReqlOpsDocManipulation for FilterBuilder<T> {}
 
 impl<T> ReqlOps for FilterBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0
+            .clone()
+            .with_opts(&self.1)
+            .into_arg::<()>()
+            .into_cmd()
+    }
+}
+
+impl<T> Into<Command> for FilterBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

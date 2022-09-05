@@ -1,8 +1,8 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::types::DbResponseType;
 use crate::Command;
+use crate::types::DbResponseType;
 
 #[derive(Debug, Clone)]
 pub struct DbDropBuilder(pub(crate) Command);

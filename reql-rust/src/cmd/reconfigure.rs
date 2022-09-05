@@ -5,9 +5,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Serialize, Serializer};
 
-use crate::Command;
 use crate::ops::ReqlOps;
-use crate::types::{Replicas, EmergencyRepair, ReconfigureResponseType};
+use crate::types::{EmergencyRepair, ReconfigureResponseType, Replicas};
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct ReconfigureBuilder(pub(crate) Command, pub(crate) ReconfigureOption);
@@ -28,7 +28,10 @@ impl ReconfigureBuilder {
         Self(command, ReconfigureOption::default())
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<ReconfigureResponseType>> {
+    pub async fn run(
+        self,
+        arg: impl super::run::Arg,
+    ) -> crate::Result<Option<ReconfigureResponseType>> {
         self.make_query(arg).try_next().await
     }
 
@@ -36,11 +39,7 @@ impl ReconfigureBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<ReconfigureResponseType>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, ReconfigureResponseType>(arg)
+        self.get_parent().run::<_, ReconfigureResponseType>(arg)
     }
 
     pub fn with_dry_run(mut self, dry_run: bool) -> Self {
@@ -71,7 +70,13 @@ impl ReconfigureBuilder {
 
 impl ReqlOps for ReconfigureBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().with_opts(&self.1).into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for ReconfigureBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }
 

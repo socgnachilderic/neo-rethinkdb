@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 
 use crate::ops::{ReqlOps, ReqlOpsGeometry};
 use crate::types::{GeoSystem, Point, Unit};
@@ -43,15 +43,8 @@ impl<T: Unpin + DeserializeOwned + Serialize + ReqlOpsGeometry> CircleBuilder<T>
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<T>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub fn with_geo_system(mut self, geo_system: GeoSystem) -> Self {
@@ -79,6 +72,16 @@ impl<T> ReqlOpsGeometry for CircleBuilder<T> {}
 
 impl<T> ReqlOps for CircleBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0
+            .clone()
+            .with_opts(self.1.clone())
+            .into_arg::<()>()
+            .into_cmd()
+    }
+}
+
+impl<T> Into<Command> for CircleBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

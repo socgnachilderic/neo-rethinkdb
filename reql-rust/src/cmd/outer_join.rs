@@ -4,11 +4,11 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsJoin, ReqlOpsSequence};
+use crate::types::{Document, JoinResponseType, Sequence};
 use crate::{Command, Func};
-use crate::ops::{ReqlOpsJoin, ReqlOpsSequence, ReqlOpsDocManipulation};
-use crate::types::{JoinResponseType, Sequence, Document};
 
-use super::{run, table::TableBuilder, ReqlOps};
+use super::{run, table::TableBuilder};
 
 #[derive(Debug, Clone)]
 pub struct OuterJoinBuilder<A, T>(
@@ -41,11 +41,8 @@ where
     pub fn make_query(
         self,
         arg: impl run::Arg,
-    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<T, Document<A>>>>>
-    {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
+    ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<T, Document<A>>>>> {
+        self.get_parent()
             .run::<_, Sequence<JoinResponseType<T, Document<A>>>>(arg)
     }
 
@@ -55,12 +52,18 @@ where
     }
 }
 
-impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for OuterJoinBuilder<A, T> { }
+impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for OuterJoinBuilder<A, T> {}
 impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for OuterJoinBuilder<A, T> {}
-impl<A, T> ReqlOpsDocManipulation for OuterJoinBuilder<A, T> { }
+impl<A, T> ReqlOpsDocManipulation for OuterJoinBuilder<A, T> {}
 
 impl<A, T> ReqlOps for OuterJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<A, T> Into<Command> for OuterJoinBuilder<A, T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

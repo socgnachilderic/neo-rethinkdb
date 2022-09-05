@@ -4,7 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::ops::{ReqlOpsArray, ReqlOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsArray, ReqlOpsDocManipulation};
 use crate::Command;
 
 #[derive(Debug, Clone)]
@@ -13,7 +13,7 @@ pub struct KeysBuilder(pub(crate) Command);
 impl KeysBuilder {
     pub(crate) fn new() -> Self {
         let command = Command::new(TermType::Keys);
-        
+
         Self(command)
     }
 
@@ -28,9 +28,7 @@ impl KeysBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<Vec<Cow<'static, str>>>> {
-        self.0.into_arg::<()>()
-            .into_cmd()
-            .run::<_, Vec<Cow<'static, str>>>(arg)
+        self.get_parent().run::<_, Vec<Cow<'static, str>>>(arg)
     }
 
     pub fn with_sequences(mut self, sequences: &[impl Serialize]) -> Self {
@@ -48,11 +46,17 @@ impl KeysBuilder {
     }
 }
 
-impl ReqlOpsArray for KeysBuilder { }
-impl ReqlOpsDocManipulation for KeysBuilder { }
+impl ReqlOpsArray for KeysBuilder {}
+impl ReqlOpsDocManipulation for KeysBuilder {}
 
 impl ReqlOps for KeysBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for KeysBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }
