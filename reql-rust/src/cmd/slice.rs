@@ -2,18 +2,18 @@ use std::marker::PhantomData;
 
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 use serde::de::DeserializeOwned;
+use serde::Serialize;
 
-use crate::ops::{ReqlOpsArray, ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
-use crate::Command;
+use crate::ops::{ReqlOps, ReqlOpsArray, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::types::Status;
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct SliceBuilder<T>(
-    pub(crate) Command, 
-    pub(crate) SliceOption, 
-    pub(crate) PhantomData<T>
+    pub(crate) Command,
+    pub(crate) SliceOption,
+    pub(crate) PhantomData<T>,
 );
 
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
@@ -34,25 +34,16 @@ impl<T: Unpin + DeserializeOwned> SliceBuilder<T> {
             let start_offset = Command::from_json(start_offset);
             command = command.with_arg(start_offset);
         }
-        
+
         Self(command, SliceOption::default(), PhantomData)
     }
 
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> crate::Result<Option<T>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<T>> {
-        self.0.with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub fn with_left_bound(mut self, status: Status) -> Self {
@@ -71,12 +62,18 @@ impl<T: Unpin + DeserializeOwned> SliceBuilder<T> {
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SliceBuilder<T> { }
-impl<T> ReqlOpsArray for SliceBuilder<T> { }
-impl<T> ReqlOpsDocManipulation for SliceBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SliceBuilder<T> {}
+impl<T> ReqlOpsArray for SliceBuilder<T> {}
+impl<T> ReqlOpsDocManipulation for SliceBuilder<T> {}
 
 impl<T> ReqlOps for SliceBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().with_opts(self.1).into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for SliceBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

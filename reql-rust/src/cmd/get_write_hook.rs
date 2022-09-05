@@ -1,4 +1,4 @@
-use crate::{types::WriteHookResponseType, Command};
+use crate::{ops::ReqlOps, types::WriteHookResponseType, Command};
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
@@ -23,9 +23,7 @@ impl GetWriteBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<Option<WriteHookResponseType>>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
+        self.get_parent()
             .run::<_, Option<WriteHookResponseType>>(arg)
     }
 
@@ -33,5 +31,17 @@ impl GetWriteBuilder {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl ReqlOps for GetWriteBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for GetWriteBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

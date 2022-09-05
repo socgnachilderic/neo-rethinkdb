@@ -85,6 +85,7 @@ use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
 use crate::Command;
+use crate::ops::ReqlOps;
 use crate::types::Squash;
 
 use super::run;
@@ -166,11 +167,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> ChangesBuilder<T> {
     }
 
     pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<T>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub fn with_squash(mut self, squash: Squash) -> Self {
@@ -210,8 +207,14 @@ impl<T: Unpin + Serialize + DeserializeOwned> ChangesBuilder<T> {
     }
 }
 
+impl<T> ReqlOps for ChangesBuilder<T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone().with_opts(self.1).into_arg::<()>().into_cmd()
+    }
+}
+
 impl<T> Into<Command> for ChangesBuilder<T> {
     fn into(self) -> Command {
-        self.0
+        self.get_parent()
     }
 }

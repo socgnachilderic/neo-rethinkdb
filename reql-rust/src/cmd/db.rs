@@ -1,4 +1,4 @@
-use crate::Command;
+use crate::{ops::ReqlOps, Command};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
@@ -13,7 +13,7 @@ impl DbBuilder {
             Command::new(TermType::Db)
                 .with_arg(args)
                 .into_arg::<()>()
-                .into_cmd()
+                .into_cmd(),
         )
     }
 
@@ -28,156 +28,156 @@ impl DbBuilder {
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
     ///         .table_create("dc_universe")
     ///         .run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// See [r::table_create](crate::r::table_create) for more details.
-    /// 
+    ///
     pub fn table_create(self, table_name: &str) -> super::table_create::TableCreateBuilder {
-        super::table_create::TableCreateBuilder::new(table_name)._with_parent(self.into())
+        super::table_create::TableCreateBuilder::new(table_name)._with_parent(self.get_parent())
     }
 
     /// Drop a table from a database. The table and all its data will be deleted.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Drop a table named “dc_universe”.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
     ///         .table_drop("dc_universe")
     ///         .run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// See [r::table_create](crate::r::table_create) for more details.
-    /// 
+    ///
     pub fn table_drop(self, table_name: &str) -> super::table_drop::TableDropBuilder {
-        super::table_drop::TableDropBuilder::new(table_name)._with_parent(self.into())
+        super::table_drop::TableDropBuilder::new(table_name)._with_parent(self.get_parent())
     }
 
     /// List all table names in a default database. The result is a list of strings.
-    /// 
+    ///
     /// # Example
-    /// 
+    ///
     /// List all tables of the ‘marvel’ database.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("marvel").table_list()
     ///         .run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
     pub fn table_list(self) -> super::table_list::TableListBuilder {
-        super::table_list::TableListBuilder::new()._with_parent(self.into())
+        super::table_list::TableListBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// Return all documents in a table. Other commands may be chained after `table` to return a subset of documents 
+    /// Return all documents in a table. Other commands may be chained after `table` to return a subset of documents
     /// (such as [get](super::get::GetBuilder) and [filter](super::filter::FilterBuilder)) or perform further processing.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Return all documents in the table ‘marvel’ of the default database.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// 
+    ///
     /// #[derive(Serialize, Deserialize)]
     /// struct Marvel {
     ///     id: String,
     ///     name: String
     /// }
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.table::<Marvel>("marvel").run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Return all documents in the table ‘marvel’ of the database ‘heroes’.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Serialize, Deserialize};
-    /// 
+    ///
     /// #[derive(Serialize, Deserialize)]
     /// struct Marvel {
     ///     id: String,
     ///     name: String
     /// }
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes").table::<Marvel>("marvel").run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// There are two methods that may be used to setting.
-    /// 
+    ///
     /// * [with_read_mode(read_mode: reql_rust::types::ReadMode)](super::table::TableBuilder::with_read_mode) :
     /// One of three possible values affecting the consistency guarantee for the table read:
     ///     - `ReadMode::Single` : returns values that are in memory (but not necessarily written to disk) on the primary replica. This is the default.
-    ///     - `ReadMode::Majority` : will only return values that are safely committed on disk on a majority of replicas. This requires sending a message 
+    ///     - `ReadMode::Majority` : will only return values that are safely committed on disk on a majority of replicas. This requires sending a message
     ///         to every replica on each read, so it is the slowest but most consistent.
     ///     - `ReadMode::Outdated` : will return values that are in memory on an arbitrarily-selected replica. This is the fastest but least consistent.
     /// * [with_identifier_format(identifier_format: reql_rust::types::IdentifierFormat)](super::table::TableBuilder::with_identifier_format) :
     ///     - `IdentifierFormat::Name`
     ///     - `IdentifierFormat::Uuid` : then [system tables](https://rethinkdb.com/docs/system-tables/) will refer to servers,
     ///         databases and tables by UUID rather than name. (This only has an effect when used with system tables.)
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Allow potentially out-of-date data in exchange for faster reads.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::ReadMode;
     /// use serde::{Serialize, Deserialize};
-    /// 
+    ///
     /// #[derive(Serialize, Deserialize)]
     /// struct Marvel {
     ///     id: String,
     ///     name: String
     /// }
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("heroes")
     ///         .table::<Marvel>("marvel")
     ///         .with_read_mode(ReadMode::Outdated)
     ///         .run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
@@ -189,17 +189,17 @@ impl DbBuilder {
     }
 
     /// Grant or deny access permissions for a user account, on a per-database basis.
-    /// 
+    ///
     /// See [r::grant](crate::r::grant) for more information
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Grant the `chatapp` user account read and write permissions on the `users` database.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("users")
@@ -208,123 +208,124 @@ impl DbBuilder {
     ///         .permit_write(true)
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
     pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
-        super::grant::GrantBuilder::new(username)._with_parent(self.into())
+        super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
     }
 
     /// Query (read and/or update) the configurations for individual databases.
-    /// 
-    /// The `config` command is a shorthand way to access the `db_config` 
-    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables). 
-    /// It will return the single row from the system that corresponds to the database configuration, 
+    ///
+    /// The `config` command is a shorthand way to access the `db_config`
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables).
+    /// It will return the single row from the system that corresponds to the database configuration,
     /// as if [get](super::table::TableBuilder::get) had been called on the system table with the UUID of the database in question.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Get the configuration for the `marvel` database.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("marvel").config().run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Change the database name requirement of the `marvel` database.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::json;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("marvel").config().update(json!({ "name": "heroes" })).run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
     pub fn config(self) -> super::config::ConfigBuilder {
-        super::config::ConfigBuilder::new()._with_parent(self.into())
+        super::config::ConfigBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Rebalances the shards of a table. When called on a database, all the tables in that database will be rebalanced.
-    /// 
+    ///
     /// See [r::table::rebalance](super::table::TableBuilder::rebalance)
     pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
-        super::rebalance::RebalanceBuilder::new()._with_parent(self.into())
+        super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
     }
 
     /// Reconfigure a table’s sharding and replication.
-    /// 
+    ///
     /// See [r::table::reconfigure](super::table::TableBuilder::reconfigure)
     pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
-        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.into())
+        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
     }
 
-    /// Wait for all the tables to be ready. 
-    /// A table may be temporarily unavailable after creation, rebalancing or reconfiguring. 
+    /// Wait for all the tables to be ready.
+    /// A table may be temporarily unavailable after creation, rebalancing or reconfiguring.
     /// The `wait` command blocks until the given database is fully up to date.
-    /// 
+    ///
     /// The `wait` command use two optional methods:
-    /// 
+    ///
     /// - `with_wait_for(reql_rust::types::WaitFor)` : a string indicating a table status to wait on before returning, one of
     /// `WaitFor::ReadyForOutdatedReads`, `WaitFor::ReadyForReads`, `WaitFor::ReadyForWrites`,
     /// `WaitFor::AllReplicasReady`. The default is `WaitFor::AllReplicasReady`.
     /// - `with_timeout(std::time::Duration)` : a number indicating maximum time, in seconds, to wait for the table to be ready.
     /// If this value is exceeded, a ReqlRuntimeError will be thrown.A value of 0 means no timeout. The default is 0 (no timeout).
-    /// 
+    ///
     /// The return value is an object consisting of a single field, ready.
     /// The value is an integer indicating the number of tables waited for.
     /// It will always be the total number of tables when called on a database.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Wait on all table in database to be ready.
-    /// 
+    ///
     /// ```
     /// use std::time::Duration;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde_json::Value;
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let _ = r.db("marvel").wait().run(&session).await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
     pub fn wait(self) -> super::wait::WaitBuilder {
-        super::wait::WaitBuilder::new()._with_parent(self.into())
+        super::wait::WaitBuilder::new()._with_parent(self.get_parent())
     }
 }
 
-impl Into<Command> for DbBuilder {
-    fn into(self) -> Command {
-        self.0
+impl ReqlOps for DbBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::ReqlOps;
     use crate::{cmd, r};
 
     #[test]
     fn r_db() {
-        let query = r.db("foo").into();
+        let query = r.db("foo").get_parent();
         let serialised = cmd::serialise(&query);
         let expected = r#"[14,["foo"]]"#;
         assert_eq!(serialised, expected);

@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{Command, Func, Result};
-use crate::ops::{ReqlOpsGroupedStream, ReqlOps};
+use crate::ops::{ReqlOps, ReqlOpsGroupedStream};
 use crate::types::GroupStream;
+use crate::{Command, Func, Result};
 
 use super::StaticString;
 
@@ -32,7 +32,7 @@ where
 {
     pub(crate) fn new(fields: &[&str]) -> Self {
         let mut command = Command::new(TermType::Group);
-        
+
         for field in fields {
             let arg = Command::from_json(field);
             command = command.with_arg(arg);
@@ -48,10 +48,7 @@ where
         Self(command, GroupOption::default(), PhantomData, PhantomData)
     }
 
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> Result<Option<GroupStream<G, V>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<GroupStream<G, V>>> {
         self.make_query(arg).try_next().await
     }
 
@@ -59,15 +56,7 @@ where
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = Result<GroupStream<G, V>>> {
-        let mut command = self.0;
-
-        if self.1.index.is_some() || self.1.multi.is_some() {
-            command = command.with_opts(self.1);
-        }
-
-        command.into_arg::<()>()
-            .into_cmd()
-            .run::<_, GroupStream<G, V>>(arg)
+        self.get_parent().run::<_, GroupStream<G, V>>(arg)
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {
@@ -90,10 +79,23 @@ impl<G, V> ReqlOpsGroupedStream<G, V> for GroupBuilder<G, V>
 where
     G: Unpin + Serialize + DeserializeOwned,
     V: Unpin + Serialize + DeserializeOwned,
-{}
+{
+}
 
 impl<G, V> ReqlOps for GroupBuilder<G, V> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        let mut command = self.0.clone();
+
+        if self.1.index.is_some() || self.1.multi.is_some() {
+            command = command.with_opts(&self.1);
+        }
+
+        command.into_arg::<()>().into_cmd()
+    }
+}
+
+impl<G, V> Into<Command> for GroupBuilder<G, V> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

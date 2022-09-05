@@ -2,8 +2,8 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::{Command, Func};
 use crate::ops::ReqlOps;
+use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
 pub struct ContainsBuilder(pub(crate) Command);
@@ -22,7 +22,7 @@ impl ContainsBuilder {
             let Func(func) = func;
             command = command.with_arg(func);
         }
-        
+
         Self(command)
     }
 
@@ -30,8 +30,8 @@ impl ContainsBuilder {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<bool>> {        
-        self.0.into_arg::<()>().into_cmd().run::<_, bool>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<bool>> {
+        self.get_parent().run::<_, bool>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -42,6 +42,12 @@ impl ContainsBuilder {
 
 impl ReqlOps for ContainsBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for ContainsBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

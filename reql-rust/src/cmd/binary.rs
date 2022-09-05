@@ -1,6 +1,7 @@
+use ql2::term::TermType;
+
 use crate::types::Binary;
 use crate::{cmd, r, Command};
-use ql2::term::TermType;
 
 pub trait Arg {
     fn arg(self) -> cmd::Arg<()>;

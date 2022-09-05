@@ -1,9 +1,9 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::Command;
-use crate::ops::{ReqlOpsGeometry, ReqlOps};
+use crate::ops::{ReqlOps, ReqlOpsGeometry};
 use crate::types::Polygon;
+use crate::Command;
 
 pub struct PolygonSubBuilder(pub(crate) Command);
 
@@ -22,7 +22,7 @@ impl PolygonSubBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<Polygon>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, Polygon>(arg)
+        self.get_parent().run::<_, Polygon>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -35,6 +35,12 @@ impl ReqlOpsGeometry for PolygonSubBuilder {}
 
 impl ReqlOps for PolygonSubBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for PolygonSubBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

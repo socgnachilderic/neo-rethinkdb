@@ -1,10 +1,10 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
 
 #[derive(Debug, Clone)]
 pub struct ChangeAtBuilder(pub(crate) Command);
@@ -24,8 +24,8 @@ impl ChangeAtBuilder {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Value>> {        
-        self.0.into_arg::<()>().into_cmd().run::<_, Value>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Value>> {
+        self.get_parent().run::<_, Value>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -34,12 +34,18 @@ impl ChangeAtBuilder {
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for ChangeAtBuilder { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for ChangeAtBuilder {}
 
-impl ReqlOpsDocManipulation for ChangeAtBuilder { }
+impl ReqlOpsDocManipulation for ChangeAtBuilder {}
 
 impl ReqlOps for ChangeAtBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for ChangeAtBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

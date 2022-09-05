@@ -12,14 +12,11 @@ pub struct UpcaseBuilder(pub(crate) Command);
 impl UpcaseBuilder {
     pub(crate) fn new() -> Self {
         let command = Command::new(TermType::Upcase);
-        
+
         Self(command)
     }
 
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> crate::Result<Option<Cow<'static, str>>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Cow<'static, str>>> {
         self.make_query(arg).try_next().await
     }
 
@@ -27,9 +24,7 @@ impl UpcaseBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<Cow<'static, str>>> {
-        self.0.into_arg::<()>()
-            .into_cmd()
-            .run::<_, Cow<'static, str>>(arg)
+        self.get_parent().run::<_, Cow<'static, str>>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -40,6 +35,12 @@ impl UpcaseBuilder {
 
 impl ReqlOps for UpcaseBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for UpcaseBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

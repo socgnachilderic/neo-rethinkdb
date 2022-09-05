@@ -162,8 +162,6 @@ pub mod without;
 pub mod year;
 pub mod zip;
 
-use crate::ops::{ReqlOps, ReqlOpsDocManipulation};
-use crate::Command;
 use async_native_tls::TlsStream;
 use async_net::TcpStream;
 use futures::stream::Stream;
@@ -172,6 +170,8 @@ use serde::de::DeserializeOwned;
 use std::borrow::Cow;
 use std::str;
 
+use crate::ops;
+use crate::Command;
 pub use crate::proto::Arg;
 
 pub trait StaticString {
@@ -379,9 +379,15 @@ impl<'a> Command {
     }
 }
 
-impl ReqlOpsDocManipulation for Command {}
+impl ops::ReqlOpsCommand for Command {}
+impl ops::ReqlOpsGeometry for Command {}
+impl ops::ReqlOpsString for Command {}
+impl ops::ReqlOpsArray for Command {}
+impl ops::ReqlOpsDocManipulation for Command {}
+impl ops::ReqlOpsJoin<serde_json::Value> for Command {}
+impl ops::ReqlOpsSequence<serde_json::Value> for Command {}
 
-impl ReqlOps for Command {
+impl ops::ReqlOps for Command {
     fn get_parent(&self) -> Command {
         self.clone()
     }

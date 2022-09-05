@@ -1,7 +1,7 @@
 use crate::Command;
 use ql2::term::TermType;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Func(pub(crate) Command);
 
 impl Func {

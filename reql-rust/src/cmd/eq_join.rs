@@ -4,11 +4,11 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsJoin, ReqlOpsSequence};
+use crate::types::{Document, JoinResponseType, Sequence};
 use crate::{Command, Func};
-use crate::ops::{ReqlOpsJoin, ReqlOpsSequence, ReqlOpsDocManipulation};
-use crate::types::{Document, Sequence, JoinResponseType};
 
-use super::{run, table::TableBuilder, ReqlOps};
+use super::{run, table::TableBuilder};
 
 #[derive(Debug, Clone)]
 pub struct EqJoinBuilder<A, T>(
@@ -58,10 +58,7 @@ where
         self,
         arg: impl run::Arg,
     ) -> impl Stream<Item = crate::Result<Sequence<JoinResponseType<T, Document<A>>>>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
+        self.get_parent()
             .run::<_, Sequence<JoinResponseType<T, Document<A>>>>(arg)
     }
 
@@ -76,12 +73,18 @@ where
     }
 }
 
-impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for EqJoinBuilder<A, T> { }
-impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for EqJoinBuilder<A, T> { }
-impl<A, T> ReqlOpsDocManipulation for EqJoinBuilder<A, T> { }
+impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for EqJoinBuilder<A, T> {}
+impl<A, T: Unpin + Serialize + DeserializeOwned> ReqlOpsJoin<T> for EqJoinBuilder<A, T> {}
+impl<A, T> ReqlOpsDocManipulation for EqJoinBuilder<A, T> {}
 
 impl<A, T> ReqlOps for EqJoinBuilder<A, T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().with_opts(&self.1).into_arg::<()>().into_cmd()
+    }
+}
+
+impl<A, T> Into<Command> for EqJoinBuilder<A, T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

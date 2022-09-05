@@ -6,8 +6,9 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::Command;
+use crate::ops::ReqlOps;
 use crate::types::{Durability, ReturnChanges};
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct DeleteBuilder<T>(
@@ -33,22 +34,12 @@ impl<T: Unpin + DeserializeOwned> DeleteBuilder<T> {
         Self(command, DeleteOption::default(), PhantomData)
     }
 
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> crate::Result<Option<T>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<T>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {
@@ -73,8 +64,8 @@ impl<T: Unpin + DeserializeOwned> DeleteBuilder<T> {
     }
 }
 
-impl<T> Into<Command> for DeleteBuilder<T> {
-    fn into(self) -> Command {
-        self.0
+impl<T> ReqlOps for DeleteBuilder<T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone().with_opts(&self.1).into_arg::<()>().into_cmd()
     }
 }

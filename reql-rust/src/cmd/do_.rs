@@ -3,8 +3,9 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::{Command, Func};
+use crate::ops::ReqlOps;
 use crate::types::Document;
+use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
 pub struct DoBuilder(pub(crate) Command);
@@ -30,10 +31,7 @@ impl DoBuilder {
         A: super::run::Arg,
         T: Unpin + DeserializeOwned,
     {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Document<T>>(arg)
+        self.get_parent().run::<_, Document<T>>(arg)
     }
 
     pub fn with_args<T: Serialize>(mut self, args: &[T]) -> Self {
@@ -52,9 +50,15 @@ impl DoBuilder {
     }
 }
 
+impl ReqlOps for DoBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
 impl Into<Command> for DoBuilder {
     fn into(self) -> Command {
-        self.0
+        self.get_parent()
     }
 }
 
@@ -67,7 +71,7 @@ mod tests {
     fn r_do() {
         let counter = crate::current_counter();
         let query = r.do_(func!(|x, y| x + y)).with_args(&[10, 20]);
-        let serialised = cmd::serialise(&query.into());
+        let serialised = cmd::serialise(&query.get_parent());
         let expected = format!(
             r#"[64,[[69,[[2,[2,3]],[24,[[10,[{}]],[10,[{}]]]]]],10,20]]"#,
             counter,
@@ -87,7 +91,7 @@ mod tests {
         //     .db("mydb")
         //     .table("table2")
         //     .get(doc.get_field("id"))));
-        let serialised = cmd::serialise(&query.into());
+        let serialised = cmd::serialise(&query.get_parent());
         let expected = format!(
             r#"[64,[[69,[[2,[1]],[16,[[15,[[14,["mydb"]],"table2"]],[31,[[10,[{}]],"id"]]]]]],[16,[[15,[[14,["mydb"]],"table1"]],"johndoe@example.com"]]]]"#,
             counter

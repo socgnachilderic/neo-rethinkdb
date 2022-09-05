@@ -5,8 +5,9 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
+use crate::ops::ReqlOps;
+use crate::types::{Conflict, Document, Durability, ReturnChanges, Sequence, WritingResponseType};
 use crate::{Command, Func};
-use crate::types::{Conflict, Durability, ReturnChanges, WritingResponseType, Document, Sequence};
 
 #[derive(Debug)]
 pub struct InsertBuilder<T>(
@@ -39,7 +40,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> InsertBuilder<T> {
 
         Self(command, InsertOption::default(), None, PhantomData)
     }
-    
+
     pub(crate) fn new_many(documents: &[T]) -> Self {
         let args = Command::from_json(documents);
         let command = Command::new(TermType::Insert).with_arg(args);
@@ -58,18 +59,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> InsertBuilder<T> {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<WritingResponseType<Sequence<Document<T>>>>> {
-        let command = self.0;
-
-        let command = if let Some(Func(func)) = self.2 {
-            let args = func.with_opts(self.1);
-            command.with_arg(args)
-        } else {
-            command.with_opts(self.1)
-        };
-
-        command
-            .into_arg::<()>()
-            .into_cmd()
+        self.get_parent()
             .run::<_, WritingResponseType<Sequence<Document<T>>>>(arg)
     }
 
@@ -105,14 +95,30 @@ impl<T: Unpin + Serialize + DeserializeOwned> InsertBuilder<T> {
     }
 }
 
+impl<T> ReqlOps for InsertBuilder<T> {
+    fn get_parent(&self) -> Command {
+        let command = self.0.clone();
+
+        let command = if let Some(Func(func)) = self.2.clone() {
+            let args = func.with_opts(self.1);
+            command.with_arg(args)
+        } else {
+            command.with_opts(&self.1)
+        };
+
+        command.into_arg::<()>().into_cmd()
+    }
+}
+
 impl<T> Into<Command> for InsertBuilder<T> {
     fn into(self) -> Command {
-        self.0
+        self.get_parent()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::ReqlOps;
     use crate::{cmd, r};
     use serde::{Deserialize, Serialize};
 
@@ -128,7 +134,7 @@ mod tests {
         };
 
         let query = r.table::<Document>("foo").insert(&document);
-        let serialised = cmd::serialise(&query.into());
+        let serialised = cmd::serialise(&query.get_parent());
         let expected = r#"[56,[[15,["foo"]],{"item":"bar"}]]"#;
         assert_eq!(serialised, expected);
     }

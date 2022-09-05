@@ -3,9 +3,8 @@ use std::borrow::Cow;
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::{Command, ops::ReqlOpsArray};
-
-use super::ReqlOps;
+use crate::ops::{ReqlOps, ReqlOpsArray};
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct TableListBuilder(pub(crate) Command);
@@ -26,10 +25,7 @@ impl TableListBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<Vec<Cow<'static, str>>>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Vec<Cow<'static, str>>>(arg)
+        self.get_parent().run::<_, Vec<Cow<'static, str>>>(arg)
     }
 
     #[doc(hidden)]
@@ -39,10 +35,16 @@ impl TableListBuilder {
     }
 }
 
-impl ReqlOpsArray for TableListBuilder { }
+impl ReqlOpsArray for TableListBuilder {}
 
 impl ReqlOps for TableListBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for TableListBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

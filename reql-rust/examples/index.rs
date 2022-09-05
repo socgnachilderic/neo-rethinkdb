@@ -1,5 +1,6 @@
 use reql_rust::cmd::table::TableBuilder;
 use reql_rust::{r, Result, Session};
+use reql_rust::prelude::*;
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -9,14 +10,14 @@ async fn main() -> Result<()> {
     let result = my_table.index_create("mail").run(&conn).await?;
     dbg!(result);
 
-    // let result = my_table
-    //     .index_create("author_name")
-    //     .with_func(func!(|row| row.bracket("author").bracket("name")))
-    //     .with_geo(true)
-    //     .with_multi(true)
-    //     .run(&conn)
-    //     .await?;
-    // dbg!(result);
+    let result = my_table
+        .index_create("author_name")
+        .with_func(func!(|row| row.bracket("author").bracket("name")))
+        .with_geo(true)
+        .with_multi(true)
+        .run(&conn)
+        .await?;
+    dbg!(result);
 
     let result = my_table
         .index_status()

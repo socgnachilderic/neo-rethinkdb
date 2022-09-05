@@ -4,6 +4,7 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
+use crate::ops::ReqlOps;
 use crate::types::{GeoSystem, Point, Unit};
 use crate::Command;
 
@@ -42,12 +43,11 @@ impl GetNearestBuilder {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<serde_json::Value>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, serde_json::Value>(arg)
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<serde_json::Value>> {
+        self.get_parent().run::<_, serde_json::Value>(arg)
     }
 
     pub fn with_geo_system(mut self, geo_system: GeoSystem) -> Self {
@@ -73,5 +73,21 @@ impl GetNearestBuilder {
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl ReqlOps for GetNearestBuilder {
+    fn get_parent(&self) -> Command {
+        self.0
+            .clone()
+            .with_opts(&self.1)
+            .into_arg::<()>()
+            .into_cmd()
+    }
+}
+
+impl Into<Command> for GetNearestBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

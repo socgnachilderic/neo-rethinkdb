@@ -2,16 +2,13 @@ use std::marker::PhantomData;
 
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Serialize};
 
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::Command;
-use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
-pub struct PrependBuilder<T>(
-    pub(crate) Command,
-    pub(crate) PhantomData<T>
-);
+pub struct PrependBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
 
 impl<T: Unpin + Serialize + DeserializeOwned> PrependBuilder<T> {
     pub(crate) fn new(value: impl Serialize) -> Self {
@@ -25,8 +22,8 @@ impl<T: Unpin + Serialize + DeserializeOwned> PrependBuilder<T> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {        
-        self.0.into_arg::<()>().into_cmd().run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -35,11 +32,17 @@ impl<T: Unpin + Serialize + DeserializeOwned> PrependBuilder<T> {
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for PrependBuilder<T> { }
-impl<T> ReqlOpsDocManipulation for PrependBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for PrependBuilder<T> {}
+impl<T> ReqlOpsDocManipulation for PrependBuilder<T> {}
 
 impl<T> ReqlOps for PrependBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for PrependBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

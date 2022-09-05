@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
-use crate::Command;
-use crate::ops::{ReqlOpsGeometry, ReqlOps};
+use crate::ops::{ReqlOps, ReqlOpsGeometry};
 use crate::types::{GeoType, ReqlType};
+use crate::Command;
 
 use super::point::Point;
 use super::polygon_sub::PolygonSubBuilder;
@@ -47,26 +47,22 @@ impl Polygon {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Self>> {
-        self.command
-            .unwrap()
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Self>(arg)
+        self.get_parent().run::<_, Self>(arg)
     }
 
-    /// Use polygon2 to “punch out” a hole in polygon1. 
+    /// Use polygon2 to “punch out” a hole in polygon1.
     /// polygon2 must be completely contained within polygon1 and must have no holes itself (it must not be the output of polygon_sub itself).
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Define a polygon with a hole punched in it.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use reql_rust::types::Point;
     /// use serde_json::{Value, json};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let outer_polygon = [
@@ -87,20 +83,26 @@ impl Polygon {
     ///    let inner_polygon = r.polygon(&inner_polygon);
     ///
     ///    let _ = outer_polygon.polygon_sub(&inner_polygon).run(&session).await?;
-    /// 
+    ///
     ///    Ok(())
     /// }
     /// ```
     pub fn polygon_sub(&self, polygon: &Polygon) -> PolygonSubBuilder {
-        PolygonSubBuilder::new(polygon)._with_parent(self.command.clone().unwrap())
+        PolygonSubBuilder::new(polygon)._with_parent(self.get_parent())
     }
 }
 
-impl ReqlOpsGeometry for Polygon { }
+impl ReqlOpsGeometry for Polygon {}
 
 impl ReqlOps for Polygon {
     fn get_parent(&self) -> Command {
-        self.command.clone().unwrap()
+        self.command.clone().unwrap().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for Polygon {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }
 

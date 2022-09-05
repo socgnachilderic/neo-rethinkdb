@@ -1,9 +1,9 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::Command;
 use crate::ops::ReqlOps;
 use crate::types::StatusResponseType;
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct StatusBuilder(pub(crate) Command);
@@ -23,10 +23,7 @@ impl StatusBuilder {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<StatusResponseType>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, StatusResponseType>(arg)
+        self.get_parent().run::<_, StatusResponseType>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -37,6 +34,12 @@ impl StatusBuilder {
 
 impl ReqlOps for StatusBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for StatusBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

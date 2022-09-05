@@ -4,8 +4,8 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::Command;
-use crate::ops::{ReqlOpsSequence, ReqlOps, ReqlOpsDocManipulation};
 
 #[derive(Debug, Clone)]
 pub struct GetBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
@@ -23,7 +23,7 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, T>(arg)
+        self.get_parent().run::<_, T>(arg)
     }
 
     #[doc(hidden)]
@@ -33,24 +33,25 @@ impl<T: Unpin + DeserializeOwned> GetBuilder<T> {
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for GetBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for GetBuilder<T> {}
 
-impl<T> ReqlOpsDocManipulation for GetBuilder<T> { }
+impl<T> ReqlOpsDocManipulation for GetBuilder<T> {}
 
 impl<T> ReqlOps for GetBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
     }
 }
 
 impl<T> Into<Command> for GetBuilder<T> {
     fn into(self) -> Command {
-        self.0
+        self.get_parent()
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::prelude::ReqlOps;
     use crate::{cmd, r};
 
     #[test]
@@ -59,7 +60,7 @@ mod tests {
             .db("foo")
             .table::<serde_json::Value>("bar")
             .get("84fc23ac-9e85-43af-b6f7-f86be17237e1");
-        let serialised = cmd::serialise(&query.into());
+        let serialised = cmd::serialise(&query.get_parent());
         let expected = r#"[16,[[15,[[14,["foo"]],"bar"]],"84fc23ac-9e85-43af-b6f7-f86be17237e1"]]"#;
         assert_eq!(serialised, expected);
     }

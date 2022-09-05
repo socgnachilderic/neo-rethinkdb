@@ -2,9 +2,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::Command;
 use crate::ops::ReqlOps;
 use crate::types::GrantResponseType;
+use crate::Command;
 
 #[derive(Debug, Clone)]
 pub struct GrantBuilder(pub(crate) Command, GrantOption);
@@ -33,12 +33,11 @@ impl GrantBuilder {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<GrantResponseType>> {  
-        let permissions = Command::from_json(self.1);      
-        self.0.with_arg(permissions)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, GrantResponseType>(arg)
+    pub fn make_query(
+        self,
+        arg: impl super::run::Arg,
+    ) -> impl Stream<Item = crate::Result<GrantResponseType>> {
+        self.get_parent().run::<_, GrantResponseType>(arg)
     }
 
     pub fn permit_read(mut self, read: bool) -> Self {
@@ -69,6 +68,13 @@ impl GrantBuilder {
 
 impl ReqlOps for GrantBuilder {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        let permissions = Command::from_json(&self.1);
+        self.0.clone().with_arg(permissions).into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for GrantBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

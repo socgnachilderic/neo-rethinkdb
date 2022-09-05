@@ -27,7 +27,7 @@ impl<T: Unpin + Serialize + DeserializeOwned + Clone> ToGeoJsonBuilder<T> {
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = crate::Result<GeoJson<T>>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, GeoJson<T>>(arg)
+        self.get_parent().run::<_, GeoJson<T>>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
@@ -40,6 +40,12 @@ impl<T> ReqlOpsGeometry for ToGeoJsonBuilder<T> {}
 
 impl<T> ReqlOps for ToGeoJsonBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<T> Into<Command> for ToGeoJsonBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

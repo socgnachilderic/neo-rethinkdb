@@ -5,8 +5,9 @@ use ql2::term::TermType;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
-use crate::{Command, Func};
+use crate::ops::ReqlOps;
 use crate::types::{Durability, ReturnChanges};
+use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
 pub struct ReplaceBuilder<T>(
@@ -39,22 +40,12 @@ impl<T: Unpin + DeserializeOwned> ReplaceBuilder<T> {
         Self::constructor(func)
     }
 
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> crate::Result<Option<T>> {
+    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<T>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub fn with_durability(mut self, durability: Durability) -> Self {
@@ -91,8 +82,14 @@ impl<T: Unpin + DeserializeOwned> ReplaceBuilder<T> {
     }
 }
 
+impl<T> ReqlOps for ReplaceBuilder<T> {
+    fn get_parent(&self) -> Command {
+        self.0.clone().with_opts(&self.1).into_arg::<()>().into_cmd()
+    }
+}
+
 impl<T> Into<Command> for ReplaceBuilder<T> {
     fn into(self) -> Command {
-        self.0
+        self.get_parent()
     }
 }

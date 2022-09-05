@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
+use crate::types::{Sequence, UngroupResponseType};
 use crate::{Command, Result};
-use crate::ops::{ReqlOpsSequence, ReqlOps, ReqlOpsDocManipulation};
-use crate::types::{UngroupResponseType, Sequence};
 
 #[derive(Debug, Clone)]
 pub struct UngroupBuilder<G, V>(
@@ -37,8 +37,7 @@ where
         self,
         arg: impl super::run::Arg,
     ) -> impl Stream<Item = Result<Sequence<UngroupResponseType<G, V>>>> {
-        self.0.into_arg::<()>()
-            .into_cmd()
+        self.get_parent()
             .run::<_, Sequence<UngroupResponseType<G, V>>>(arg)
     }
 
@@ -52,12 +51,19 @@ impl<G, V> ReqlOpsSequence<UngroupResponseType<G, V>> for UngroupBuilder<G, V>
 where
     G: Unpin + Serialize + DeserializeOwned,
     V: Unpin + Serialize + DeserializeOwned,
-{}
+{
+}
 
-impl<G, V> ReqlOpsDocManipulation for UngroupBuilder<G, V> { }
+impl<G, V> ReqlOpsDocManipulation for UngroupBuilder<G, V> {}
 
 impl<G, V> ReqlOps for UngroupBuilder<G, V> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl<G, V> Into<Command> for UngroupBuilder<G, V> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

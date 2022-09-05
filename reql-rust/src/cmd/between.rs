@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de::DeserializeOwned, Serialize};
 
-use crate::{Command, Result};
-use crate::ops::{ReqlOpsSequence, ReqlOps, ReqlOpsDocManipulation};
+use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::types::Status;
+use crate::{Command, Result};
 
 use super::StaticString;
 
@@ -14,7 +14,7 @@ use super::StaticString;
 pub struct BetweenBuilder<T>(
     pub(crate) Command,
     pub(crate) BetweenOption,
-    pub(crate) PhantomData<T>
+    pub(crate) PhantomData<T>,
 );
 
 #[derive(Debug, Clone, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -32,7 +32,7 @@ impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
     pub(crate) fn new(lower_key: impl Serialize, upper_key: impl Serialize) -> Self {
         let min_key = Command::from_json(lower_key);
         let max_key = Command::from_json(upper_key);
-        
+
         let command = Command::new(TermType::Between)
             .with_arg(min_key)
             .with_arg(max_key);
@@ -41,20 +41,11 @@ impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
     }
 
     pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
-        self.make_query(arg)
-            .try_next()
-            .await
+        self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = Result<T>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, T>(arg)
+    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<T>> {
+        self.get_parent().run::<_, T>(arg)
     }
 
     pub fn with_index(mut self, index: &'static str) -> Self {
@@ -79,12 +70,22 @@ impl<T: Unpin + Serialize + DeserializeOwned> BetweenBuilder<T> {
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for BetweenBuilder<T> { }
+impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for BetweenBuilder<T> {}
 
-impl<T> ReqlOpsDocManipulation for BetweenBuilder<T> { }
+impl<T> ReqlOpsDocManipulation for BetweenBuilder<T> {}
 
 impl<T> ReqlOps for BetweenBuilder<T> {
     fn get_parent(&self) -> Command {
-        self.0.clone()
+        self.0
+            .clone()
+            .with_opts(self.1.clone())
+            .into_arg::<()>()
+            .into_cmd()
+    }
+}
+
+impl<T> Into<Command> for BetweenBuilder<T> {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }

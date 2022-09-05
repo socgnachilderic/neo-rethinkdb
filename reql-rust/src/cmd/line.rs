@@ -4,9 +4,9 @@ use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
-use crate::Command;
 use crate::ops::{ReqlOps, ReqlOpsGeometry};
 use crate::types::{GeoType, ReqlType};
+use crate::Command;
 
 use super::point::Point;
 
@@ -46,24 +46,20 @@ impl Line {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Self>> {
-        self.command
-            .unwrap()
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, Self>(arg)
+        self.get_parent().run::<_, Self>(arg)
     }
 
-    /// Convert a Line object into a Polygon object. 
+    /// Convert a Line object into a Polygon object.
     /// If the last point does not specify the same coordinates as the first point, `polygon` will close the polygon by connecting them.
-    /// 
+    ///
     /// ## Example
-    /// 
+    ///
     /// Create a line object and then convert it to a polygon.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
-    /// 
+    ///
     /// async fn example() -> Result<()> {
     ///     let session = r.connection().connect().await?;
     ///     let rectangle = [
@@ -72,12 +68,12 @@ impl Line {
     ///         r.point(-121.886420,37.329898),
     ///         r.point(-121.886420,37.779388),
     ///     ];
-    /// 
+    ///
     ///     let _ = r.line(&rectangle)
     ///         .fill()
     ///         .run(&session)
     ///         .await?;
-    /// 
+    ///
     ///     Ok(())
     /// }
     /// ```
@@ -86,11 +82,17 @@ impl Line {
     }
 }
 
-impl ReqlOpsGeometry for Line { }
+impl ReqlOpsGeometry for Line {}
 
 impl ReqlOps for Line {
     fn get_parent(&self) -> Command {
-        self.command.clone().unwrap()
+        self.command.clone().unwrap().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for Line {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }
 

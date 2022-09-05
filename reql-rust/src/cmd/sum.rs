@@ -1,6 +1,7 @@
 use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
+use crate::ops::ReqlOps;
 use crate::{Command, Func};
 
 #[derive(Debug, Clone)]
@@ -29,11 +30,23 @@ impl SumBuilder {
     }
 
     pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<f64>> {
-        self.0.into_arg::<()>().into_cmd().run::<_, f64>(arg)
+        self.get_parent().run::<_, f64>(arg)
     }
 
     pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
         self.0 = self.0.with_parent(parent);
         self
+    }
+}
+
+impl ReqlOps for SumBuilder {
+    fn get_parent(&self) -> Command {
+        self.0.clone().into_arg::<()>().into_cmd()
+    }
+}
+
+impl Into<Command> for SumBuilder {
+    fn into(self) -> Command {
+        self.get_parent()
     }
 }
