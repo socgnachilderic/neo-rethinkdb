@@ -11,23 +11,16 @@ use async_native_tls::{Certificate, TlsConnector};
 use async_net::TcpStream;
 use dashmap::DashMap;
 use futures::channel::oneshot;
-use futures::io::{AsyncReadExt, AsyncWriteExt};
 use futures::lock::Mutex;
-use futures::{AsyncRead, AsyncWrite};
-use ql2::version_dummy::Version;
-use scram::client::{ScramClient, ServerFinal, ServerFirst};
-use serde::{Deserialize, Serialize};
 use tokio::task;
 use tokio::time;
-use tracing::trace;
 
-use super::{bytes_to_string, StaticString, TcpStreamConnection};
+use super::{StaticString, TcpStreamConnection};
 use crate::constants::{
-    BUFFER_SIZE, DEFAULT_AUTHENTICATION_METHOD, DEFAULT_RETHINKDB_DBNAME,
-    DEFAULT_RETHINKDB_HOSTNAME, DEFAULT_RETHINKDB_PASSWORD, DEFAULT_RETHINKDB_PORT,
-    DEFAULT_RETHINKDB_USER, NULL_BYTE, PROTOCOL_VERSION,
+    DEFAULT_RETHINKDB_DBNAME, DEFAULT_RETHINKDB_HOSTNAME, DEFAULT_RETHINKDB_PASSWORD,
+    DEFAULT_RETHINKDB_PORT, DEFAULT_RETHINKDB_USER,
 };
-use crate::{err, InnerSession, Result, Session};
+use crate::{InnerSession, Result, Session};
 
 /// Options accepted by [crate::r::connection]
 ///
@@ -46,7 +39,7 @@ use crate::{err, InnerSession, Result, Session};
 /// ```
 #[derive(Debug)]
 #[non_exhaustive]
-pub struct ConnectionBuilder {
+pub struct ConnectionCommand {
     /// Host of the RethinkDB instance. The default value is `localhost`.
     host: Cow<'static, str>,
 
@@ -74,24 +67,7 @@ pub struct SslContext<'a> {
     pub auth_key: Option<&'a str>,
 }
 
-impl ConnectionBuilder {
-    /**
-     * This method initialize and launch connection.
-     *
-     * This is the same as `Connection::default()`.
-     *
-     * Default parameters are:
-     * - `host` : localhost
-     * - `port` : 28015
-     * - `user` : admin
-     * - `password` : ""
-     * - `timeout` : None
-     * - `tls_connector` : None
-     */
-    pub fn connection() -> Self {
-        Self::default()
-    }
-
+impl ConnectionCommand {
     /// This method connect to database
     pub async fn connect(self) -> Result<Session> {
         if let Some(timeout) = self.timeout {
@@ -117,38 +93,38 @@ impl ConnectionBuilder {
     }
 
     /// This method set database host
-    pub fn with_host(mut self, host: &'static str) -> Self {
+    pub fn host(mut self, host: &'static str) -> Self {
         self.host = host.static_string();
         self
     }
 
     /// This method set database port
-    pub fn with_port(mut self, port: u16) -> Self {
+    pub fn port(mut self, port: u16) -> Self {
         self.port = port;
         self
     }
 
     /// This method set database name
-    pub fn with_db(mut self, db: &'static str) -> Self {
-        self.db = Cow::from(db);
+    pub fn dbname(mut self, dbname: &'static str) -> Self {
+        self.db = Cow::from(dbname);
         self
     }
 
     /// This method set database user
-    pub fn with_user(mut self, user: &'static str, password: &'static str) -> Self {
+    pub fn user(mut self, user: &'static str, password: &'static str) -> Self {
         self.user = user.static_string();
         self.password = password.static_string();
         self
     }
 
     /// Timeout period in seconds for the connection to be opened
-    pub fn with_timeout(mut self, timeout: Duration) -> Self {
+    pub fn timeout(mut self, timeout: Duration) -> Self {
         self.timeout = Some(timeout);
         self
     }
 
     /// This method set ssl connection
-    pub fn with_ssl(mut self, ssl_context: SslContext) -> Self {
+    pub fn ssl_context(mut self, ssl_context: SslContext) -> Self {
         let mut file = File::open(ssl_context.ca_certs).unwrap();
         let mut certificate = Vec::new();
 
@@ -180,9 +156,9 @@ impl ConnectionBuilder {
         };
 
         if let Some(tcp_stream) = stream.tls_stream {
-            stream.tls_stream = Some(handshake(tcp_stream, &self).await?);
+            stream.tls_stream = Some(tools::handshake(tcp_stream, &self).await?);
         } else {
-            stream.stream = handshake(stream.stream, &self).await?;
+            stream.stream = tools::handshake(stream.stream, &self).await?;
         }
 
         let inner = InnerSession {
@@ -200,7 +176,7 @@ impl ConnectionBuilder {
     }
 }
 
-impl Default for ConnectionBuilder {
+impl Default for ConnectionCommand {
     fn default() -> Self {
         Self {
             host: DEFAULT_RETHINKDB_HOSTNAME.static_string(),
@@ -214,178 +190,238 @@ impl Default for ConnectionBuilder {
     }
 }
 
-// Performs the actual handshake
-//
-// This method optimises message exchange as suggested in the RethinkDB
-// documentation by sending message 3 right after message 1, without waiting
-// for message 2 first.
-async fn handshake<T>(mut stream: T, opts: &ConnectionBuilder) -> Result<T>
-where
-    T: Unpin + AsyncWrite + AsyncReadExt + AsyncRead + AsyncReadExt,
-{
-    trace!("sending supported version to RethinkDB");
+mod tools {
+    use futures::io::{AsyncReadExt, AsyncWriteExt};
+    use futures::{AsyncRead, AsyncWrite};
+    use ql2::version_dummy::Version;
+    use scram::client::{ScramClient, ServerFinal, ServerFirst};
+    use serde::{Deserialize, Serialize};
+    use tracing::trace;
 
-    stream
-        .write_all(&(Version::V10 as i32).to_le_bytes())
-        .await?; // message 1
-
-    let scram = ScramClient::new(opts.user.as_ref(), opts.password.as_ref(), None);
-    let (scram, msg) = client_first(scram)?;
-    trace!("sending client first message");
-    stream.write_all(&msg).await?; // message 3
-
-    let mut buf = [0u8; BUFFER_SIZE];
-
-    trace!("receiving message(s) from RethinkDB");
-    stream.read(&mut buf).await?; // message 2
-    let (len, resp) = bytes(&buf, 0);
-    trace!("received server info; info: {}", bytes_to_string(resp));
-    ServerInfo::validate(resp)?;
-
-    let offset = len + 1;
-    let resp = if offset < BUFFER_SIZE && buf[offset] != NULL_BYTE {
-        bytes(&buf, offset).1
-    } else {
-        trace!("reading auth response");
-        stream.read(&mut buf).await?; // message 4
-        bytes(&buf, 0).1
+    use super::ConnectionCommand;
+    use crate::cmd::bytes_to_string;
+    use crate::constants::{
+        BUFFER_SIZE, DEFAULT_AUTHENTICATION_METHOD, NULL_BYTE, PROTOCOL_VERSION,
     };
-    trace!("received auth response");
-    let info = AuthResponse::from_slice(resp)?;
-    let auth = match info.authentication {
-        Some(auth) => auth,
-        None => {
-            let msg = String::from("server did not send authentication info");
-            return Err(err::ReqlDriverError::Other(msg).into());
+    use crate::{err, Result};
+
+    // Performs the actual handshake
+    //
+    // This method optimises message exchange as suggested in the RethinkDB
+    // documentation by sending message 3 right after message 1, without waiting
+    // for message 2 first.
+    pub async fn handshake<T>(mut stream: T, opts: &ConnectionCommand) -> Result<T>
+    where
+        T: Unpin + AsyncWrite + AsyncReadExt + AsyncRead + AsyncReadExt,
+    {
+        trace!("sending supported version to RethinkDB");
+
+        stream
+            .write_all(&(Version::V10 as i32).to_le_bytes())
+            .await?; // message 1
+
+        let scram = ScramClient::new(opts.user.as_ref(), opts.password.as_ref(), None);
+        let (scram, msg) = client_first(scram)?;
+        trace!("sending client first message");
+        stream.write_all(&msg).await?; // message 3
+
+        let mut buf = [0u8; BUFFER_SIZE];
+
+        trace!("receiving message(s) from RethinkDB");
+        stream.read(&mut buf).await?; // message 2
+        let (len, resp) = bytes(&buf, 0);
+        trace!("received server info; info: {}", bytes_to_string(resp));
+        ServerInfo::validate(resp)?;
+
+        let offset = len + 1;
+        let resp = if offset < BUFFER_SIZE && buf[offset] != NULL_BYTE {
+            bytes(&buf, offset).1
+        } else {
+            trace!("reading auth response");
+            stream.read(&mut buf).await?; // message 4
+            bytes(&buf, 0).1
+        };
+        trace!("received auth response");
+        let info = AuthResponse::from_slice(resp)?;
+        let auth = match info.authentication {
+            Some(auth) => auth,
+            None => {
+                let msg = String::from("server did not send authentication info");
+                return Err(err::ReqlDriverError::Other(msg).into());
+            }
+        };
+
+        let (scram, msg) = client_final(scram, &auth)?;
+        trace!("sending client final message");
+        stream.write_all(&msg).await?; // message 5
+
+        trace!("reading server final message");
+        stream.read(&mut buf).await?; // message 6
+        let resp = bytes(&buf, 0).1;
+        trace!("received server final message");
+        server_final(scram, resp)?;
+
+        trace!("client connected successfully");
+
+        Ok(stream)
+    }
+    fn bytes(buf: &[u8], offset: usize) -> (usize, &[u8]) {
+        let len = (&buf[offset..])
+            .iter()
+            .take_while(|x| **x != NULL_BYTE)
+            .count();
+        let max = offset + len;
+        (max, &buf[offset..max])
+    }
+
+    // We are going to use &str for `server_version` because it is safe to do so.
+    // Unfortunately, the other fields that are using String, are doing so because
+    // because they can potentially contain an escaped double quote which is not
+    // supported by serde in &str.
+    #[derive(Serialize, Deserialize, Debug)]
+    struct ServerInfo<'a> {
+        success: bool,
+        min_protocol_version: usize,
+        max_protocol_version: usize,
+        server_version: &'a str,
+    }
+
+    impl ServerInfo<'_> {
+        fn validate(resp: &[u8]) -> Result<()> {
+            let info = serde_json::from_slice::<ServerInfo>(resp)?;
+            if !info.success {
+                return Err(err::ReqlRuntimeError::Internal(bytes_to_string(resp)).into());
+            }
+            #[allow(clippy::absurd_extreme_comparisons)]
+            if PROTOCOL_VERSION < info.min_protocol_version
+                || info.max_protocol_version < PROTOCOL_VERSION
+            {
+                let msg = format!(
+                    "unsupported protocol version {version}, expected between {min} and {max}",
+                    version = PROTOCOL_VERSION,
+                    min = info.min_protocol_version,
+                    max = info.max_protocol_version,
+                );
+                return Err(err::ReqlDriverError::Other(msg).into());
+            }
+            Ok(())
         }
-    };
+    }
 
-    let (scram, msg) = client_final(scram, &auth)?;
-    trace!("sending client final message");
-    stream.write_all(&msg).await?; // message 5
+    #[derive(Serialize, Deserialize, Debug)]
+    struct AuthRequest {
+        protocol_version: usize,
+        authentication_method: &'static str,
+        authentication: String,
+    }
 
-    trace!("reading server final message");
-    stream.read(&mut buf).await?; // message 6
-    let resp = bytes(&buf, 0).1;
-    trace!("received server final message");
-    server_final(scram, resp)?;
+    fn client_first(scram: ScramClient<'_>) -> Result<(ServerFirst<'_>, Vec<u8>)> {
+        let (scram, client_first) = scram.client_first();
+        let ar = AuthRequest {
+            protocol_version: PROTOCOL_VERSION,
+            authentication_method: DEFAULT_AUTHENTICATION_METHOD,
+            authentication: client_first,
+        };
+        let mut msg = serde_json::to_vec(&ar)?;
+        msg.push(NULL_BYTE);
+        Ok((scram, msg))
+    }
 
-    trace!("client connected successfully");
+    #[derive(Serialize, Deserialize, Debug)]
+    struct AuthConfirmation {
+        authentication: String,
+    }
 
-    Ok(stream)
-}
+    fn client_final(scram: ServerFirst<'_>, auth: &str) -> Result<(ServerFinal, Vec<u8>)> {
+        let scram = scram
+            .handle_server_first(auth)
+            .map_err(|x| x.to_string())
+            .map_err(err::ReqlDriverError::Other)?;
+        let (scram, client_final) = scram.client_final();
+        let conf = AuthConfirmation {
+            authentication: client_final,
+        };
+        let mut msg = serde_json::to_vec(&conf)?;
+        msg.push(NULL_BYTE);
+        Ok((scram, msg))
+    }
 
-fn bytes(buf: &[u8], offset: usize) -> (usize, &[u8]) {
-    let len = (&buf[offset..])
-        .iter()
-        .take_while(|x| **x != NULL_BYTE)
-        .count();
-    let max = offset + len;
-    (max, &buf[offset..max])
-}
+    #[derive(Serialize, Deserialize, Debug)]
+    struct AuthResponse {
+        success: bool,
+        authentication: Option<String>,
+        error_code: Option<usize>,
+        error: Option<String>,
+    }
 
-// We are going to use &str for `server_version` because it is safe to do so.
-// Unfortunately, the other fields that are using String, are doing so because
-// because they can potentially contain an escaped double quote which is not
-// supported by serde in &str.
-#[derive(Serialize, Deserialize, Debug)]
-struct ServerInfo<'a> {
-    success: bool,
-    min_protocol_version: usize,
-    max_protocol_version: usize,
-    server_version: &'a str,
-}
-
-impl ServerInfo<'_> {
-    fn validate(resp: &[u8]) -> Result<()> {
-        let info = serde_json::from_slice::<ServerInfo>(resp)?;
-        if !info.success {
-            return Err(err::ReqlRuntimeError::Internal(bytes_to_string(resp)).into());
+    impl AuthResponse {
+        fn from_slice(resp: &[u8]) -> Result<Self> {
+            let info = serde_json::from_slice::<AuthResponse>(resp)?;
+            if !info.success {
+                // If error code is between 10 and 20, this is an auth error
+                if let Some(10..=20) = info.error_code {
+                    if let Some(msg) = info.error {
+                        return Err(err::ReqlDriverError::Auth(msg).into());
+                    }
+                }
+                return Err(err::ReqlRuntimeError::Internal(bytes_to_string(resp)).into());
+            }
+            Ok(info)
         }
-        #[allow(clippy::absurd_extreme_comparisons)]
-        if PROTOCOL_VERSION < info.min_protocol_version
-            || info.max_protocol_version < PROTOCOL_VERSION
-        {
-            let msg = format!(
-                "unsupported protocol version {version}, expected between {min} and {max}",
-                version = PROTOCOL_VERSION,
-                min = info.min_protocol_version,
-                max = info.max_protocol_version,
-            );
-            return Err(err::ReqlDriverError::Other(msg).into());
+    }
+
+    fn server_final(scram: ServerFinal, resp: &[u8]) -> Result<()> {
+        let info = AuthResponse::from_slice(resp)?;
+        if let Some(auth) = info.authentication {
+            if let Err(error) = scram.handle_server_final(&auth) {
+                return Err(err::ReqlDriverError::Other(error.to_string()).into());
+            }
         }
         Ok(())
     }
 }
 
-#[derive(Serialize, Deserialize, Debug)]
-struct AuthRequest {
-    protocol_version: usize,
-    authentication_method: &'static str,
-    authentication: String,
-}
+#[cfg(test)]
+mod test {
+    use crate::{ReqlDriverError, ReqlError};
 
-fn client_first(scram: ScramClient<'_>) -> Result<(ServerFirst<'_>, Vec<u8>)> {
-    let (scram, client_first) = scram.client_first();
-    let ar = AuthRequest {
-        protocol_version: PROTOCOL_VERSION,
-        authentication_method: DEFAULT_AUTHENTICATION_METHOD,
-        authentication: client_first,
-    };
-    let mut msg = serde_json::to_vec(&ar)?;
-    msg.push(NULL_BYTE);
-    Ok((scram, msg))
-}
+    use super::ConnectionCommand;
 
-#[derive(Serialize, Deserialize, Debug)]
-struct AuthConfirmation {
-    authentication: String,
-}
+    #[tokio::test]
+    async fn test_default_connection() {
+        execute_test(ConnectionCommand::default()).await
+    }
 
-fn client_final(scram: ServerFirst<'_>, auth: &str) -> Result<(ServerFinal, Vec<u8>)> {
-    let scram = scram
-        .handle_server_first(auth)
-        .map_err(|x| x.to_string())
-        .map_err(err::ReqlDriverError::Other)?;
-    let (scram, client_final) = scram.client_final();
-    let conf = AuthConfirmation {
-        authentication: client_final,
-    };
-    let mut msg = serde_json::to_vec(&conf)?;
-    msg.push(NULL_BYTE);
-    Ok((scram, msg))
-}
+    #[tokio::test]
+    async fn test_custom_connection() {
+        let connection_command = ConnectionCommand::default()
+            .host("127.0.0.1")
+            .port(28015)
+            .user("admin", "")
+            .dbname("test");
 
-#[derive(Serialize, Deserialize, Debug)]
-struct AuthResponse {
-    success: bool,
-    authentication: Option<String>,
-    error_code: Option<usize>,
-    error: Option<String>,
-}
+        execute_test(connection_command).await
+    }
 
-impl AuthResponse {
-    fn from_slice(resp: &[u8]) -> Result<Self> {
-        let info = serde_json::from_slice::<AuthResponse>(resp)?;
-        if !info.success {
-            // If error code is between 10 and 20, this is an auth error
-            if let Some(10..=20) = info.error_code {
-                if let Some(msg) = info.error {
-                    return Err(err::ReqlDriverError::Auth(msg).into());
+    async fn execute_test(connection_command: ConnectionCommand) {
+        let db_expected = connection_command.db.clone();
+
+        match connection_command.connect().await {
+            Ok(session) => {
+                let db_obtained = &session.inner.db.lock().await;
+                assert!(db_obtained.eq(&db_expected));
+            }
+            Err(err) => {
+                if let ReqlError::Driver(err) = err {
+                    match err {
+                        ReqlDriverError::Io(err, msg) => {
+                            assert!(std::io::ErrorKind::ConnectionRefused.eq(&err), "{}", msg)
+                        }
+                        ReqlDriverError::Auth(msg) => assert!(true, "{}", msg),
+                        _ => (),
+                    }
                 }
             }
-            return Err(err::ReqlRuntimeError::Internal(bytes_to_string(resp)).into());
-        }
-        Ok(info)
+        };
     }
-}
-
-fn server_final(scram: ServerFinal, resp: &[u8]) -> Result<()> {
-    let info = AuthResponse::from_slice(resp)?;
-    if let Some(auth) = info.authentication {
-        if let Err(error) = scram.handle_server_final(&auth) {
-            return Err(err::ReqlDriverError::Other(error.to_string()).into());
-        }
-    }
-    Ok(())
 }

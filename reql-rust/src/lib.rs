@@ -114,12 +114,12 @@ pub struct r;
 impl r {
     /// Create a new connection to the database server.
     /// [connection](cmd::connect::ConnectionBuilder::connection) returns a connection builder with the following methods:
-    /// - [with_host(host: &'static str)](cmd::connect::ConnectionBuilder::with_host): the host to connect to (default `localhost`)
-    /// - [with_port(port: u16)](cmd::connect::ConnectionBuilder::with_port): the port to connect on (default `28015`).
-    /// - [with_db(db_name: &'static str)](cmd::connect::ConnectionBuilder::with_db): the default database (default `test`).
-    /// - [with_user(username: &'static str, password: &'static str)](cmd::connect::ConnectionBuilder::with_user): the user account and password to connect as (default `"admin", ""`).
-    /// - [with_timeout(timeout: std::time::Duration)](cmd::connect::ConnectionBuilder::with_timeout): timeout period in seconds for the connection to be opened.
-    /// - [with_ssl(ssl_context: SslContext)](cmd::connect::ConnectionBuilder::with_ssl): a hash of options to support SSL connections.
+    /// - [host(host: &'static str)](cmd::connect::ConnectionBuilder::host): the host to connect to (default `localhost`)
+    /// - [port(port: u16)](cmd::connect::ConnectionBuilder::port): the port to connect on (default `28015`).
+    /// - [db_name(db_name: &'static str)](cmd::connect::ConnectionBuilder::db): the default database (default `test`).
+    /// - [user(username: &'static str, password: &'static str)](cmd::connect::ConnectionBuilder::with_user): the user account and password to connect as (default `"admin", ""`).
+    /// - [timeout(timeout: std::time::Duration)](cmd::connect::ConnectionBuilder::timeout): timeout period in seconds for the connection to be opened.
+    /// - [ssl_context(ssl_context: SslContext)](cmd::connect::ConnectionBuilder::ssl_context): a hash of options to support SSL connections.
     ///
     ///
     /// # Example
@@ -140,17 +140,17 @@ impl r {
     /// ```
     /// async fn example() -> reql_rust::Result<()> {
     ///     let session = reql_rust::r.connection()
-    ///         .with_host("localhost")
-    ///         .with_port(28015)
-    ///         .with_db("marvel")
+    ///         .host("localhost")
+    ///         .port(28015)
+    ///         .dbname("marvel")
     ///         .connect().await?;
     ///     Ok(())
     /// }
     /// ```
     ///
     /// Read more about this command [connect](cmd::connect::ConnectionBuilder)
-    pub fn connection(self) -> cmd::connect::ConnectionBuilder {
-        cmd::connect::ConnectionBuilder::connection()
+    pub fn connection(self) -> cmd::connect::ConnectionCommand {
+        cmd::connect::ConnectionCommand::default()
     }
 
     /// Create a database. A RethinkDB database is a collection of tables, similar to relational databases.
