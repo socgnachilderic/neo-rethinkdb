@@ -1,34 +1,28 @@
-use futures::{TryStreamExt, Stream};
 use ql2::term::TermType;
 
 use crate::Command;
-use crate::types::DbResponseType;
 
-use super::run;
+pub fn make_db_create_command(db_name: &str) -> Command {
+    let args = Command::from_json(db_name);
 
-#[derive(Debug, Clone)]
-pub struct DbCreateBuilder(pub(crate) Command);
+    Command::new(TermType::DbCreate).with_arg(args)
+}
 
-impl DbCreateBuilder {
-    pub(crate) fn new(db_name: &str) -> Self {
-        let args = Command::from_json(db_name);
-        let command =  Command::new(TermType::DbCreate).with_arg(args);
-        DbCreateBuilder(command)
-    }
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::types::DbResponse;
+    use crate::{r, Result};
 
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DbResponseType>> {        
-        self.make_query(arg)
-            .try_next()
-            .await
-    }
+    #[tokio::test]
+    async fn test_create_db() -> Result<()> {
+        let dbname = "zuma";
+        let conn = r.connection().connect().await?;
+        let db_created: DbResponse = r.db_create(dbname).run(&conn).await?.unwrap().parse();
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<DbResponseType>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, DbResponseType>(arg)
+        assert!(db_created.dbs_created == Some(1));
+
+        r.db_drop(dbname).run(&conn).await?;
+        Ok(())
     }
 }

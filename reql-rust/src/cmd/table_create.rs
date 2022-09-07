@@ -1,14 +1,15 @@
-use super::{run, StaticString};
-use crate::types::{DbResponseType, Durability, Replicas};
-use crate::Command;
-use futures::{Stream, TryStreamExt};
-use ql2::term::TermType;
-use serde::{Serialize, Serializer};
 use std::borrow::Cow;
 use std::collections::HashMap;
 
-#[derive(Debug, Clone)]
-pub struct TableCreateBuilder(pub(crate) Command, pub(crate) TableCreateOption);
+use ql2::term::TermType;
+use serde::{Serialize, Serializer};
+
+use crate::types::{Durability, Replicas};
+use crate::Command;
+
+use super::StaticString;
+
+pub struct TableCreateCommand(pub(crate) Command, pub(crate) TableCreateOption);
 
 #[derive(Debug, Default, Clone, PartialEq)]
 #[non_exhaustive]
@@ -19,27 +20,12 @@ pub(crate) struct TableCreateOption {
     pub replicas: Option<Replicas>,
 }
 
-impl TableCreateBuilder {
+impl TableCreateCommand {
     pub(crate) fn new(table_name: &str) -> Self {
         let args = Command::from_json(table_name);
         let command = Command::new(TermType::TableCreate).with_arg(args);
 
         Self(command, TableCreateOption::default())
-    }
-
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DbResponseType>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl run::Arg,
-    ) -> impl Stream<Item = crate::Result<DbResponseType>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, DbResponseType>(arg)
     }
 
     /// The name of the primary key. The default primary key is id.

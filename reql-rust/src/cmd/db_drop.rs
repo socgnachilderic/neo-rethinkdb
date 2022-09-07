@@ -1,30 +1,28 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
 use crate::Command;
-use crate::types::DbResponseType;
 
-#[derive(Debug, Clone)]
-pub struct DbDropBuilder(pub(crate) Command);
+pub fn make_db_drop_command(db_name: &str) -> Command {
+    let args = Command::from_json(db_name);
 
-impl DbDropBuilder {
-    pub(crate) fn new(db_name: &str) -> Self {
-        let args = Command::from_json(db_name);
-        let command = Command::new(TermType::DbDrop).with_arg(args);
-        DbDropBuilder(command)
-    }
+    Command::new(TermType::DbDrop).with_arg(args)
+}
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<DbResponseType>> {
-        self.make_query(arg).try_next().await
-    }
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::types::DbResponse;
+    use crate::{r, Result};
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<DbResponseType>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, DbResponseType>(arg)
+    #[tokio::test]
+    async fn test_drop_db() -> Result<()> {
+        let dbname = "zuma";
+        let conn = r.connection().connect().await?;
+        r.db_create(dbname).run(&conn).await?;
+
+        let db_dropped: DbResponse = r.db_drop(dbname).run(&conn).await?.unwrap().parse();
+
+        assert!(db_dropped.dbs_dropped == Some(1));
+        Ok(())
     }
 }

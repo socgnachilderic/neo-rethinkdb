@@ -3,19 +3,19 @@ use std::{borrow::Cow, collections::HashMap};
 use serde::{Deserialize, Serialize, Serializer};
 use uuid::Uuid;
 
-pub use crate::cmd::line::Line;
-pub use crate::cmd::point::Point;
-pub use crate::cmd::polygon::Polygon;
-pub use document::Document;
-pub use group_stream::{GroupItem, GroupStream};
-pub use sequence::Sequence;
-pub use datetime::DateTime;
+// pub use crate::cmd::line::Line;
+// pub use crate::cmd::point::Point;
+// pub use crate::cmd::polygon::Polygon;
+// pub use document::Document;
+// pub use group_stream::{GroupItem, GroupStream};
+// pub use sequence::Sequence;
+// pub use datetime::DateTime;
 pub use binary::Binary;
 
-mod document;
-mod group_stream;
-mod sequence;
-mod datetime;
+// mod document;
+// mod group_stream;
+// mod sequence;
+// mod datetime;
 mod binary;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
@@ -45,7 +45,7 @@ pub struct ServerInfo {
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct DbResponseType {
+pub struct DbResponse {
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
     pub dbs_created: Option<u32>,
     pub dbs_dropped: Option<u32>,

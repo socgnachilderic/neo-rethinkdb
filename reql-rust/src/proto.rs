@@ -7,7 +7,7 @@ use serde::ser::{self, Serialize, Serializer};
 use serde_json::value::{Number, Value};
 
 use crate::cmd::run::{Db, Options};
-use crate::prelude::ReqlOps;
+// use crate::prelude::ReqlOps;
 use crate::{err, r};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -318,6 +318,6 @@ impl Serialize for Db {
     {
         let Self(name) = self;
         let cmd = r.db(name.as_ref());
-        Query(&cmd.get_parent()).serialize(serializer)
+        Query(&cmd.into()).serialize(serializer)
     }
 }

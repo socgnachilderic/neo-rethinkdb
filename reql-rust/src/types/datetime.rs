@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops::Deref;
 
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{de, ser};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -10,7 +9,7 @@ use time::macros::time;
 use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
 use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
-use crate::{cmd::run, Command};
+use crate::Command;
 
 #[derive(Debug, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -26,18 +25,6 @@ struct Time {
 pub struct DateTime(OffsetDateTime, pub(crate) Option<Command>);
 
 impl DateTime {
-    pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<DateTime>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<DateTime>> {
-        self.1
-            .unwrap()
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, DateTime>(arg)
-    }
-
     pub(crate) fn now() -> Self {
         let offset_datetime = OffsetDateTime::now_utc();
         Self::default().create_datetime_command(Some(offset_datetime), Some(TermType::Now))
@@ -56,7 +43,8 @@ impl DateTime {
 
     pub(crate) fn epoch_time(timestamp: i64) -> crate::Result<Self> {
         let offset_datetime = OffsetDateTime::from_unix_timestamp(timestamp)?;
-        Ok(Self::default().create_datetime_command(Some(offset_datetime), Some(TermType::EpochTime)))
+        Ok(Self::default()
+            .create_datetime_command(Some(offset_datetime), Some(TermType::EpochTime)))
     }
 
     pub(crate) fn iso8601(
@@ -176,7 +164,9 @@ impl DateTime {
     }
 
     pub fn to_iso8601(&self) -> String {
-        self.0.format(&format_description::well_known::Rfc3339).unwrap()
+        self.0
+            .format(&format_description::well_known::Rfc3339)
+            .unwrap()
     }
 
     pub fn to_epoch_time(&self) -> i64 {
