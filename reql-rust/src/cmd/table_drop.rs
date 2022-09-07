@@ -1,37 +1,30 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::types::DbResponseType;
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct TableDropBuilder(pub(crate) Command);
+pub(crate) fn new(table_name: &str) -> Command {
+    let args = Command::from_json(table_name);
 
-impl TableDropBuilder {
-    pub(crate) fn new(table_name: &str) -> Self {
-        let args = Command::from_json(table_name);
-        let command = Command::new(TermType::TableDrop).with_arg(args);
+    Command::new(TermType::TableDrop).with_arg(args)
+}
 
-        TableDropBuilder(command)
-    }
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::types::DbResponse;
+    use crate::{r, Result};
+    
+    #[tokio::test]
+    async fn test_drop_table() -> Result<()> {
+        let table_name: &str = "malik";
+        let conn = r.connection().connect().await?;
+        
+        r.table_create(table_name).run(&conn).await?;
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<DbResponseType>> {
-        self.make_query(arg).try_next().await
-    }
+        let table_dropped: DbResponse = r.table_drop(table_name).run(&conn).await?.unwrap().parse();
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<DbResponseType>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, DbResponseType>(arg)
-    }
+        assert!(table_dropped.tables_dropped > Some(0));
 
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+        Ok(())
     }
 }

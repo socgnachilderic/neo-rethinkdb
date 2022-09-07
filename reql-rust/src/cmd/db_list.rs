@@ -2,7 +2,7 @@ use ql2::term::TermType;
 
 use crate::Command;
 
-pub fn make_db_list_command() -> Command {
+pub(crate) fn new() -> Command {
     Command::new(TermType::DbList)
 }
 

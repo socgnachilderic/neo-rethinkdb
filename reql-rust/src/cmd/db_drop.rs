@@ -2,10 +2,10 @@ use ql2::term::TermType;
 
 use crate::Command;
 
-pub fn make_db_drop_command(db_name: &str) -> Command {
-    let args = Command::from_json(db_name);
+pub(crate) fn new(db_name: &str) -> Command {
+    let arg = Command::from_json(db_name);
 
-    Command::new(TermType::DbDrop).with_arg(args)
+    Command::new(TermType::DbDrop).with_arg(arg)
 }
 
 #[cfg(test)]

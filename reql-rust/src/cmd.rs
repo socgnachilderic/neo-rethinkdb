@@ -138,10 +138,10 @@ pub mod run;
 // pub mod sub;
 // pub mod sum;
 // pub mod sync;
-// pub mod table;
+pub mod table;
 pub mod table_create;
-// pub mod table_drop;
-// pub mod table_list;
+pub mod table_drop;
+pub mod table_list;
 // pub mod time;
 // pub mod time_of_day;
 // pub mod timezone;
@@ -209,6 +209,22 @@ impl StaticString for &Cow<'static, str> {
 }
 
 impl<'a> Command {
+    pub fn table_create(self, args: impl table_create::TableCreateArg) -> Self {
+        table_create::new(args).with_parent(self)
+    }
+
+    pub fn table_drop(self, table_name: &str) -> Self {
+        table_drop::new(table_name).with_parent(self)
+    }
+
+    pub fn table_list(self) -> Self {
+        table_list::new().with_parent(self)
+    }
+
+    pub fn table(self, args: impl table::TableArg) -> Self {
+        table::new(args).with_parent(self)
+    }
+
     // pub fn merge(self, arg: impl merge::Arg) -> Self {
     //     arg.arg().into_cmd().with_parent(self)
     // }

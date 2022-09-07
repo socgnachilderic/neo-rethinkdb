@@ -2,64 +2,44 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 
 use ql2::term::TermType;
+use reql_rust_macros::CommandOptions;
 use serde::{Serialize, Serializer};
 
 use crate::types::{Durability, Replicas};
 use crate::Command;
 
-use super::StaticString;
+pub(crate) fn new(args: impl TableCreateArg) -> Command {
+    let (table_name, opts) = args.into_table_create_opts();
+    let arg = Command::from_json(table_name);
 
-pub struct TableCreateCommand(pub(crate) Command, pub(crate) TableCreateOption);
+    Command::new(TermType::TableCreate)
+        .with_arg(arg)
+        .with_opts(opts)
+}
 
-#[derive(Debug, Default, Clone, PartialEq)]
+pub trait TableCreateArg {
+    fn into_table_create_opts(self) -> (String, TableCreateOption);
+}
+
+impl TableCreateArg for &str {
+    fn into_table_create_opts(self) -> (String, TableCreateOption) {
+        (self.to_string(), Default::default())
+    }
+}
+
+impl TableCreateArg for (&str, TableCreateOption) {
+    fn into_table_create_opts(self) -> (String, TableCreateOption) {
+        (self.0.to_string(), self.1)
+    }
+}
+
+#[derive(Debug, Default, Clone, PartialEq, CommandOptions)]
 #[non_exhaustive]
-pub(crate) struct TableCreateOption {
+pub struct TableCreateOption {
     pub primary_key: Option<Cow<'static, str>>,
     pub durability: Option<Durability>,
     pub shards: Option<u8>,
     pub replicas: Option<Replicas>,
-}
-
-impl TableCreateCommand {
-    pub(crate) fn new(table_name: &str) -> Self {
-        let args = Command::from_json(table_name);
-        let command = Command::new(TermType::TableCreate).with_arg(args);
-
-        Self(command, TableCreateOption::default())
-    }
-
-    /// The name of the primary key. The default primary key is id.
-    pub fn with_primary_key(mut self, primary_key_name: &'static str) -> Self {
-        self.1.primary_key = Some(primary_key_name.static_string());
-        self
-    }
-
-    /// If set to `soft`, writes will be acknowledged by the server immediately and flushed to disk in
-    /// the background. The default is `hard`: acknowledgment of writes happens after data has been
-    pub fn with_durability(mut self, durability: Durability) -> Self {
-        self.1.durability = Some(durability);
-        self
-    }
-
-    /// The number of shards, an integer from 1-64. Defaults to 1.
-    pub fn with_shards(mut self, shards: u8) -> Self {
-        assert!(shards >= 1 && shards <= 64);
-
-        self.1.shards = Some(shards);
-        self
-    }
-
-    /// Either an integer or a mapping object. Defaults to `Replicas::Int(1)`.
-    pub fn with_replicas(mut self, replicas: Replicas) -> Self {
-        self.1.replicas = Some(replicas);
-        self
-    }
-
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
 }
 
 impl Serialize for TableCreateOption {
@@ -109,5 +89,49 @@ impl Serialize for TableCreateOption {
         };
 
         opts.serialize(serializer)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::cmd::table_create::TableCreateOption;
+    use crate::types::DbResponse;
+    use crate::{prelude::*, Session};
+    use crate::{r, Result};
+
+    #[tokio::test]
+    async fn test_create_table() -> Result<()> {
+        let table_name: &str = "malik1";
+        let conn = r.connection().connect().await?;
+        let table_created: DbResponse = r
+            .table_create(table_name)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse();
+
+        drop_table(table_name, table_created, &conn).await
+    }
+
+    #[tokio::test]
+    async fn test_create_table_with_options() -> Result<()> {
+        let table_name: &str = "malik2";
+        let conn = r.connection().connect().await?;
+        let table_options = TableCreateOption::default().primary_key("id");
+        let table_created = r
+            .db("test")
+            .table_create((table_name, table_options))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse();
+
+        drop_table(table_name, table_created, &conn).await
+    }
+
+    async fn drop_table(table_name: &str, table_created: DbResponse, conn: &Session) -> Result<()> {
+        assert!(table_created.tables_created > Some(0));
+        r.table_drop(table_name).run(conn).await?;
+        Ok(())
     }
 }

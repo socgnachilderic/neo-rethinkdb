@@ -46,42 +46,38 @@ impl r {
     }
 
     pub fn db_create(self, db_name: &str) -> Command {
-        cmd::db_create::make_db_create_command(db_name)
+        cmd::db_create::new(db_name)
     }
 
     pub fn db_drop(self, db_name: &str) -> Command {
-        cmd::db_drop::make_db_drop_command(db_name)
+        cmd::db_drop::new(db_name)
     }
 
     pub fn db_list(self) -> Command {
-        cmd::db_list::make_db_list_command()
+        cmd::db_list::new()
     }
 
     pub fn db(self, db_name: &str) -> Command {
-        cmd::db::make_db_command(db_name)
+        cmd::db::new(db_name)
     }
 
-    
-    /* pub fn table_create(self, table_name: &str) -> cmd::table_create::TableCreateCommand {
-        cmd::table_create::TableCreateCommand::new(table_name)
+    pub fn table_create(self, args: impl cmd::table_create::TableCreateArg) -> Command {
+        cmd::table_create::new(args)
     }
 
-    pub fn table_drop(self, table_name: &str) -> cmd::table_drop::TableDropBuilder {
-        cmd::table_drop::TableDropBuilder::new(table_name)
+    pub fn table_drop(self, table_name: &str) -> Command {
+        cmd::table_drop::new(table_name)
     }
 
-    pub fn table_list(self) -> cmd::table_list::TableListBuilder {
-        cmd::table_list::TableListBuilder::new()
+    pub fn table_list(self) -> Command {
+        cmd::table_list::new()
     }
 
-    pub fn table<T>(self, table_name: &str) -> cmd::table::TableBuilder<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::table::TableBuilder::new(table_name)
+    pub fn table(self, args: impl cmd::table::TableArg) -> Command {
+        cmd::table::new(args)
     }
 
-    pub fn map<A: Unpin + DeserializeOwned>(
+    /* pub fn map<A: Unpin + DeserializeOwned>(
         self,
         sequences: &[impl Serialize],
         func: Func,
