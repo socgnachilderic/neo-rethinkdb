@@ -10,11 +10,11 @@ use serde::Serialize;
 use serde::de::DeserializeOwned;
 
 pub trait Converter {
-    fn parse<T: Unpin + Serialize + DeserializeOwned>(&self) -> T;
+    fn parse<T: Unpin + Serialize + DeserializeOwned>(self) -> T;
 }
 
 impl Converter for serde_json::Value {
-    fn parse<T: Unpin + Serialize + DeserializeOwned>(&self) -> T {
-        serde_json::from_value(self.clone()).unwrap()
+    fn parse<T: Unpin + Serialize + DeserializeOwned>(self) -> T {
+        serde_json::from_value(self).unwrap()
     }
 }

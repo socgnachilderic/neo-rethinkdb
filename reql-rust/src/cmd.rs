@@ -71,12 +71,12 @@ pub(crate) mod func;
 // pub mod in_timezone;
 // pub mod includes;
 // pub mod index;
-// pub mod index_create;
-// pub mod index_drop;
-// pub mod index_list;
-// pub mod index_rename;
-// pub mod index_status;
-// pub mod index_wait;
+pub mod index_create;
+pub mod index_drop;
+pub mod index_list;
+pub mod index_rename;
+pub mod index_status;
+pub mod index_wait;
 // pub mod info;
 // pub mod inner_join;
 // pub mod insert;
@@ -164,8 +164,8 @@ pub mod table_list;
 
 use async_native_tls::TlsStream;
 use async_net::TcpStream;
-use futures::TryStreamExt;
 use futures::stream::Stream;
+use futures::TryStreamExt;
 use ql2::term::TermType;
 // use serde::de::DeserializeOwned;
 use serde_json::Value;
@@ -173,9 +173,9 @@ use std::borrow::Cow;
 use std::str;
 
 // use crate::ops;
+pub use crate::proto::Arg;
 use crate::Command;
 use crate::Result;
-pub use crate::proto::Arg;
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
@@ -224,6 +224,70 @@ impl<'a> Command {
     pub fn table(self, args: impl table::TableArg) -> Self {
         table::new(args).with_parent(self)
     }
+
+    pub fn index_create(self, args: impl index_create::IndexCreateArg) -> Self {
+        index_create::new(args).with_parent(self)
+    }
+
+    pub fn index_drop(self, index_name: &str) -> Self {
+        index_drop::new(index_name).with_parent(self)
+    }
+
+    pub fn index_list(self) -> Self {
+        index_list::new().with_parent(self)
+    }
+
+    pub fn index_rename(self, args: impl index_rename::IndexRenameArg) -> Self {
+        index_rename::new(args).with_parent(self)
+    }
+
+    pub fn index_status(self, args: impl index_status::IndexStatusArg) -> Self {
+        index_status::new(args).with_parent(self)
+    }
+
+    pub fn index_wait(self, args: impl index_wait::IndexWaitArg) -> Self {
+        index_wait::new(args).with_parent(self)
+    }
+
+    /* pub fn set_write_hook(&self, func: Func) -> super::set_write_hook::SetWriteHookBuilder {
+        super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.get_parent())
+    }
+
+    pub fn get_write_hook(&self) -> super::get_write_hook::GetWriteBuilder {
+        super::get_write_hook::GetWriteBuilder::new()._with_parent(self.get_parent())
+    }
+
+    pub fn insert(&self, document: &T) -> super::insert::InsertBuilder<T> {
+        super::insert::InsertBuilder::new(document)._with_parent(self.get_parent())
+    }
+
+    pub fn insert_many(&self, documents: &[T]) -> super::insert::InsertBuilder<T> {
+        assert!(documents.len() > 0);
+        super::insert::InsertBuilder::new_many(documents)._with_parent(self.get_parent())
+    }
+
+    pub fn sync(&self) -> super::sync::SyncBuilder {
+        super::sync::SyncBuilder::new()._with_parent(self.get_parent())
+    }
+
+    pub fn get(&self, primary_key: impl Serialize) -> super::get::GetBuilder<Option<Document<T>>> {
+        super::get::GetBuilder::new(primary_key)._with_parent(self.get_parent())
+    }
+
+    pub fn get_all(
+        &self,
+        values: &[impl Serialize],
+    ) -> super::get_all::GetAllBuilder<Sequence<Document<T>>> {
+        super::get_all::GetAllBuilder::new(values)._with_parent(self.get_parent())
+    }
+
+    pub fn between(
+        &self,
+        lower_key: impl Serialize,
+        upper_key: impl Serialize,
+    ) -> super::between::BetweenBuilder<Sequence<Document<T>>> {
+        super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.get_parent())
+    } */
 
     // pub fn merge(self, arg: impl merge::Arg) -> Self {
     //     arg.arg().into_cmd().with_parent(self)

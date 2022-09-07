@@ -1,67 +1,120 @@
-use crate::{types::IndexResponseType, Command, Func};
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
+use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-#[derive(Debug, Clone)]
-pub struct IndexCreateBuilder(pub(crate) Command, pub(crate) IndexCreateOption);
+use crate::{Command, Func};
 
-#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
-pub(crate) struct IndexCreateOption {
+pub(crate) fn new(args: impl IndexCreateArg) -> Command {
+    let (index_name, func, opts) = args.into_table_create_opts();
+    let arg = Command::from_json(index_name);
+
+    let mut command = Command::new(TermType::IndexCreate)
+        .with_arg(arg)
+        .with_opts(opts);
+
+    if let Some(Func(func)) = func {
+        command = command.with_arg(func);
+    }
+
+    command
+}
+
+pub trait IndexCreateArg {
+    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption);
+}
+
+impl IndexCreateArg for &str {
+    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
+        (self.to_string(), None, Default::default())
+    }
+}
+
+impl IndexCreateArg for (&str, Func) {
+    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
+        (self.0.to_string(), Some(self.1), Default::default())
+    }
+}
+
+impl IndexCreateArg for (&str, IndexCreateOption) {
+    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
+        (self.0.to_string(), None, self.1)
+    }
+}
+
+impl IndexCreateArg for (&str, Func, IndexCreateOption) {
+    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
+        (self.0.to_string(), Some(self.1), self.2)
+    }
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
+pub struct IndexCreateOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multi: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub geo: Option<bool>,
 }
 
-impl IndexCreateBuilder {
-    pub(crate) fn new(index_name: &str) -> Self {
-        let args = Command::from_json(index_name);
-        let command = Command::new(TermType::IndexCreate).with_arg(args);
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::types::IndexResponse;
+    use crate::{r, Command, Result, Session};
 
-        Self(command, IndexCreateOption::default())
+    use super::IndexCreateOption;
+
+    #[tokio::test]
+    async fn test_create_index() -> Result<()> {
+        let table_name = "malik1";
+        let conn = r.connection().connect().await?;
+        let index_created = r.table(table_name).index_create("author");
+
+        setup(table_name, index_created, &conn).await
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<IndexResponseType>> {
-        self.make_query(arg).try_next().await
+    #[tokio::test]
+    async fn test_create_index_with_options() -> Result<()> {
+        let table_name = "malik2";
+        let conn = r.connection().connect().await?;
+        let index_option = IndexCreateOption::default().multi(true);
+        let index_created = r.table(table_name).index_create(("author", index_option));
+
+        setup(table_name, index_created, &conn).await
     }
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<IndexResponseType>> {
-        self.0
-            .with_opts(self.1)
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, IndexResponseType>(arg)
+    /* #[tokio::test]
+    async fn test_create_index_with_func() -> Result<()> {
+        let table_name = "malik3";
+        let conn = r.connection().connect().await?;
+        let index_created = r
+            .table(table_name)
+            .index_create(("author", func!(|row| row.bracket("author").bracket("name"))));
+
+        setup(table_name, index_created, &conn).await
     }
 
-    pub fn with_func(mut self, func: Func) -> Self {
-        let Func(func) = func;
-        self.0 = self.0.with_arg(func);
-        self
-    }
+    #[tokio::test]
+    async fn test_create_index_with_func_and_options() -> Result<()> {
+        let table_name = "malik2";
+        let conn = r.connection().connect().await?;
+        let index_option = IndexCreateOption::default().multi(true);
+        let index_created = r.table(table_name).index_create((
+            "author",
+            func!(|row| row.bracket("author").bracket("name")),
+            index_option,
+        ));
 
-    pub fn with_query(mut self, query: Command) -> Self {
-        let Func(func) = Func::row(query);
-        self.0 = self.0.with_arg(func);
-        self
-    }
+        setup(table_name, index_created, &conn).await
+    } */
 
-    pub fn with_multi(mut self, multi: bool) -> Self {
-        self.1.multi = Some(multi);
-        self
-    }
+    async fn setup(table_name: &str, index_created: Command, conn: &Session) -> Result<()> {
+        r.table_create(table_name).run(conn).await?;
 
-    pub fn with_geo(mut self, geo: bool) -> Self {
-        self.1.geo = Some(geo);
-        self
-    }
+        let index_created: IndexResponse = index_created.run(conn).await?.unwrap().parse();
 
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+        assert!(index_created.created > Some(0));
+
+        r.table_drop(table_name).run(conn).await?;
+        Ok(())
     }
 }

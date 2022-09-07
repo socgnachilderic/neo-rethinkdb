@@ -233,3 +233,19 @@ where
 {
     query(r, r.connection().connect().await?).await
 }
+
+#[cfg(test)]
+pub(crate) async fn set_up(table_name: &str) -> Result<(Session, Command)> {
+    let conn = r.connection().connect().await?;
+    let table = r.table(table_name);
+    r.table_create(table_name).run(&conn).await?;
+    table.clone().run(&conn).await?;
+
+    Ok((conn, table))
+}
+
+#[cfg(test)]
+pub(crate) async fn tear_down(conn: Session, table_name: &str) -> Result<()> {
+    r.table_drop(table_name).run(&conn).await?;
+    Ok(())
+}

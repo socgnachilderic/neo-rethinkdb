@@ -1,36 +1,38 @@
-use crate::types::IndexResponseType;
 use crate::Command;
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-#[derive(Debug, Clone)]
-pub struct IndexDropBuilder(pub(crate) Command);
+pub(crate) fn new(index_name: &str) -> Command {
+    let args = Command::from_json(index_name);
 
-impl IndexDropBuilder {
-    pub(crate) fn new(index_name: &str) -> Self {
-        let args = Command::from_json(index_name);
-        let command = Command::new(TermType::IndexDrop).with_arg(args);
+    Command::new(TermType::IndexDrop).with_arg(args)
+}
 
-        IndexDropBuilder(command)
-    }
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::types::IndexResponse;
+    use crate::{r, Result};
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<IndexResponseType>> {
-        self.make_query(arg).try_next().await
-    }
+    #[tokio::test]
+    async fn test_drop_db() -> Result<()> {
+        let table_name = "malik";
+        let index_name = "author";
+        let conn = r.connection().connect().await?;
+        let table = r.table(table_name);
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<IndexResponseType>> {
-        self.0
-            .into_arg::<()>()
-            .into_cmd()
-            .run::<_, IndexResponseType>(arg)
-    }
+        r.table_create(table_name).run(&conn).await?;
+        table.clone().index_create(index_name).run(&conn).await?;
 
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+        let index_dropped: IndexResponse = table
+            .index_drop(index_name)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse();
+
+        assert!(index_dropped.dropped > Some(0));
+
+        r.table_drop(table_name).run(&conn).await?;
+        Ok(())
     }
 }

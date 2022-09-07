@@ -72,7 +72,7 @@ pub struct WritingResponseType<T> {
 /// Structure of return data in `index` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct IndexResponseType {
+pub struct IndexResponse {
     pub created: Option<u32>,
     pub dropped: Option<u32>,
     pub renamed: Option<u8>,
@@ -81,13 +81,14 @@ pub struct IndexResponseType {
 /// Structure of return data in `index_status` table
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
-pub struct IndexStatusResponseType {
+pub struct IndexStatusResponse {
     pub geo: bool,
     pub ready: bool,
     pub multi: bool,
     pub outdated: bool,
     pub progress: Option<f64>,
     pub index: Cow<'static, str>,
+    pub query: Cow<'static, str>,
     pub function: Binary,
 }
 
