@@ -110,7 +110,7 @@ mod tests {
     async fn setup(table_name: &str, index_created: Command, conn: &Session) -> Result<()> {
         r.table_create(table_name).run(conn).await?;
 
-        let index_created: IndexResponse = index_created.run(conn).await?.unwrap().parse();
+        let index_created: IndexResponse = index_created.run(conn).await?.unwrap().parse()?;
 
         assert!(index_created.created > Some(0));
 

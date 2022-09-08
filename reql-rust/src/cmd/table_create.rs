@@ -108,7 +108,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         drop_table(table_name, table_created, &conn).await
     }
@@ -124,7 +124,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         drop_table(table_name, table_created, &conn).await
     }

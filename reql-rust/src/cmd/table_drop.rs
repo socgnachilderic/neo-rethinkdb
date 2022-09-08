@@ -21,7 +21,7 @@ mod tests {
         
         r.table_create(table_name).run(&conn).await?;
 
-        let table_dropped: DbResponse = r.table_drop(table_name).run(&conn).await?.unwrap().parse();
+        let table_dropped: DbResponse = r.table_drop(table_name).run(&conn).await?.unwrap().parse()?;
 
         assert!(table_dropped.tables_dropped > Some(0));
 

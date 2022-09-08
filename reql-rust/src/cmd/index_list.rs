@@ -21,7 +21,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(index_list.len() > 0);
 

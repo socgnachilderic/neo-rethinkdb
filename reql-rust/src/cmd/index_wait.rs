@@ -50,7 +50,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(indexes_waited.len() == 3);
         indexes_waited
@@ -71,7 +71,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse::<Vec<IndexStatusResponse>>();
+            .parse::<Vec<IndexStatusResponse>>()?;
 
         let index_waited = index_waited.first().unwrap();
 
@@ -92,7 +92,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(indexes_waited.len() == 2);
         indexes_waited

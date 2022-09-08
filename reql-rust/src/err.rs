@@ -165,4 +165,3 @@ impl From<time::error::Format> for ReqlError {
         ReqlDriverError::Time(err.to_string()).into()
     }
 }
-

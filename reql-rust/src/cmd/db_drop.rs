@@ -20,7 +20,7 @@ mod tests {
         let conn = r.connection().connect().await?;
         r.db_create(dbname).run(&conn).await?;
 
-        let db_dropped: DbResponse = r.db_drop(dbname).run(&conn).await?.unwrap().parse();
+        let db_dropped: DbResponse = r.db_drop(dbname).run(&conn).await?.unwrap().parse()?;
 
         assert!(db_dropped.dbs_dropped == Some(1));
         Ok(())

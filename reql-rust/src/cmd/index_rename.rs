@@ -55,7 +55,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(index_renamed.renamed > Some(0));
 
@@ -78,7 +78,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(index_renamed.renamed > Some(0));
 

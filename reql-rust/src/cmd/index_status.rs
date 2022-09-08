@@ -54,7 +54,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(index_status.len() == 3);
 
@@ -72,7 +72,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(index_status.len() == 1);
         assert!(index_status.first().unwrap().index == "author");
@@ -91,7 +91,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(index_status.len() == 2);
         assert!(index_status.first().unwrap().index == "age");

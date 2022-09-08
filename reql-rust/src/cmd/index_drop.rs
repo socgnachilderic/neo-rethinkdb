@@ -28,7 +28,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(index_dropped.dropped > Some(0));
 

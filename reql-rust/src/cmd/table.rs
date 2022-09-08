@@ -106,7 +106,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(table.len() > 0);
         Ok(())
@@ -122,7 +122,7 @@ mod tests {
             .run(&conn)
             .await?
             .unwrap()
-            .parse();
+            .parse()?;
 
         assert!(table.len() > 0);
         Ok(())

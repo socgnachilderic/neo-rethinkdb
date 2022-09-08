@@ -18,7 +18,7 @@ mod tests {
     async fn test_create_db() -> Result<()> {
         let dbname = "zuma";
         let conn = r.connection().connect().await?;
-        let db_created: DbResponse = r.db_create(dbname).run(&conn).await?.unwrap().parse();
+        let db_created: DbResponse = r.db_create(dbname).run(&conn).await?.unwrap().parse()?;
 
         assert!(db_created.dbs_created == Some(1));
 
