@@ -61,7 +61,7 @@ pub(crate) mod func;
 // pub mod get_field;
 // pub mod get_intersecting;
 // pub mod get_nearest;
-// pub mod get_write_hook;
+pub mod get_write_hook;
 // pub mod grant;
 // pub mod group;
 // pub mod gt;
@@ -129,7 +129,7 @@ pub mod run;
 // pub mod set_insert;
 // pub mod set_intersection;
 // pub mod set_union;
-// pub mod set_write_hook;
+pub mod set_write_hook;
 // pub mod skip;
 // pub mod slice;
 // pub mod splice_at;
@@ -172,6 +172,7 @@ use serde_json::Value;
 use std::borrow::Cow;
 use std::str;
 
+use crate::Func;
 // use crate::ops;
 pub use crate::proto::Arg;
 use crate::Command;
@@ -249,15 +250,15 @@ impl<'a> Command {
         index_wait::new(args).with_parent(self)
     }
 
-    /* pub fn set_write_hook(&self, func: Func) -> super::set_write_hook::SetWriteHookBuilder {
-        super::set_write_hook::SetWriteHookBuilder::new(func)._with_parent(self.get_parent())
+    pub fn set_write_hook(self, args: Option<impl set_write_hook::SetWriteHookArg>) -> Self {
+        set_write_hook::new(args).with_parent(self)
     }
 
-    pub fn get_write_hook(&self) -> super::get_write_hook::GetWriteBuilder {
-        super::get_write_hook::GetWriteBuilder::new()._with_parent(self.get_parent())
+    pub fn get_write_hook(self) -> Self {
+        get_write_hook::new().with_parent(self)
     }
 
-    pub fn insert(&self, document: &T) -> super::insert::InsertBuilder<T> {
+    /* pub fn insert(&self, document: &T) -> super::insert::InsertBuilder<T> {
         super::insert::InsertBuilder::new(document)._with_parent(self.get_parent())
     }
 

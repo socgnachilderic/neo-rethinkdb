@@ -95,7 +95,7 @@ pub struct IndexStatusResponse {
 /// Structure of return data in `index_status` table
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
-pub struct WriteHookResponseType {
+pub struct WriteHookResponse {
     pub function: Binary,
     pub query: Cow<'static, str>,
 }
