@@ -1,26 +1,52 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::de::DeserializeOwned;
+use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::ops::ReqlOps;
-use crate::types::{Conflict, Document, Durability, ReturnChanges, Sequence, WritingResponseType};
-use crate::{Command, Func};
+use crate::prelude::Document;
+use crate::types::{Conflict, Durability, ReturnChanges};
+use crate::Command;
 
-#[derive(Debug)]
-pub struct InsertBuilder<T>(
-    pub(crate) Command,
-    pub(crate) InsertOption,
-    pub(crate) Option<Func>,
-    pub(crate) PhantomData<T>,
-);
+pub(crate) fn new(args: impl InsertArg) -> Command {
+    let (arg, opts) = args.into_insert_opts();
+    Command::new(TermType::Insert).with_arg(arg).with_opts(opts)
+}
+
+pub trait InsertArg {
+    fn into_insert_opts(self) -> (Command, InsertOption);
+}
+
+impl<T: Document> InsertArg for T {
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        let command = Command::from_json(self.get_document());
+
+        (command, Default::default())
+    }
+}
+
+impl InsertArg for Command {
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        (self, Default::default())
+    }
+}
+
+impl<T: Document> InsertArg for (T, InsertOption) {
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        let command = Command::from_json(self.0.get_document());
+
+        (command, self.1)
+    }
+}
+
+impl InsertArg for (Command, InsertOption) {
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        (self.0, self.1)
+    }
+}
 
 // TODO finish this struct
-#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 #[non_exhaustive]
-pub(crate) struct InsertOption {
+pub struct InsertOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub durability: Option<Durability>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -33,109 +59,96 @@ pub(crate) struct InsertOption {
     pub ignore_write_hook: Option<bool>,
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> InsertBuilder<T> {
-    pub(crate) fn new(document: &T) -> Self {
-        let args = Command::from_json(document);
-        let command = Command::new(TermType::Insert).with_arg(args);
-
-        Self(command, InsertOption::default(), None, PhantomData)
-    }
-
-    pub(crate) fn new_many(documents: &[T]) -> Self {
-        let args = Command::from_json(documents);
-        let command = Command::new(TermType::Insert).with_arg(args);
-
-        Self(command, InsertOption::default(), None, PhantomData)
-    }
-
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> crate::Result<Option<WritingResponseType<Sequence<Document<T>>>>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<WritingResponseType<Sequence<Document<T>>>>> {
-        self.get_parent()
-            .run::<_, WritingResponseType<Sequence<Document<T>>>>(arg)
-    }
-
-    pub fn with_durability(mut self, durability: Durability) -> Self {
-        self.1.durability = Some(durability);
-        self
-    }
-
-    pub fn with_return_changes(mut self, return_changes: ReturnChanges) -> Self {
-        self.1.return_changes = Some(return_changes);
-        self
-    }
-
-    pub fn with_ignore_write_hook(mut self, ignore_write_hook: bool) -> Self {
-        self.1.ignore_write_hook = Some(ignore_write_hook);
-        self
-    }
-
-    pub fn with_conflict(mut self, conflict: Conflict) -> Self {
-        self.1.conflict = Some(conflict);
-        self
-    }
-
-    pub fn with_conflict_func(mut self, func: Func) -> Self {
-        self.2 = Some(func);
-        self
-    }
-
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl<T> ReqlOps for InsertBuilder<T> {
-    fn get_parent(&self) -> Command {
-        let command = self.0.clone();
-
-        let command = if let Some(Func(func)) = self.2.clone() {
-            let args = func.with_opts(self.1);
-            command.with_arg(args)
-        } else {
-            command.with_opts(&self.1)
-        };
-
-        command.into_arg::<()>().into_cmd()
-    }
-}
-
-impl<T> Into<Command> for InsertBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use crate::prelude::ReqlOps;
-    use crate::{cmd, r};
-    use serde::{Deserialize, Serialize};
+    use crate::prelude::*;
+    use crate::spec::{set_up, tear_down, Post, DATABASE_NAMES};
+    use crate::types::{ReturnChanges, WritingResponse};
+    use crate::{r, Result};
 
-    #[derive(Serialize, Deserialize)]
-    struct Document {
-        item: String,
+    use super::InsertOption;
+
+    #[tokio::test]
+    async fn test_insert_data() -> Result<()> {
+        let data = Post::get_one_data();
+        let (conn, table) = set_up(DATABASE_NAMES[1]).await?;
+        let data_inserted: WritingResponse<Post> = table
+            .clone()
+            .insert(&data)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(data_inserted.inserted == 1);
+
+        tear_down(conn, DATABASE_NAMES[1]).await
     }
 
-    #[test]
-    fn r_table_insert() {
-        let document = Document {
-            item: "bar".to_string(),
-        };
+    #[tokio::test]
+    async fn test_insert_many_data() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(DATABASE_NAMES[2]).await?;
+        let data_inserted: WritingResponse<Post> = table
+            .clone()
+            .insert(&data)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-        let query = r.table::<Document>("foo").insert(&document);
-        let serialised = cmd::serialise(&query.get_parent());
-        let expected = r#"[56,[[15,["foo"]],{"item":"bar"}]]"#;
-        assert_eq!(serialised, expected);
+        assert!(data_inserted.inserted == 2);
+
+        tear_down(conn, DATABASE_NAMES[2]).await
+    }
+
+    #[tokio::test]
+    async fn test_insert_data_by_copy() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(DATABASE_NAMES[3]).await?;
+
+        r.table_create(DATABASE_NAMES[5]).run(&conn).await?;
+        table.clone().insert(&data).run(&conn).await?;
+
+        let data_inserted: WritingResponse<Post> = r
+            .table(DATABASE_NAMES[5])
+            .insert(table.clone())
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(data_inserted.inserted == 2);
+
+        r.table_drop("malik_backup3").run(&conn).await?;
+        tear_down(conn, DATABASE_NAMES[3]).await
+    }
+
+    #[tokio::test]
+    async fn test_insert_data_with_opts() -> Result<()> {
+        let data = Post::get_one_data();
+        let (conn, table) = set_up(DATABASE_NAMES[4]).await?;
+        let data_inserted: WritingResponse<Post> = table
+            .clone()
+            .insert((
+                &data,
+                InsertOption::default().return_changes(ReturnChanges::Bool(true)),
+            ))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!((&data_inserted).inserted == 1);
+        let expected_data = data_inserted
+            .changes
+            .unwrap()
+            .first()
+            .unwrap()
+            .clone()
+            .new_val;
+        assert!(expected_data == Some(data));
+
+        tear_down(conn, DATABASE_NAMES[4]).await
     }
 }

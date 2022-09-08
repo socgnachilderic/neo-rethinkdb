@@ -56,7 +56,7 @@ pub struct DbResponse {
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
-pub struct WritingResponseType<T> {
+pub struct WritingResponse<T> {
     pub inserted: u32,
     pub replaced: u32,
     pub unchanged: u32,
@@ -108,8 +108,8 @@ pub struct UngroupResponseType<G, V> {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct SyncResponseType {
-    synced: u8,
+pub struct SyncResponse {
+    pub synced: u8,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

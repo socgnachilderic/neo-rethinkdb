@@ -1,7 +1,7 @@
 pub use futures::stream::select_all;
 pub use futures::TryStreamExt;
 #[doc(hidden)]
-pub use reql_rust_macros::func;
+pub use reql_rust_macros::{func, Document};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 
@@ -16,5 +16,11 @@ pub trait Converter {
 impl Converter for serde_json::Value {
     fn parse<T: Unpin + Serialize + DeserializeOwned>(self) -> Result<T> {
         Ok(serde_json::from_value(self)?)
+    }
+}
+
+pub trait Document: Serialize {
+    fn get_document(&self) -> &Self {
+        self
     }
 }

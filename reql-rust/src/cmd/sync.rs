@@ -1,46 +1,34 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::ops::ReqlOps;
-use crate::types::SyncResponseType;
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct SyncBuilder(pub(crate) Command);
-
-impl SyncBuilder {
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::Sync);
-
-        Self(command)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<SyncResponseType>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<SyncResponseType>> {
-        self.get_parent().run::<_, SyncResponseType>(arg)
-    }
-
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+pub(crate) fn new() -> Command {
+    Command::new(TermType::Sync)
 }
 
-impl ReqlOps for SyncBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
+#[cfg(test)]
+mod tests {
+    use crate::cmd::insert::InsertOption;
+    use crate::prelude::*;
+    use crate::spec::{set_up, tear_down, Post, DATABASE_NAMES};
+    use crate::types::{Durability, SyncResponse};
+    use crate::Result;
 
-impl Into<Command> for SyncBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+    #[tokio::test]
+    async fn test_sync_ops() -> Result<()> {
+        let (conn, table) = set_up(DATABASE_NAMES[0]).await?;
+        let data = Post::get_many_data();
+        let insert_option = InsertOption::default().durability(Durability::Soft);
+        table
+            .clone()
+            .insert((&data, insert_option))
+            .run(&conn)
+            .await?;
+
+        let sync_response: SyncResponse = table.sync().run(&conn).await?.unwrap().parse()?;
+
+        assert!(sync_response.synced == 1);
+
+        tear_down(conn, DATABASE_NAMES[0]).await
     }
 }

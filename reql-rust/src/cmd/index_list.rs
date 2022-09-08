@@ -9,7 +9,8 @@ pub(crate) fn new() -> Command {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use crate::{set_up, tear_down, Result};
+    use crate::spec::{set_up, tear_down};
+    use crate::Result;
 
     #[tokio::test]
     async fn test_list_index() -> Result<()> {

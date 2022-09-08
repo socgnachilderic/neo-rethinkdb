@@ -35,9 +35,10 @@ impl IndexWaitArg for Vec<&str> {
 
 #[cfg(test)]
 mod tests {
+    use crate::spec::{set_up, tear_down};
     use crate::types::IndexStatusResponse;
+    use crate::Result;
     use crate::{prelude::*, Command, Session};
-    use crate::{set_up, tear_down, Result};
 
     #[tokio::test]
     async fn test_get_index_waited() -> Result<()> {

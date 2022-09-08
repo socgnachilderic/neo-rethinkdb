@@ -1,7 +1,6 @@
-// extern crate proc_macro;
-
 mod func;
 mod options;
+mod document;
 
 use func::Func;
 use proc_macro::TokenStream;
@@ -14,4 +13,9 @@ pub fn func(input: TokenStream) -> TokenStream {
 #[proc_macro_derive(CommandOptions)]
 pub fn command_opts(input: TokenStream) -> TokenStream {
     options::parse(input)
+}
+
+#[proc_macro_derive(Document)]
+pub fn make_document(input: TokenStream) -> TokenStream {
+    document::parse(input)
 }

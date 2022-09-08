@@ -33,7 +33,7 @@ pub mod db_create;
 pub mod db_drop;
 pub mod db_list;
 // pub mod default;
-// pub mod delete;
+pub mod delete;
 // pub mod delete_at;
 // pub mod desc;
 // pub mod difference;
@@ -79,7 +79,7 @@ pub mod index_status;
 pub mod index_wait;
 // pub mod info;
 // pub mod inner_join;
-// pub mod insert;
+pub mod insert;
 // pub mod insert_at;
 // pub mod intersects;
 // pub mod is_empty;
@@ -120,7 +120,7 @@ pub mod index_wait;
 // pub mod reconfigure;
 // pub mod reduce;
 // pub mod rem;
-// pub mod replace;
+pub mod replace;
 // pub mod round;
 pub mod run;
 // pub mod sample;
@@ -137,7 +137,7 @@ pub mod set_write_hook;
 // pub mod status;
 // pub mod sub;
 // pub mod sum;
-// pub mod sync;
+pub mod sync;
 pub mod table;
 pub mod table_create;
 pub mod table_drop;
@@ -153,7 +153,7 @@ pub mod table_list;
 // pub mod ungroup;
 // pub mod union;
 // pub mod upcase;
-// pub mod update;
+pub mod update;
 // pub mod uuid;
 // pub mod values;
 // pub mod wait;
@@ -162,18 +162,16 @@ pub mod table_list;
 // pub mod year;
 // pub mod zip;
 
+use std::borrow::Cow;
+use std::str;
+
 use async_native_tls::TlsStream;
 use async_net::TcpStream;
 use futures::stream::Stream;
 use futures::TryStreamExt;
 use ql2::term::TermType;
-// use serde::de::DeserializeOwned;
 use serde_json::Value;
-use std::borrow::Cow;
-use std::str;
 
-use crate::Func;
-// use crate::ops;
 pub use crate::proto::Arg;
 use crate::Command;
 use crate::Result;
@@ -258,20 +256,27 @@ impl<'a> Command {
         get_write_hook::new().with_parent(self)
     }
 
-    /* pub fn insert(&self, document: &T) -> super::insert::InsertBuilder<T> {
-        super::insert::InsertBuilder::new(document)._with_parent(self.get_parent())
+    pub fn insert(self, args: impl insert::InsertArg) -> Self {
+        insert::new(args).with_parent(self)
     }
 
-    pub fn insert_many(&self, documents: &[T]) -> super::insert::InsertBuilder<T> {
-        assert!(documents.len() > 0);
-        super::insert::InsertBuilder::new_many(documents)._with_parent(self.get_parent())
+    pub fn update(self, args: impl update::UpdateArg) -> Self {
+        update::new(args).with_parent(self)
     }
 
-    pub fn sync(&self) -> super::sync::SyncBuilder {
-        super::sync::SyncBuilder::new()._with_parent(self.get_parent())
+    pub fn replace(self, args: impl replace::ReplaceArg) -> Self {
+        replace::new(args).with_parent(self)
     }
 
-    pub fn get(&self, primary_key: impl Serialize) -> super::get::GetBuilder<Option<Document<T>>> {
+    pub fn delete(self, args: impl delete::DeleteArg) -> Self {
+        delete::new(args).with_parent(self)
+    }
+
+    pub fn sync(self) -> Self {
+        sync::new().with_parent(self)
+    }
+
+    /* pub fn get(&self, primary_key: impl Serialize) -> super::get::GetBuilder<Option<Document<T>>> {
         super::get::GetBuilder::new(primary_key)._with_parent(self.get_parent())
     }
 

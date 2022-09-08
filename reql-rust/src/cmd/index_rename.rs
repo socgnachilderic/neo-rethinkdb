@@ -40,8 +40,9 @@ pub struct IndexRenameOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
+    use crate::spec::{set_up, tear_down};
     use crate::types::IndexResponse;
-    use crate::{set_up, tear_down, Result};
+    use crate::Result;
 
     use super::IndexRenameOption;
 
@@ -67,7 +68,7 @@ mod tests {
         let (conn, table) = set_up("malik2").await?;
         table.clone().index_create("author").run(&conn).await?;
         table.clone().index_create("author_name").run(&conn).await?;
-        
+
         let index_renamed: IndexResponse = table
             .clone()
             .index_rename((
