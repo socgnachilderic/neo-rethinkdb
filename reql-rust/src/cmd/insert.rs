@@ -2,8 +2,7 @@ use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::prelude::Document;
-use crate::types::{Conflict, Durability, ReturnChanges};
+use crate::types::{AnyParam, Conflict, Durability, ReturnChanges};
 use crate::Command;
 
 pub(crate) fn new(args: impl InsertArg) -> Command {
@@ -15,25 +14,21 @@ pub trait InsertArg {
     fn into_insert_opts(self) -> (Command, InsertOption);
 }
 
-impl<T: Document> InsertArg for T {
+impl InsertArg for AnyParam {
     fn into_insert_opts(self) -> (Command, InsertOption) {
-        let command = Command::from_json(self.get_document());
+        (self.into(), Default::default())
+    }
+}
 
-        (command, Default::default())
+impl InsertArg for (AnyParam, InsertOption) {
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        (self.0.into(), self.1)
     }
 }
 
 impl InsertArg for Command {
     fn into_insert_opts(self) -> (Command, InsertOption) {
         (self, Default::default())
-    }
-}
-
-impl<T: Document> InsertArg for (T, InsertOption) {
-    fn into_insert_opts(self) -> (Command, InsertOption) {
-        let command = Command::from_json(self.0.get_document());
-
-        (command, self.1)
     }
 }
 
@@ -62,8 +57,8 @@ pub struct InsertOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use crate::spec::{set_up, tear_down, Post, DATABASE_NAMES};
-    use crate::types::{ReturnChanges, WritingResponse};
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::types::{AnyParam, ReturnChanges, WritingResponse};
     use crate::{r, Result};
 
     use super::InsertOption;
@@ -71,10 +66,10 @@ mod tests {
     #[tokio::test]
     async fn test_insert_data() -> Result<()> {
         let data = Post::get_one_data();
-        let (conn, table) = set_up(DATABASE_NAMES[1]).await?;
+        let (conn, table) = set_up(TABLE_NAMES[1], false).await?;
         let data_inserted: WritingResponse<Post> = table
             .clone()
-            .insert(&data)
+            .insert(AnyParam::new(&data))
             .run(&conn)
             .await?
             .unwrap()
@@ -82,58 +77,60 @@ mod tests {
 
         assert!(data_inserted.inserted == 1);
 
-        tear_down(conn, DATABASE_NAMES[1]).await
+        tear_down(conn, TABLE_NAMES[1]).await
     }
 
     #[tokio::test]
     async fn test_insert_many_data() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(DATABASE_NAMES[2]).await?;
+        let (conn, table) = set_up(TABLE_NAMES[2], false).await?;
         let data_inserted: WritingResponse<Post> = table
             .clone()
-            .insert(&data)
+            .insert(AnyParam::new(&data))
             .run(&conn)
             .await?
             .unwrap()
             .parse()?;
 
-        assert!(data_inserted.inserted == 2);
+        assert!(data_inserted.inserted == data.len());
 
-        tear_down(conn, DATABASE_NAMES[2]).await
+        tear_down(conn, TABLE_NAMES[2]).await
     }
 
     #[tokio::test]
     async fn test_insert_data_by_copy() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(DATABASE_NAMES[3]).await?;
+        let (conn, table) = set_up(TABLE_NAMES[3], false).await?;
 
-        r.table_create(DATABASE_NAMES[5]).run(&conn).await?;
-        table.clone().insert(&data).run(&conn).await?;
+        r.table_create(TABLE_NAMES[5]).run(&conn).await?;
+        table
+            .clone()
+            .insert(AnyParam::new(&data))
+            .run(&conn)
+            .await?;
 
         let data_inserted: WritingResponse<Post> = r
-            .table(DATABASE_NAMES[5])
+            .table(TABLE_NAMES[5])
             .insert(table.clone())
             .run(&conn)
             .await?
             .unwrap()
             .parse()?;
 
-        assert!(data_inserted.inserted == 2);
+        assert!(data_inserted.inserted == data.len());
 
-        r.table_drop("malik_backup3").run(&conn).await?;
-        tear_down(conn, DATABASE_NAMES[3]).await
+        r.table_drop(TABLE_NAMES[5]).run(&conn).await?;
+        tear_down(conn, TABLE_NAMES[3]).await
     }
 
     #[tokio::test]
     async fn test_insert_data_with_opts() -> Result<()> {
         let data = Post::get_one_data();
-        let (conn, table) = set_up(DATABASE_NAMES[4]).await?;
+        let (conn, table) = set_up(TABLE_NAMES[4], false).await?;
+        let insert_options = InsertOption::default().return_changes(ReturnChanges::Bool(true));
         let data_inserted: WritingResponse<Post> = table
             .clone()
-            .insert((
-                &data,
-                InsertOption::default().return_changes(ReturnChanges::Bool(true)),
-            ))
+            .insert((AnyParam::new(&data), insert_options))
             .run(&conn)
             .await?
             .unwrap()
@@ -149,6 +146,6 @@ mod tests {
             .new_val;
         assert!(expected_data == Some(data));
 
-        tear_down(conn, DATABASE_NAMES[4]).await
+        tear_down(conn, TABLE_NAMES[4]).await
     }
 }

@@ -42,7 +42,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_index_waited() -> Result<()> {
-        let (conn, table) = set_up("malik1").await?;
+        let (conn, table) = set_up("malik1", false).await?;
         generate_data(&conn, &table).await?;
 
         let indexes_waited: Vec<IndexStatusResponse> = table
@@ -63,7 +63,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_index_status_with_param() -> Result<()> {
-        let (conn, table) = set_up("malik2").await?;
+        let (conn, table) = set_up("malik2", false).await?;
         generate_data(&conn, &table).await?;
 
         let index_waited = table
@@ -84,7 +84,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_index_status_with_params() -> Result<()> {
-        let (conn, table) = set_up("malik3").await?;
+        let (conn, table) = set_up("malik3", false).await?;
         generate_data(&conn, &table).await?;
 
         let indexes_waited: Vec<IndexStatusResponse> = table

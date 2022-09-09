@@ -48,7 +48,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_index() -> Result<()> {
-        let (conn, table) = set_up("malik1").await?;
+        let (conn, table) = set_up("malik1", false).await?;
         table.clone().index_create("author").run(&conn).await?;
         let index_renamed: IndexResponse = table
             .clone()
@@ -65,7 +65,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_rename_index_with_overwrite() -> Result<()> {
-        let (conn, table) = set_up("malik2").await?;
+        let (conn, table) = set_up("malik2", false).await?;
         table.clone().index_create("author").run(&conn).await?;
         table.clone().index_create("author_name").run(&conn).await?;
 

@@ -12,6 +12,8 @@ use uuid::Uuid;
 // pub use datetime::DateTime;
 pub use binary::Binary;
 
+use crate::Command;
+
 // mod document;
 // mod group_stream;
 // mod sequence;
@@ -47,22 +49,22 @@ pub struct ServerInfo {
 #[non_exhaustive]
 pub struct DbResponse {
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
-    pub dbs_created: Option<u32>,
-    pub dbs_dropped: Option<u32>,
-    pub tables_created: Option<u32>,
-    pub tables_dropped: Option<u32>,
+    pub dbs_created: Option<usize>,
+    pub dbs_dropped: Option<usize>,
+    pub tables_created: Option<usize>,
+    pub tables_dropped: Option<usize>,
 }
 
 /// Structure of return data in `db` table
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct WritingResponse<T> {
-    pub inserted: u32,
-    pub replaced: u32,
-    pub unchanged: u32,
-    pub skipped: u32,
-    pub deleted: u32,
-    pub errors: u32,
+    pub inserted: usize,
+    pub replaced: usize,
+    pub unchanged: usize,
+    pub skipped: usize,
+    pub deleted: usize,
+    pub errors: usize,
     pub first_error: Option<String>,
     pub generated_keys: Option<Vec<Uuid>>,
     pub warnings: Option<Vec<String>>,
@@ -73,9 +75,9 @@ pub struct WritingResponse<T> {
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[non_exhaustive]
 pub struct IndexResponse {
-    pub created: Option<u32>,
-    pub dropped: Option<u32>,
-    pub renamed: Option<u8>,
+    pub created: Option<usize>,
+    pub dropped: Option<usize>,
+    pub renamed: Option<usize>,
 }
 
 /// Structure of return data in `index_status` table
@@ -114,7 +116,7 @@ pub struct SyncResponse {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct WaitResponseType {
-    ready: u32,
+    ready: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -344,4 +346,19 @@ pub enum GeoSystem {
     #[serde(rename = "unit_sphere")]
     UnitSphere,
     WGS84,
+}
+
+#[derive(Debug, Clone)]
+pub struct AnyParam(Command);
+
+impl AnyParam {
+    pub fn new(arg: impl Serialize) -> Self {
+        Self(Command::from_json(arg))
+    }
+}
+
+impl Into<Command> for AnyParam {
+    fn into(self) -> Command {
+        self.0
+    }
 }

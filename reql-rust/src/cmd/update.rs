@@ -2,8 +2,7 @@ use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::prelude::Document;
-use crate::types::{Durability, ReturnChanges};
+use crate::types::{Durability, ReturnChanges, AnyParam};
 use crate::Command;
 
 pub(crate) fn new(args: impl UpdateArg) -> Command {
@@ -15,11 +14,9 @@ pub trait UpdateArg {
     fn into_update_opts(self) -> (Command, UpdateOption);
 }
 
-impl<T: Document> UpdateArg for T {
+impl UpdateArg for AnyParam {
     fn into_update_opts(self) -> (Command, UpdateOption) {
-        let command = Command::from_json(self.get_document());
-
-        (command, Default::default())
+        (self.into(), Default::default())
     }
 }
 
@@ -29,11 +26,9 @@ impl UpdateArg for Command {
     }
 }
 
-impl<T: Document> UpdateArg for (T, UpdateOption) {
+impl UpdateArg for (AnyParam, UpdateOption) {
     fn into_update_opts(self) -> (Command, UpdateOption) {
-        let command = Command::from_json(self.0.get_document());
-
-        (command, self.1)
+        (self.0.into(), self.1)
     }
 }
 

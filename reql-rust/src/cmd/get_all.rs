@@ -1,78 +1,80 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::borrow::Cow;
 
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
+use reql_rust_macros::CommandOptions;
+use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
-use crate::{Command, Result};
+use crate::Command;
 
-use super::StaticString;
+pub(crate) fn new(args: impl GetAllArg) -> Command {
+    let (args, opts) = args.into_get_all_opts();
+    let mut command = Command::new(TermType::GetAll);
 
-#[derive(Debug, Clone)]
-pub struct GetAllBuilder<T>(
-    pub(crate) Command,
-    pub(crate) GetAllOption,
-    pub(crate) PhantomData<T>,
-);
+    for arg in args {
+        command = command.with_arg(arg);
+    }
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub(crate) struct GetAllOption {
+    command.with_opts(opts)
+}
+
+pub trait GetAllArg {
+    fn into_get_all_opts(self) -> (Vec<Command>, GetAllOption);
+}
+
+impl<T: Serialize> GetAllArg for Vec<T> {
+    fn into_get_all_opts(self) -> (Vec<Command>, GetAllOption) {
+        let keys = self
+            .into_iter()
+            .map(|key| Command::from_json(key))
+            .collect();
+
+        (keys, Default::default())
+    }
+}
+
+impl<T: Serialize> GetAllArg for (Vec<T>, GetAllOption) {
+    fn into_get_all_opts(self) -> (Vec<Command>, GetAllOption) {
+        let keys = self
+            .0
+            .into_iter()
+            .map(|key| Command::from_json(key))
+            .collect();
+
+        (keys, self.1)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
+pub struct GetAllOption {
     pub index: Option<Cow<'static, str>>,
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> GetAllBuilder<T> {
-    pub(crate) fn new(values: &[impl Serialize]) -> Self {
-        assert!(values.len() > 0);
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
 
-        let mut command = Command::new(TermType::GetAll);
+    use super::GetAllOption;
 
-        for val in values {
-            let arg = Command::from_json(val);
-            command = command.with_arg(arg);
-        }
+    #[tokio::test]
+    async fn test_get_all() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(TABLE_NAMES[1], true).await?;
 
-        Self(command, GetAllOption::default(), PhantomData)
-    }
+        table.clone().sync().run(&conn).await?;
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
+        let data_get: Vec<Post> = table
+            .get_all((vec!["title4"], GetAllOption::default().index("title")))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<T>> {
-        self.get_parent().run::<_, T>(arg)
-    }
+        assert!(data_get.len() == 2);
+        assert!(data_get.first() == data.get(3));
+        assert!(data_get.last() == data.last());
 
-    pub fn with_index(mut self, index: &'static str) -> Self {
-        self.1.index = Some(index.static_string());
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for GetAllBuilder<T> {}
-
-impl<T> ReqlOpsDocManipulation for GetAllBuilder<T> {}
-
-impl<T> ReqlOps for GetAllBuilder<T> {
-    fn get_parent(&self) -> Command {
-        let mut command = self.0.clone();
-
-        if self.1.index.is_some() {
-            command = command.with_opts(&self.1);
-        }
-
-        command.into_arg::<()>().into_cmd()
-    }
-}
-
-impl<T> Into<Command> for GetAllBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[1]).await
     }
 }

@@ -39,15 +39,15 @@ impl IndexStatusArg for Vec<&str> {
 
 #[cfg(test)]
 mod tests {
-    use crate::spec::{set_up, tear_down};
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
     use crate::types::IndexStatusResponse;
     use crate::Result;
     use crate::{prelude::*, Command, Session};
 
     #[tokio::test]
     async fn test_get_index_status() -> Result<()> {
-        let (conn, table) = set_up("malik1").await?;
-        generate_data(&conn, &table).await?;
+        let (conn, table) = set_up(TABLE_NAMES[1], false).await?;
+        generate_index(&conn, &table).await?;
 
         let index_status: Vec<IndexStatusResponse> = table
             .clone()
@@ -59,13 +59,13 @@ mod tests {
 
         assert!(index_status.len() == 3);
 
-        tear_down(conn, "malik1").await
+        tear_down(conn, TABLE_NAMES[1]).await
     }
 
     #[tokio::test]
     async fn test_get_index_status_with_param() -> Result<()> {
-        let (conn, table) = set_up("malik2").await?;
-        generate_data(&conn, &table).await?;
+        let (conn, table) = set_up(TABLE_NAMES[2], false).await?;
+        generate_index(&conn, &table).await?;
 
         let index_status: Vec<IndexStatusResponse> = table
             .clone()
@@ -78,13 +78,13 @@ mod tests {
         assert!(index_status.len() == 1);
         assert!(index_status.first().unwrap().index == "author");
 
-        tear_down(conn, "malik2").await
+        tear_down(conn, TABLE_NAMES[2]).await
     }
 
     #[tokio::test]
     async fn test_get_index_status_with_params() -> Result<()> {
-        let (conn, table) = set_up("malik3").await?;
-        generate_data(&conn, &table).await?;
+        let (conn, table) = set_up(TABLE_NAMES[3], false).await?;
+        generate_index(&conn, &table).await?;
 
         let index_status: Vec<IndexStatusResponse> = table
             .clone()
@@ -98,13 +98,14 @@ mod tests {
         assert!(index_status.first().unwrap().index == "age");
         assert!(index_status.last().unwrap().index == "name");
 
-        tear_down(conn, "malik3").await
+        tear_down(conn, TABLE_NAMES[3]).await
     }
 
-    async fn generate_data(conn: &Session, table: &Command) -> Result<()> {
+    async fn generate_index(conn: &Session, table: &Command) -> Result<()> {
         table.clone().index_create("author").run(conn).await?;
         table.clone().index_create("name").run(conn).await?;
         table.clone().index_create("age").run(conn).await?;
+
         Ok(())
     }
 }

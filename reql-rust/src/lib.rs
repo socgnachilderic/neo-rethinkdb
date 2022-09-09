@@ -13,10 +13,7 @@ pub mod types;
 
 use futures::Future;
 pub use prelude::Func;
-// use serde::{de::DeserializeOwned, Serialize};
 use std::sync::atomic::{AtomicU64, Ordering};
-// use time::{Date, Time, UtcOffset};
-// use types::{DateTime, GeoJson, Line, Point, Polygon};
 
 pub use connection::*;
 pub use err::*;
@@ -222,6 +219,14 @@ impl r {
 
     pub fn args<T>(self, arg: T) -> cmd::args::Args<T> {
         cmd::args::Args(arg)
+    }
+
+    pub fn min_val() -> Command {
+        Command::new(ql2::term::TermType::Minval)
+    }
+
+    pub fn max_val() -> Command {
+        Command::new(ql2::term::TermType::Maxval)
     }
 }
 

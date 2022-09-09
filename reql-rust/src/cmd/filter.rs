@@ -1,69 +1,91 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
+use reql_rust_macros::CommandOptions;
+use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
-use crate::{Command, Func, Result};
+use crate::{types::AnyParam, Command, Func};
 
-#[derive(Debug, Clone)]
-pub struct FilterBuilder<T>(
-    pub(crate) Command,
-    pub(crate) FilterOption,
-    pub(crate) PhantomData<T>,
-);
+pub(crate) fn new(args: impl FilterArg) -> Command {
+    let (arg, opts) = args.into_filter_opts();
 
-#[derive(Debug, Clone, Copy, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
+    Command::new(TermType::Filter).with_arg(arg).with_opts(opts)
+}
+
+pub trait FilterArg {
+    fn into_filter_opts(self) -> (Command, FilterOption);
+}
+
+impl FilterArg for AnyParam {
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self.into(), Default::default())
+    }
+}
+
+impl FilterArg for Func {
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self.0, Default::default())
+    }
+}
+
+impl FilterArg for Command {
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self, Default::default())
+    }
+}
+
+impl FilterArg for (AnyParam, FilterOption) {
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self.0.into(), self.1)
+    }
+}
+
+impl FilterArg for (Func, FilterOption) {
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        let Func(func) = self.0;
+
+        (func, self.1)
+    }
+}
+
+impl FilterArg for (Command, FilterOption) {
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self.0, self.1)
+    }
+}
+
+#[derive(
+    Debug, Clone, Copy, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash, CommandOptions,
+)]
 #[non_exhaustive]
-pub(crate) struct FilterOption {
+pub struct FilterOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default: Option<bool>,
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> FilterBuilder<T> {
-    pub fn new(func: Func) -> Self {
-        let Func(func) = func;
-        let command = Command::new(TermType::Filter).with_arg(func);
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
 
-        Self(command, FilterOption::default(), PhantomData)
-    }
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::types::AnyParam;
+    use crate::Result;
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<T>> {
-        self.get_parent().run::<_, T>(arg)
-    }
-
-    pub fn with_default(mut self, default: bool) -> Self {
-        self.1.default = Some(default);
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for FilterBuilder<T> {}
-
-impl<T> ReqlOpsDocManipulation for FilterBuilder<T> {}
-
-impl<T> ReqlOps for FilterBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0
+    #[tokio::test]
+    async fn test_filter_data() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_filtered: Vec<Post> = table
             .clone()
-            .with_opts(&self.1)
-            .into_arg::<()>()
-            .into_cmd()
-    }
-}
+            .filter(AnyParam::new(json!({"view": 2})))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-impl<T> Into<Command> for FilterBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+        assert!(data_filtered.len() == 2);
+        assert!(data_filtered.first() == data.get(3));
+        assert!(data_filtered.last() == data.get(1));
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

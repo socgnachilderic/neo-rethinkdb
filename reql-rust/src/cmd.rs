@@ -4,7 +4,7 @@
 pub mod args;
 // pub mod asc;
 // pub mod avg;
-// pub mod between;
+pub mod between;
 // pub mod binary;
 // pub mod bit_and;
 // pub mod bit_not;
@@ -49,15 +49,15 @@ pub mod delete;
 // pub mod error;
 pub mod expr;
 // pub mod fill;
-// pub mod filter;
+pub mod filter;
 // pub mod floor;
 // pub mod fold;
 // pub mod for_each;
 pub(crate) mod func;
 // pub mod ge;
 // pub mod geojson;
-// pub mod get;
-// pub mod get_all;
+pub mod get;
+pub mod get_all;
 // pub mod get_field;
 // pub mod get_intersecting;
 // pub mod get_nearest;
@@ -170,6 +170,7 @@ use async_net::TcpStream;
 use futures::stream::Stream;
 use futures::TryStreamExt;
 use ql2::term::TermType;
+use serde::Serialize;
 use serde_json::Value;
 
 pub use crate::proto::Arg;
@@ -276,24 +277,21 @@ impl<'a> Command {
         sync::new().with_parent(self)
     }
 
-    /* pub fn get(&self, primary_key: impl Serialize) -> super::get::GetBuilder<Option<Document<T>>> {
-        super::get::GetBuilder::new(primary_key)._with_parent(self.get_parent())
+    pub fn get(self, primary_key: impl Serialize) -> Self {
+        get::new(primary_key).with_parent(self)
     }
 
-    pub fn get_all(
-        &self,
-        values: &[impl Serialize],
-    ) -> super::get_all::GetAllBuilder<Sequence<Document<T>>> {
-        super::get_all::GetAllBuilder::new(values)._with_parent(self.get_parent())
+    pub fn get_all(self, values: impl get_all::GetAllArg) -> Command {
+        get_all::new(values).with_parent(self)
     }
 
-    pub fn between(
-        &self,
-        lower_key: impl Serialize,
-        upper_key: impl Serialize,
-    ) -> super::between::BetweenBuilder<Sequence<Document<T>>> {
-        super::between::BetweenBuilder::new(lower_key, upper_key)._with_parent(self.get_parent())
-    } */
+    pub fn between(self, args: impl between::BetweenArg) -> Self {
+        between::new(args).with_parent(self)
+    }
+
+    pub fn filter(self, args: impl filter::FilterArg) -> Self {
+        filter::new(args).with_parent(self)
+    }
 
     // pub fn merge(self, arg: impl merge::Arg) -> Self {
     //     arg.arg().into_cmd().with_parent(self)

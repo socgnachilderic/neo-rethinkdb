@@ -115,7 +115,7 @@ mod tests {
     #[tokio::test]
     async fn test_table_with_options() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let table_options = TableOption::default().read_mode(ReadMode::Single);
+        let table_options = TableOption::default().read_mode(ReadMode::Outdated);
         let table: Vec<Value> = r
             .db("todo_app")
             .table(("geo", table_options))
