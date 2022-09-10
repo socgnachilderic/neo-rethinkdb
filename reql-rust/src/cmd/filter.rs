@@ -4,51 +4,54 @@ use serde::Serialize;
 
 use crate::{types::AnyParam, Command, Func};
 
-pub(crate) fn new(args: impl FilterArg) -> Command {
-    let (arg, opts) = args.into_filter_opts();
+use super::CmdOpts;
 
-    Command::new(TermType::Filter).with_arg(arg).with_opts(opts)
+pub(crate) fn new(args: impl FilterArg) -> Command {
+    let (args, opts) = args.into_filter_opts();
+
+    args.add_to_cmd(Command::new(TermType::Filter))
+        .with_opts(opts)
 }
 
 pub trait FilterArg {
-    fn into_filter_opts(self) -> (Command, FilterOption);
+    fn into_filter_opts(self) -> (CmdOpts, FilterOption);
 }
 
 impl FilterArg for AnyParam {
-    fn into_filter_opts(self) -> (Command, FilterOption) {
-        (self.into(), Default::default())
+    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
+        (CmdOpts::Single(self.into()), Default::default())
     }
 }
 
 impl FilterArg for Func {
-    fn into_filter_opts(self) -> (Command, FilterOption) {
-        (self.0, Default::default())
+    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
+        (CmdOpts::Single(self.0), Default::default())
     }
 }
 
 impl FilterArg for Command {
-    fn into_filter_opts(self) -> (Command, FilterOption) {
-        (self, Default::default())
+    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
+        (CmdOpts::Single(self), Default::default())
     }
 }
 
 impl FilterArg for (AnyParam, FilterOption) {
-    fn into_filter_opts(self) -> (Command, FilterOption) {
-        (self.0.into(), self.1)
+    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
+        (CmdOpts::Single(self.0.into()), self.1)
     }
 }
 
 impl FilterArg for (Func, FilterOption) {
-    fn into_filter_opts(self) -> (Command, FilterOption) {
+    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
         let Func(func) = self.0;
 
-        (func, self.1)
+        (CmdOpts::Single(func), self.1)
     }
 }
 
 impl FilterArg for (Command, FilterOption) {
-    fn into_filter_opts(self) -> (Command, FilterOption) {
-        (self.0, self.1)
+    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
+        (CmdOpts::Single(self.0), self.1)
     }
 }
 

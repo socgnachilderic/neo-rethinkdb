@@ -5,36 +5,39 @@ use serde::Serialize;
 use crate::types::{Durability, ReturnChanges, AnyParam};
 use crate::Command;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl ReplaceArg) -> Command {
-    let (arg, opts) = args.into_replace_opts();
-    Command::new(TermType::Replace).with_arg(arg).with_opts(opts)
+    let (args, opts) = args.into_replace_opts();
+    
+    args.add_to_cmd(Command::new(TermType::Replace)).with_opts(opts)
 }
 
 pub trait ReplaceArg {
-    fn into_replace_opts(self) -> (Command, ReplaceOption);
+    fn into_replace_opts(self) -> (CmdOpts, ReplaceOption);
 }
 
 impl ReplaceArg for AnyParam {
-    fn into_replace_opts(self) -> (Command, ReplaceOption) {
-        (self.into(), Default::default())
+    fn into_replace_opts(self) -> (CmdOpts, ReplaceOption) {
+        (CmdOpts::Single(self.into()), Default::default())
     }
 }
 
 impl ReplaceArg for Command {
-    fn into_replace_opts(self) -> (Command, ReplaceOption) {
-        (self, Default::default())
+    fn into_replace_opts(self) -> (CmdOpts, ReplaceOption) {
+        (CmdOpts::Single(self), Default::default())
     }
 }
 
 impl ReplaceArg for (AnyParam, ReplaceOption) {
-    fn into_replace_opts(self) -> (Command, ReplaceOption) {
-        (self.0.into(), self.1)
+    fn into_replace_opts(self) -> (CmdOpts, ReplaceOption) {
+        (CmdOpts::Single(self.0.into()), self.1)
     }
 }
 
 impl ReplaceArg for (Command, ReplaceOption) {
-    fn into_replace_opts(self) -> (Command, ReplaceOption) {
-        (self.0, self.1)
+    fn into_replace_opts(self) -> (CmdOpts, ReplaceOption) {
+        (CmdOpts::Single(self.0), self.1)
     }
 }
 

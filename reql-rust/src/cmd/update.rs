@@ -2,39 +2,43 @@ use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::{Durability, ReturnChanges, AnyParam};
+use crate::types::{AnyParam, Durability, ReturnChanges};
 use crate::Command;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl UpdateArg) -> Command {
-    let (arg, opts) = args.into_update_opts();
-    Command::new(TermType::Update).with_arg(arg).with_opts(opts)
+    let (args, opts) = args.into_update_opts();
+
+    args.add_to_cmd(Command::new(TermType::Update))
+        .with_opts(opts)
 }
 
 pub trait UpdateArg {
-    fn into_update_opts(self) -> (Command, UpdateOption);
+    fn into_update_opts(self) -> (CmdOpts, UpdateOption);
 }
 
 impl UpdateArg for AnyParam {
-    fn into_update_opts(self) -> (Command, UpdateOption) {
-        (self.into(), Default::default())
+    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
+        (CmdOpts::Single(self.into()), Default::default())
     }
 }
 
 impl UpdateArg for Command {
-    fn into_update_opts(self) -> (Command, UpdateOption) {
-        (self, Default::default())
+    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
+        (CmdOpts::Single(self), Default::default())
     }
 }
 
 impl UpdateArg for (AnyParam, UpdateOption) {
-    fn into_update_opts(self) -> (Command, UpdateOption) {
-        (self.0.into(), self.1)
+    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
+        (CmdOpts::Single(self.0.into()), self.1)
     }
 }
 
 impl UpdateArg for (Command, UpdateOption) {
-    fn into_update_opts(self) -> (Command, UpdateOption) {
-        (self.0, self.1)
+    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
+        (CmdOpts::Single(self.0), self.1)
     }
 }
 

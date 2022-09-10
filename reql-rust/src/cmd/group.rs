@@ -1,101 +1,46 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::borrow::Cow;
 
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
+use reql_rust_macros::CommandOptions;
+use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsGroupedStream};
-use crate::types::GroupStream;
-use crate::{Command, Func, Result};
+use crate::Command;
 
-use super::StaticString;
+use super::CmdOpts;
 
-#[derive(Debug, Clone)]
-pub struct GroupBuilder<G, V>(
-    pub(crate) Command,
-    pub(crate) GroupOption,
-    pub(crate) PhantomData<G>,
-    pub(crate) PhantomData<V>,
-);
+pub(crate) fn new(args: impl GroupArg) -> Command {
+    let (args, opts) = args.into_group_opts();
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub(crate) struct GroupOption {
+    args.add_to_cmd(Command::new(TermType::Group))
+        .with_opts(opts)
+}
+
+pub trait GroupArg {
+    fn into_group_opts(self) -> (CmdOpts, GroupOption);
+}
+
+impl GroupArg for &str {
+    fn into_group_opts(self) -> (CmdOpts, GroupOption) {
+        let arg = Command::from_json(self);
+        (CmdOpts::Single(arg), Default::default())
+    }
+}
+
+impl GroupArg for Vec<&str> {
+    fn into_group_opts(self) -> (CmdOpts, GroupOption) {
+        let args = self
+            .into_iter()
+            .map(|field| Command::from_json(field))
+            .collect();
+
+        (CmdOpts::Many(args), Default::default())
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
+pub struct GroupOption {
     pub index: Option<Cow<'static, str>>,
     pub multi: Option<bool>,
 }
 
-impl<G, V> GroupBuilder<G, V>
-where
-    G: Unpin + Serialize + DeserializeOwned,
-    V: Unpin + Serialize + DeserializeOwned,
-{
-    pub(crate) fn new(fields: &[&str]) -> Self {
-        let mut command = Command::new(TermType::Group);
-
-        for field in fields {
-            let arg = Command::from_json(field);
-            command = command.with_arg(arg);
-        }
-
-        Self(command, GroupOption::default(), PhantomData, PhantomData)
-    }
-
-    pub(crate) fn new_by_func(func: Func) -> Self {
-        let Func(func) = func;
-        let command = Command::new(TermType::Group).with_arg(func);
-
-        Self(command, GroupOption::default(), PhantomData, PhantomData)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<GroupStream<G, V>>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = Result<GroupStream<G, V>>> {
-        self.get_parent().run::<_, GroupStream<G, V>>(arg)
-    }
-
-    pub fn with_index(mut self, index: &'static str) -> Self {
-        self.1.index = Some(index.static_string());
-        self
-    }
-
-    pub fn with_multi(mut self, multi: bool) -> Self {
-        self.1.multi = Some(multi);
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl<G, V> ReqlOpsGroupedStream<G, V> for GroupBuilder<G, V>
-where
-    G: Unpin + Serialize + DeserializeOwned,
-    V: Unpin + Serialize + DeserializeOwned,
-{
-}
-
-impl<G, V> ReqlOps for GroupBuilder<G, V> {
-    fn get_parent(&self) -> Command {
-        let mut command = self.0.clone();
-
-        if self.1.index.is_some() || self.1.multi.is_some() {
-            command = command.with_opts(&self.1);
-        }
-
-        command.into_arg::<()>().into_cmd()
-    }
-}
-
-impl<G, V> Into<Command> for GroupBuilder<G, V> {
-    fn into(self) -> Command {
-        self.get_parent()
-    }
-}
+// GroupStream

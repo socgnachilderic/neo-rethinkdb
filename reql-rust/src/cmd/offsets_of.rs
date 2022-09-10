@@ -3,29 +3,31 @@ use ql2::term::TermType;
 use crate::types::AnyParam;
 use crate::{Command, Func};
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl OffsetsOfArg) -> Command {
-    Command::new(TermType::OffsetsOf).with_arg(args.into_offsets_of_opts())
+    args.into_offsets_of_opts().add_to_cmd(Command::new(TermType::OffsetsOf))
 }
 
 pub trait OffsetsOfArg {
-    fn into_offsets_of_opts(self) -> Command;
+    fn into_offsets_of_opts(self) -> CmdOpts;
 }
 
 impl OffsetsOfArg for AnyParam {
-    fn into_offsets_of_opts(self) -> Command {
-        self.into()
+    fn into_offsets_of_opts(self) -> CmdOpts {
+        CmdOpts::Single(self.into())
     }
 }
 
 impl OffsetsOfArg for Func {
-    fn into_offsets_of_opts(self) -> Command {
-        self.0
+    fn into_offsets_of_opts(self) -> CmdOpts {
+        CmdOpts::Single(self.0)
     }
 }
 
 impl OffsetsOfArg for Command {
-    fn into_offsets_of_opts(self) -> Command {
-        self
+    fn into_offsets_of_opts(self) -> CmdOpts {
+        CmdOpts::Single(self)
     }
 }
 

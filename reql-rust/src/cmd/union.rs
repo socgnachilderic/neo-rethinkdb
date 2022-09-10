@@ -5,54 +5,52 @@ use serde::Serialize;
 use crate::types::{AnyParam, Interleave};
 use crate::Command;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl UnionArg) -> Command {
-    let (values, opts) = args.into_union_opts();
-    let mut command = Command::new(TermType::Union);
+    let (args, opts) = args.into_union_opts();
 
-    for val in values {
-        command = command.with_arg(val);
-    }
-
-    command.with_opts(opts)
+    args.add_to_cmd(Command::new(TermType::Union))
+        .with_opts(opts)
 }
 
 pub trait UnionArg {
-    fn into_union_opts(self) -> (Vec<Command>, UnionOption);
+    fn into_union_opts(self) -> (CmdOpts, UnionOption);
 }
 
 impl UnionArg for Command {
-    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
-        (vec![self], Default::default())
+    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
+        (CmdOpts::Single(self), Default::default())
     }
 }
 
 impl UnionArg for Vec<Command> {
-    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
-        (self, Default::default())
+    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
+        (CmdOpts::Many(self), Default::default())
     }
 }
 
 impl UnionArg for AnyParam {
-    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
-        (vec![self.into()], Default::default())
+    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
+        (CmdOpts::Single(self.into()), Default::default())
     }
 }
 
 impl UnionArg for (Command, UnionOption) {
-    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
-        (vec![self.0], self.1)
+    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
+        (CmdOpts::Single(self.0), self.1)
     }
 }
 
 impl UnionArg for (Vec<Command>, UnionOption) {
-    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
-        (self.0, self.1)
+    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
+        (CmdOpts::Many(self.0), self.1)
     }
 }
 
 impl UnionArg for (AnyParam, UnionOption) {
-    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
-        (vec![self.0.into()], self.1)
+    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
+        (CmdOpts::Single(self.0.into()), self.1)
     }
 }
 
@@ -102,7 +100,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-            
+
         assert!(data_obtained.len() > 0);
 
         r.table_drop(TABLE_NAMES[2]).run(&conn).await?;

@@ -5,26 +5,31 @@ use serde::Serialize;
 use crate::types::{IdentifierFormat, ReadMode};
 use crate::Command;
 
-pub(crate) fn new(args: impl TableArg) -> Command {
-    let (table_name, opts) = args.into_table_opts();
-    let arg = Command::from_json(table_name);
+use super::CmdOpts;
 
-    Command::new(TermType::Table).with_arg(arg).with_opts(opts)
+pub(crate) fn new(args: impl TableArg) -> Command {
+    let (args, opts) = args.into_table_opts();
+
+    args.add_to_cmd(Command::new(TermType::Table)).with_opts(opts)
 }
 
 pub trait TableArg {
-    fn into_table_opts(self) -> (String, TableOption);
+    fn into_table_opts(self) -> (CmdOpts, TableOption);
 }
 
 impl TableArg for &str {
-    fn into_table_opts(self) -> (String, TableOption) {
-        (self.to_string(), Default::default())
+    fn into_table_opts(self) -> (CmdOpts, TableOption) {
+        let arg = Command::from_json(self);
+
+        (CmdOpts::Single(arg), Default::default())
     }
 }
 
 impl TableArg for (&str, TableOption) {
-    fn into_table_opts(self) -> (String, TableOption) {
-        (self.0.to_string(), self.1)
+    fn into_table_opts(self) -> (CmdOpts, TableOption) {
+        let arg = Command::from_json(self.0);
+
+        (CmdOpts::Single(arg), self.1)
     }
 }
 

@@ -1,35 +1,45 @@
 use crate::Command;
 use ql2::term::TermType;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl IndexWaitArg) -> Command {
     let mut command = Command::new(TermType::IndexWait);
-    for index_name in args.into_index_wait_opts() {
-        let arg = Command::from_json(index_name);
-        command = command.with_arg(arg);
+
+    if let Some(args) = args.into_index_wait_opts() {
+        command = args.add_to_cmd(command)
     }
+    
 
     command
 }
 
 pub trait IndexWaitArg {
-    fn into_index_wait_opts(self) -> Vec<String>;
+    fn into_index_wait_opts(self) -> Option<CmdOpts>;
 }
 
 impl IndexWaitArg for () {
-    fn into_index_wait_opts(self) -> Vec<String> {
-        Vec::new()
+    fn into_index_wait_opts(self) -> Option<CmdOpts> {
+        None
     }
 }
 
 impl IndexWaitArg for &str {
-    fn into_index_wait_opts(self) -> Vec<String> {
-        vec![self.to_string()]
+    fn into_index_wait_opts(self) -> Option<CmdOpts> {
+        let arg = Command::from_json(self);
+
+        Some(CmdOpts::Single(arg))
     }
 }
 
 impl IndexWaitArg for Vec<&str> {
-    fn into_index_wait_opts(self) -> Vec<String> {
-        self.iter().map(|index| index.to_string()).collect()
+    fn into_index_wait_opts(self) -> Option<CmdOpts> {
+        let args = self
+            .into_iter()
+            .map(|arg| Command::from_json(arg))
+            .collect();
+
+        Some(CmdOpts::Many(args))
     }
 }
 

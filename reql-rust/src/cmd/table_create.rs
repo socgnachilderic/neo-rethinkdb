@@ -8,28 +8,32 @@ use serde::{Serialize, Serializer};
 use crate::types::{Durability, Replicas};
 use crate::Command;
 
-pub(crate) fn new(args: impl TableCreateArg) -> Command {
-    let (table_name, opts) = args.into_table_create_opts();
-    let arg = Command::from_json(table_name);
+use super::CmdOpts;
 
-    Command::new(TermType::TableCreate)
-        .with_arg(arg)
+pub(crate) fn new(args: impl TableCreateArg) -> Command {
+    let (args, opts) = args.into_table_create_opts();
+
+    args.add_to_cmd(Command::new(TermType::TableCreate))
         .with_opts(opts)
 }
 
 pub trait TableCreateArg {
-    fn into_table_create_opts(self) -> (String, TableCreateOption);
+    fn into_table_create_opts(self) -> (CmdOpts, TableCreateOption);
 }
 
 impl TableCreateArg for &str {
-    fn into_table_create_opts(self) -> (String, TableCreateOption) {
-        (self.to_string(), Default::default())
+    fn into_table_create_opts(self) -> (CmdOpts, TableCreateOption) {
+        let arg = Command::from_json(self);
+
+        (CmdOpts::Single(arg), Default::default())
     }
 }
 
 impl TableCreateArg for (&str, TableCreateOption) {
-    fn into_table_create_opts(self) -> (String, TableCreateOption) {
-        (self.0.to_string(), self.1)
+    fn into_table_create_opts(self) -> (CmdOpts, TableCreateOption) {
+        let arg = Command::from_json(self.0);
+
+        (CmdOpts::Single(arg), self.1)
     }
 }
 

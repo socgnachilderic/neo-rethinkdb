@@ -4,12 +4,13 @@ use serde::Serialize;
 
 use crate::{Command, Func};
 
-pub(crate) fn new(args: impl IndexCreateArg) -> Command {
-    let (index_name, func, opts) = args.into_table_create_opts();
-    let arg = Command::from_json(index_name);
+use super::CmdOpts;
 
-    let mut command = Command::new(TermType::IndexCreate)
-        .with_arg(arg)
+pub(crate) fn new(args: impl IndexCreateArg) -> Command {
+    let (args, func, opts) = args.into_table_create_opts();
+
+    let mut command = args
+        .add_to_cmd(Command::new(TermType::IndexCreate))
         .with_opts(opts);
 
     if let Some(Func(func)) = func {
@@ -20,30 +21,38 @@ pub(crate) fn new(args: impl IndexCreateArg) -> Command {
 }
 
 pub trait IndexCreateArg {
-    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption);
+    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption);
 }
 
 impl IndexCreateArg for &str {
-    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
-        (self.to_string(), None, Default::default())
+    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
+        let arg = Command::from_json(self);
+
+        (CmdOpts::Single(arg), None, Default::default())
     }
 }
 
 impl IndexCreateArg for (&str, Func) {
-    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
-        (self.0.to_string(), Some(self.1), Default::default())
+    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
+        let arg = Command::from_json(self.0);
+
+        (CmdOpts::Single(arg), Some(self.1), Default::default())
     }
 }
 
 impl IndexCreateArg for (&str, IndexCreateOption) {
-    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
-        (self.0.to_string(), None, self.1)
+    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
+        let arg = Command::from_json(self.0);
+
+        (CmdOpts::Single(arg), None, self.1)
     }
 }
 
 impl IndexCreateArg for (&str, Func, IndexCreateOption) {
-    fn into_table_create_opts(self) -> (String, Option<Func>, IndexCreateOption) {
-        (self.0.to_string(), Some(self.1), self.2)
+    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
+        let arg = Command::from_json(self.0);
+
+        (CmdOpts::Single(arg), Some(self.1), self.2)
     }
 }
 

@@ -1,39 +1,45 @@
 use crate::Command;
 use ql2::term::TermType;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl IndexStatusArg) -> Command {
     let mut command = Command::new(TermType::IndexStatus);
-    let index_names = args.into_index_status_opts();
+    let args = args.into_index_status_opts();
 
-    if index_names.len() > 0 {
-        for index_name in index_names {
-            let arg = Command::from_json(index_name);
-            command = command.with_arg(arg);
-        }
+    if let Some(args) = args {
+        command = args.add_to_cmd(command)
     }
 
     command
 }
 
 pub trait IndexStatusArg {
-    fn into_index_status_opts(self) -> Vec<String>;
+    fn into_index_status_opts(self) -> Option<CmdOpts>;
 }
 
 impl IndexStatusArg for () {
-    fn into_index_status_opts(self) -> Vec<String> {
-        Vec::new()
+    fn into_index_status_opts(self) -> Option<CmdOpts> {
+        None
     }
 }
 
 impl IndexStatusArg for &str {
-    fn into_index_status_opts(self) -> Vec<String> {
-        vec![self.to_string()]
+    fn into_index_status_opts(self) -> Option<CmdOpts> {
+        let arg = Command::from_json(self);
+
+        Some(CmdOpts::Single(arg))
     }
 }
 
 impl IndexStatusArg for Vec<&str> {
-    fn into_index_status_opts(self) -> Vec<String> {
-        self.iter().map(|index| index.to_string()).collect()
+    fn into_index_status_opts(self) -> Option<CmdOpts> {
+        let args = self
+            .into_iter()
+            .map(|arg| Command::from_json(arg))
+            .collect();
+
+        Some(CmdOpts::Many(args))
     }
 }
 

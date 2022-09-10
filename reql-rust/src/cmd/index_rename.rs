@@ -4,30 +4,38 @@ use serde::Serialize;
 
 use crate::Command;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl IndexRenameArg) -> Command {
-    let (old_index_name, new_index_name, opts) = args.into_index_rename_opts();
-    let arg_1 = Command::from_json(old_index_name);
-    let arg_2 = Command::from_json(new_index_name);
+    let (old_index_arg, new_index_arg, opts) = args.into_index_rename_opts();
+    let arg_1: Option<Command> = old_index_arg.into();
+    let arg_2: Option<Command> = new_index_arg.into();
 
     Command::new(TermType::IndexRename)
-        .with_arg(arg_1)
-        .with_arg(arg_2)
+        .with_arg(arg_1.unwrap())
+        .with_arg(arg_2.unwrap())
         .with_opts(opts)
 }
 
 pub trait IndexRenameArg {
-    fn into_index_rename_opts(self) -> (String, String, IndexRenameOption);
+    fn into_index_rename_opts(self) -> (CmdOpts, CmdOpts, IndexRenameOption);
 }
 
 impl IndexRenameArg for (&str, &str) {
-    fn into_index_rename_opts(self) -> (String, String, IndexRenameOption) {
-        (self.0.to_string(), self.1.to_string(), Default::default())
+    fn into_index_rename_opts(self) -> (CmdOpts, CmdOpts, IndexRenameOption) {
+        let old_arg = Command::from_json(self.0);
+        let new_arg = Command::from_json(self.1);
+
+        (CmdOpts::Single(old_arg), CmdOpts::Single(new_arg), Default::default())
     }
 }
 
 impl IndexRenameArg for (&str, &str, IndexRenameOption) {
-    fn into_index_rename_opts(self) -> (String, String, IndexRenameOption) {
-        (self.0.to_string(), self.1.to_string(), self.2)
+    fn into_index_rename_opts(self) -> (CmdOpts, CmdOpts, IndexRenameOption) {
+        let old_arg = Command::from_json(self.0);
+        let new_arg = Command::from_json(self.1);
+
+        (CmdOpts::Single(old_arg), CmdOpts::Single(new_arg), self.2)
     }
 }
 

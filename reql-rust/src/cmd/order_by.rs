@@ -6,63 +6,64 @@ use serde::Serialize;
 
 use crate::{types::AnyParam, Command, Func};
 
-pub(crate) fn new(args: impl OrderByArg) -> Command {
-    let (arg, opts) = args.into_order_by_opts();
+use super::CmdOpts;
 
+pub(crate) fn new(args: impl OrderByArg) -> Command {
+    let (args, opts) = args.into_order_by_opts();
     let mut command = Command::new(TermType::OrderBy);
 
-    if let Some(arg) = arg {
-        command = command.with_arg(arg)
+    if let Some(args) = args {
+        command = args.add_to_cmd(command)
     }
 
     command.with_opts(opts)
 }
 
 pub trait OrderByArg {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption);
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption);
 }
 
 impl OrderByArg for OrderByOption {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption) {
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
         (Default::default(), self)
     }
 }
 
 impl OrderByArg for Func {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption) {
-        (Some(self.0), Default::default())
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        (Some(CmdOpts::Single(self.0)), Default::default())
     }
 }
 
 impl OrderByArg for AnyParam {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption) {
-        (Some(self.into()), Default::default())
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        (Some(CmdOpts::Single(self.into())), Default::default())
     }
 }
 
 impl OrderByArg for Command {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption) {
-        (Some(self), Default::default())
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        (Some(CmdOpts::Single(self)), Default::default())
     }
 }
 
 impl OrderByArg for (Func, OrderByOption) {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption) {
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
         let Func(func) = self.0;
 
-        (Some(func), self.1)
+        (Some(CmdOpts::Single(func)), self.1)
     }
 }
 
 impl OrderByArg for (AnyParam, OrderByOption) {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption) {
-        (Some(self.0.into()), self.1)
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        (Some(CmdOpts::Single(self.0.into())), self.1)
     }
 }
 
 impl OrderByArg for (Command, OrderByOption) {
-    fn into_order_by_opts(self) -> (Option<Command>, OrderByOption) {
-        (Some(self.0), self.1)
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        (Some(CmdOpts::Single(self.0)), self.1)
     }
 }
 
@@ -76,8 +77,8 @@ pub struct OrderByOption {
 mod tests {
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
-    use crate::Result;
     use crate::types::AnyParam;
+    use crate::Result;
 
     use super::OrderByOption;
 
@@ -108,7 +109,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-            
+
         assert!(data_obtained == data);
 
         tear_down(conn, TABLE_NAMES[1]).await

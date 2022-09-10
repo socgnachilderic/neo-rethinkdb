@@ -1,4 +1,5 @@
 use ql2::term::TermType;
+use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
 use crate::types::Status;
@@ -51,8 +52,7 @@ impl SliceArg for (isize, isize, SliceOption) {
     }
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
-#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct SliceOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub left_bound: Option<Status>,

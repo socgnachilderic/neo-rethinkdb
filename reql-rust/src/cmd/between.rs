@@ -7,64 +7,96 @@ use serde::Serialize;
 use crate::types::{AnyParam, Status};
 use crate::Command;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl BetweenArg) -> Command {
     let (min_key, max_key, opts) = args.into_between_opts();
+    let min_key: Option<Command> = min_key.into();
+    let max_key: Option<Command> = max_key.into();
 
     Command::new(TermType::Between)
-        .with_arg(min_key)
-        .with_arg(max_key)
+        .with_arg(min_key.unwrap())
+        .with_arg(max_key.unwrap())
         .with_opts(opts)
 }
 
 pub trait BetweenArg {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption);
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption);
 }
 
 impl BetweenArg for (AnyParam, AnyParam) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0.into(), self.1.into(), Default::default())
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (
+            CmdOpts::Single(self.0.into()),
+            CmdOpts::Single(self.1.into()),
+            Default::default(),
+        )
     }
 }
 
 impl BetweenArg for (Command, AnyParam) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0, self.1.into(), Default::default())
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (
+            CmdOpts::Single(self.0),
+            CmdOpts::Single(self.1.into()),
+            Default::default(),
+        )
     }
 }
 
 impl BetweenArg for (AnyParam, Command) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0.into(), self.1, Default::default())
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (
+            CmdOpts::Single(self.0.into()),
+            CmdOpts::Single(self.1),
+            Default::default(),
+        )
     }
 }
 
 impl BetweenArg for (Command, Command) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0, self.1, Default::default())
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (
+            CmdOpts::Single(self.0),
+            CmdOpts::Single(self.1),
+            Default::default(),
+        )
     }
 }
 
 impl BetweenArg for (AnyParam, AnyParam, BetweenOption) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0.into(), self.1.into(), self.2)
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (
+            CmdOpts::Single(self.0.into()),
+            CmdOpts::Single(self.1.into()),
+            self.2,
+        )
     }
 }
 
 impl BetweenArg for (Command, AnyParam, BetweenOption) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0, self.1.into(), self.2)
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (
+            CmdOpts::Single(self.0),
+            CmdOpts::Single(self.1.into()),
+            self.2,
+        )
     }
 }
 
 impl BetweenArg for (AnyParam, Command, BetweenOption) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0.into(), self.1, self.2)
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (
+            CmdOpts::Single(self.0.into()),
+            CmdOpts::Single(self.1),
+            self.2,
+        )
     }
 }
 
 impl BetweenArg for (Command, Command, BetweenOption) {
-    fn into_between_opts(self) -> (Command, Command, BetweenOption) {
-        (self.0, self.1, self.2)
+    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
+        (CmdOpts::Single(self.0), CmdOpts::Single(self.1), self.2)
     }
 }
 
@@ -176,7 +208,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-            
+
         assert!(data_get.len() == data.len());
         assert!(data_get.first() == data.get(3));
         assert!(data_get.last() == data.first());

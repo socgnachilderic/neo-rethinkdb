@@ -63,7 +63,7 @@ pub mod get_all;
 // pub mod get_nearest;
 pub mod get_write_hook;
 // pub mod grant;
-// pub mod group;
+pub mod group;
 // pub mod gt;
 // pub mod has_fields;
 // pub mod hours;
@@ -359,12 +359,9 @@ impl<'a> Command {
         sample::new(number).with_parent(self)
     }
 
-    // fn group<G>(&self, fields: &[&str]) -> cmd::group::GroupBuilder<G, T>
-    // where
-    //     G: Unpin + Serialize + DeserializeOwned,
-    // {
-    //     cmd::group::GroupBuilder::new(fields)._with_parent(self.get_parent())
-    // }
+    pub fn group(self, args: impl group::GroupArg) -> Self {
+        group::new(args).with_parent(self)
+    }
 
     // fn ungroup();
 
@@ -583,6 +580,30 @@ impl<'a> Command {
 
     pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = Result<Value>> {
         Box::pin(run::new(self, arg))
+    }
+}
+
+pub enum CmdOpts {
+    Single(Command),
+    Many(Vec<Command>),
+}
+
+impl CmdOpts {
+    pub(crate) fn add_to_cmd(self, command: Command) -> Command {
+        match self {
+            Self::Single(arg) => command.with_arg(arg),
+            Self::Many(args) => args.into_iter().fold(command, |cmd, arg| cmd.with_arg(arg)),
+        }
+    }
+}
+
+impl Into<Option<Command>> for CmdOpts {
+    fn into(self) -> Option<Command> {
+        if let CmdOpts::Single(arg) = self {
+            Some(arg)
+        } else {
+             None
+        }
     }
 }
 

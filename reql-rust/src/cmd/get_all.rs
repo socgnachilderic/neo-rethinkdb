@@ -6,41 +6,39 @@ use serde::Serialize;
 
 use crate::Command;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl GetAllArg) -> Command {
     let (args, opts) = args.into_get_all_opts();
-    let mut command = Command::new(TermType::GetAll);
 
-    for arg in args {
-        command = command.with_arg(arg);
-    }
-
-    command.with_opts(opts)
+    args.add_to_cmd(Command::new(TermType::GetAll))
+        .with_opts(opts)
 }
 
 pub trait GetAllArg {
-    fn into_get_all_opts(self) -> (Vec<Command>, GetAllOption);
+    fn into_get_all_opts(self) -> (CmdOpts, GetAllOption);
 }
 
 impl<T: Serialize> GetAllArg for Vec<T> {
-    fn into_get_all_opts(self) -> (Vec<Command>, GetAllOption) {
+    fn into_get_all_opts(self) -> (CmdOpts, GetAllOption) {
         let keys = self
             .into_iter()
             .map(|key| Command::from_json(key))
             .collect();
 
-        (keys, Default::default())
+        (CmdOpts::Many(keys), Default::default())
     }
 }
 
 impl<T: Serialize> GetAllArg for (Vec<T>, GetAllOption) {
-    fn into_get_all_opts(self) -> (Vec<Command>, GetAllOption) {
+    fn into_get_all_opts(self) -> (CmdOpts, GetAllOption) {
         let keys = self
             .0
             .into_iter()
             .map(|key| Command::from_json(key))
             .collect();
 
-        (keys, self.1)
+        (CmdOpts::Many(keys), self.1)
     }
 }
 
