@@ -1,53 +1,46 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 
-use crate::ops::ReqlOps;
-use crate::{Command, Func};
+use crate::{types::AnyParam, Command, Func};
 
-#[derive(Debug, Clone)]
-pub struct ContainsBuilder(pub(crate) Command);
+pub(crate) fn new(args: impl ContainsArg) -> Command {
+    let (sequence, arg) = args.into_contains_opts();
+    let mut command = Command::new(TermType::Contains);
 
-impl ContainsBuilder {
-    pub(crate) fn new(values: impl Serialize) -> Self {
-        let arg = Command::from_json(values);
-        let command = Command::new(TermType::Contains).with_arg(arg);
-        Self(command)
+    if let Some(seq) = sequence {
+        command = command.with_arg(seq)
     }
 
-    pub(crate) fn new_by_func(funcs: Vec<Func>) -> Self {
-        let mut command = Command::new(TermType::Contains);
+    command.with_arg(arg)
+}
 
-        for func in funcs.into_iter() {
-            let Func(func) = func;
-            command = command.with_arg(func);
-        }
+pub trait ContainsArg {
+    fn into_contains_opts(self) -> (Option<Command>, Command);
+}
 
-        Self(command)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<bool>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<bool>> {
-        self.get_parent().run::<_, bool>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+impl ContainsArg for AnyParam {
+    fn into_contains_opts(self) -> (Option<Command>, Command) {
+        (None, self.into())
     }
 }
 
-impl ReqlOps for ContainsBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+impl ContainsArg for Func {
+    fn into_contains_opts(self) -> (Option<Command>, Command) {
+        (None, self.0)
     }
 }
 
-impl Into<Command> for ContainsBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+impl ContainsArg for (Command, AnyParam) {
+    fn into_contains_opts(self) -> (Option<Command>, Command) {
+        (Some(self.0), self.1.into())
     }
 }
+
+impl ContainsArg for (Command, Func) {
+    fn into_contains_opts(self) -> (Option<Command>, Command) {
+        let Func(func) = self.1;
+
+        (Some(self.0), func)
+    }
+}
+
+// TODO write test

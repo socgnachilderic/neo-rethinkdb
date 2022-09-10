@@ -56,6 +56,7 @@ impl UnionArg for (AnyParam, UnionOption) {
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct UnionOption {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub interleave: Option<Interleave>,
 }
 

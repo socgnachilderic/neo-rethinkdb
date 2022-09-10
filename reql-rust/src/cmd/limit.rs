@@ -26,7 +26,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-            
+
         assert!(data_obtained.first() == data.first());
 
         tear_down(conn, TABLE_NAMES[0]).await

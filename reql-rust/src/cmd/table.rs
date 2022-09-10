@@ -10,7 +10,8 @@ use super::CmdOpts;
 pub(crate) fn new(args: impl TableArg) -> Command {
     let (args, opts) = args.into_table_opts();
 
-    args.add_to_cmd(Command::new(TermType::Table)).with_opts(opts)
+    args.add_to_cmd(Command::new(TermType::Table))
+        .with_opts(opts)
 }
 
 pub trait TableArg {

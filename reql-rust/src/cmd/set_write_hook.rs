@@ -1,16 +1,16 @@
 use ql2::term::TermType;
 
-use crate::{Command, Func, types::Binary};
+use crate::{types::Binary, Command, Func};
 
 use super::CmdOpts;
 
 pub(crate) fn new(args: Option<impl SetWriteHookArg>) -> Command {
     let mut command = Command::new(TermType::SetWriteHook);
-    
+
     if let Some(arg) = args {
         command = arg.into_set_write_hook_opts().add_to_cmd(command);
     }
-    
+
     command
 }
 

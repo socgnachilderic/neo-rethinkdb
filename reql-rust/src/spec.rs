@@ -1,8 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{r, Command, Result, Session};
 use crate::cmd::insert::InsertOption;
-use crate::types::{Durability, AnyParam};
+use crate::types::{AnyParam, Durability};
+use crate::{r, Command, Result, Session};
 
 pub const TABLE_NAMES: [&'static str; 6] = [
     "malik",
@@ -18,11 +18,11 @@ pub async fn set_up(table_name: &str, with_data: bool) -> Result<(Session, Comma
     let table = r.table(table_name);
 
     r.table_create(table_name).run(&conn).await?;
-    
+
     if with_data {
         let data = Post::get_many_data();
         let insert_option = InsertOption::default().durability(Durability::Soft);
-        
+
         table.clone().index_create("title").run(&conn).await?;
         table.clone().index_wait(()).run(&conn).await?;
         table

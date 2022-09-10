@@ -1,54 +1,43 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
 
-use crate::ops::ReqlOps;
+use crate::types::AnyParam;
 use crate::{Command, Func};
 
-#[derive(Debug, Clone)]
-pub struct ReduceBuilder<A>(pub(crate) Command, pub(crate) PhantomData<A>);
+pub(crate) fn new(args: impl ReduceArg) -> Command {
+    let (sequence, func) = args.into_reduce_opts();
+    let mut command = Command::new(TermType::Reduce);
 
-impl<A: Unpin + DeserializeOwned> ReduceBuilder<A> {
-    pub(crate) fn new(func: Func) -> Self {
-        let Func(func) = func;
-        let command = Command::new(TermType::Reduce).with_arg(func);
-
-        Self(command, PhantomData)
+    if let Some(seq) = sequence {
+        command = command.with_arg(seq)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<A>> {
-        self.make_query(arg).try_next().await
-    }
+    command.with_arg(func)
+}
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<A>> {
-        self.get_parent().run::<_, A>(arg)
-    }
+pub trait ReduceArg {
+    fn into_reduce_opts(self) -> (Option<Command>, Command);
+}
 
-    pub fn with_sequences(mut self, sequences: &[impl Serialize]) -> Self {
-        for seq in sequences {
-            let arg = Command::from_json(seq);
-            self.0 = self.0.with_arg(arg)
-        }
-
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+impl ReduceArg for Func {
+    fn into_reduce_opts(self) -> (Option<Command>, Command) {
+        (None, self.0)
     }
 }
 
-impl<A> ReqlOps for ReduceBuilder<A> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+impl ReduceArg for (Command, Func) {
+    fn into_reduce_opts(self) -> (Option<Command>, Command) {
+        let Func(func) = self.1;
+
+        (Some(self.0), func)
     }
 }
 
-impl<T> Into<Command> for ReduceBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+impl ReduceArg for (AnyParam, Func) {
+    fn into_reduce_opts(self) -> (Option<Command>, Command) {
+        let Func(func) = self.1;
+
+        (Some(self.0.into()), func)
     }
 }
+
+// TODO write test

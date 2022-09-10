@@ -1,69 +1,31 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
 
-use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
-use crate::types::{Sequence, UngroupResponseType};
-use crate::{Command, Result};
+use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct UngroupBuilder<G, V>(
-    pub(crate) Command,
-    pub(crate) PhantomData<G>,
-    pub(crate) PhantomData<V>,
-);
-
-impl<G, V> UngroupBuilder<G, V>
-where
-    G: Unpin + Serialize + DeserializeOwned,
-    V: Unpin + Serialize + DeserializeOwned,
-{
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::Ungroup);
-
-        Self(command, PhantomData, PhantomData)
-    }
-
-    pub async fn run(
-        self,
-        arg: impl super::run::Arg,
-    ) -> Result<Option<Sequence<UngroupResponseType<G, V>>>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = Result<Sequence<UngroupResponseType<G, V>>>> {
-        self.get_parent()
-            .run::<_, Sequence<UngroupResponseType<G, V>>>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+pub(crate) fn new() -> Command {
+    Command::new(TermType::Ungroup)
 }
 
-impl<G, V> ReqlOpsSequence<UngroupResponseType<G, V>> for UngroupBuilder<G, V>
-where
-    G: Unpin + Serialize + DeserializeOwned,
-    V: Unpin + Serialize + DeserializeOwned,
-{
-}
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::types::UngroupItem;
+    use crate::Result;
 
-impl<G, V> ReqlOpsDocManipulation for UngroupBuilder<G, V> {}
+    #[tokio::test]
+    async fn test_ungroup_data() -> Result<()> {
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: Vec<UngroupItem<String, Post>> = table
+            .group("title")
+            .ungroup()
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-impl<G, V> ReqlOps for UngroupBuilder<G, V> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
+        assert!(data_obtained.len() == 4);
 
-impl<G, V> Into<Command> for UngroupBuilder<G, V> {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

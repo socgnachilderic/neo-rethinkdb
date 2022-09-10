@@ -9,7 +9,6 @@ pub(crate) fn new(args: impl IndexWaitArg) -> Command {
     if let Some(args) = args.into_index_wait_opts() {
         command = args.add_to_cmd(command)
     }
-    
 
     command
 }

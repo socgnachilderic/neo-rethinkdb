@@ -2,15 +2,16 @@ use ql2::term::TermType;
 use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::{Durability, ReturnChanges, AnyParam};
+use crate::types::{AnyParam, Durability, ReturnChanges};
 use crate::Command;
 
 use super::CmdOpts;
 
 pub(crate) fn new(args: impl ReplaceArg) -> Command {
     let (args, opts) = args.into_replace_opts();
-    
-    args.add_to_cmd(Command::new(TermType::Replace)).with_opts(opts)
+
+    args.add_to_cmd(Command::new(TermType::Replace))
+        .with_opts(opts)
 }
 
 pub trait ReplaceArg {

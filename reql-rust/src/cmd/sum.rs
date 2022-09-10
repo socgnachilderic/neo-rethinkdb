@@ -1,52 +1,82 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::ops::ReqlOps;
 use crate::{Command, Func};
 
-#[derive(Debug, Clone)]
-pub struct SumBuilder(pub(crate) Command);
+pub(crate) fn new(args: impl SumArg) -> Command {
+    let (arg1, arg2) = args.into_sum_opts();
+    let mut command = Command::new(TermType::Sum);
 
-impl SumBuilder {
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::Sum);
-        Self(command)
+    if let Some(arg) = arg1 {
+        command = command.with_arg(arg)
     }
 
-    pub(crate) fn new_by_field(field_name: &str) -> Self {
-        let arg = Command::from_json(field_name);
-        let command = Command::new(TermType::Sum).with_arg(arg);
-        Self(command)
+    if let Some(arg) = arg2 {
+        command = command.with_arg(arg)
     }
 
-    pub(crate) fn new_by_func(func: Func) -> Self {
-        let Func(func) = func;
-        let command = Command::new(TermType::Sum).with_arg(func);
-        Self(command)
-    }
+    command
+}
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<f64>> {
-        self.make_query(arg).try_next().await
-    }
+pub trait SumArg {
+    fn into_sum_opts(self) -> (Option<Command>, Option<Command>);
+}
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<f64>> {
-        self.get_parent().run::<_, f64>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+impl SumArg for () {
+    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
+        (None, None)
     }
 }
 
-impl ReqlOps for SumBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+impl SumArg for &str {
+    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
+        let arg = Command::from_json(self);
+
+        (None, Some(arg))
     }
 }
 
-impl Into<Command> for SumBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+impl SumArg for Func {
+    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
+        (None, Some(self.0))
+    }
+}
+
+impl SumArg for Command {
+    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
+        (Some(self), None)
+    }
+}
+
+impl SumArg for (Command, &str) {
+    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
+        let arg = Command::from_json(self.1);
+
+        (Some(self.0), Some(arg))
+    }
+}
+
+impl SumArg for (Command, Func) {
+    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
+        let Func(func) = self.1;
+
+        (Some(self.0), Some(func))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
+
+    #[tokio::test]
+    async fn test_sum_data() -> Result<()> {
+        let data: u8 = Post::get_many_data().iter().map(|post| post.view).sum();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: u8 = table.sum("view").run(&conn).await?.unwrap().parse()?;
+
+        assert!(data_obtained == data);
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

@@ -7,7 +7,7 @@ use uuid::Uuid;
 // pub use crate::cmd::point::Point;
 // pub use crate::cmd::polygon::Polygon;
 // pub use document::Document;
-// pub use group_stream::{GroupItem, GroupStream};
+pub use group_stream::{GroupItem, GroupStream};
 // pub use sequence::Sequence;
 // pub use datetime::DateTime;
 pub use binary::Binary;
@@ -15,7 +15,7 @@ pub use binary::Binary;
 use crate::Command;
 
 // mod document;
-// mod group_stream;
+mod group_stream;
 // mod sequence;
 // mod datetime;
 mod binary;
@@ -104,7 +104,7 @@ pub struct WriteHookResponse {
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
-pub struct UngroupResponseType<G, V> {
+pub struct UngroupItem<G, V> {
     pub group: G,
     pub reduction: Vec<V>,
 }
@@ -115,12 +115,12 @@ pub struct SyncResponse {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct WaitResponseType {
-    ready: usize,
+pub struct WaitResponse {
+    pub ready: usize,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct JoinResponseType<L, R> {
+pub struct JoinResponse<L, R> {
     pub left: Option<L>,
     pub right: Option<R>,
 }

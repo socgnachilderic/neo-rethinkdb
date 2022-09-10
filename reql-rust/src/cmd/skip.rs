@@ -4,7 +4,7 @@ use crate::Command;
 
 pub(crate) fn new(step: usize) -> Command {
     let arg = Command::from_json(step);
-    
+
     Command::new(TermType::Skip).with_arg(arg)
 }
 
@@ -24,7 +24,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-            
+
         assert!(data_obtained.first() == data.first());
 
         tear_down(conn, TABLE_NAMES[0]).await

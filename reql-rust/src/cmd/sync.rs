@@ -10,7 +10,7 @@ pub(crate) fn new() -> Command {
 mod tests {
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, TABLE_NAMES};
-    use crate::types::{SyncResponse};
+    use crate::types::SyncResponse;
     use crate::Result;
 
     #[tokio::test]

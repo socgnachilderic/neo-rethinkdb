@@ -15,12 +15,7 @@ mod tests {
     #[tokio::test]
     async fn test_is_empty() -> Result<()> {
         let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
-        let data_obtained: bool = table
-            .is_empty()
-            .run(&conn)
-            .await?
-            .unwrap()
-            .parse()?;
+        let data_obtained: bool = table.is_empty().run(&conn).await?.unwrap().parse()?;
 
         assert!(!data_obtained);
 

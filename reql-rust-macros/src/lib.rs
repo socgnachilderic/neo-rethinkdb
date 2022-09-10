@@ -1,6 +1,6 @@
+mod document;
 mod func;
 mod options;
-mod document;
 
 use func::Func;
 use proc_macro::TokenStream;

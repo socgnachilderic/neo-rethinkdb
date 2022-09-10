@@ -70,6 +70,7 @@ impl OrderByArg for (Command, OrderByOption) {
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 #[non_exhaustive]
 pub struct OrderByOption {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub index: Option<Cow<'static, str>>,
 }
 

@@ -13,15 +13,20 @@ mod tests {
     use crate::prelude::*;
     use crate::types::DbResponse;
     use crate::{r, Result};
-    
+
     #[tokio::test]
     async fn test_drop_table() -> Result<()> {
         let table_name: &str = "malik";
         let conn = r.connection().connect().await?;
-        
+
         r.table_create(table_name).run(&conn).await?;
 
-        let table_dropped: DbResponse = r.table_drop(table_name).run(&conn).await?.unwrap().parse()?;
+        let table_dropped: DbResponse = r
+            .table_drop(table_name)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
         assert!(table_dropped.tables_dropped > Some(0));
 

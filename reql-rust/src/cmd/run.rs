@@ -1,6 +1,6 @@
 use std::borrow::Cow;
-use std::{str, mem};
 use std::sync::atomic::Ordering;
+use std::{mem, str};
 
 use async_stream::try_stream;
 use futures::io::{AsyncReadExt, AsyncWriteExt};
@@ -239,13 +239,14 @@ impl Connection {
     ) -> Result<(ResponseType, Response)> {
         let buf = query.encode(self.token)?;
         let mut stream = self.session.inner.stream.lock().await;
-        let tls_stream  = mem::take(&mut stream.tls_stream);
+        let tls_stream = mem::take(&mut stream.tls_stream);
 
         trace!("sending query; token: {}, payload: {}", self.token, query);
         if let Some(tcp_stream) = tls_stream {
             self.tcp_ops(tcp_stream, buf, noreply, db_token).await
         } else {
-            self.tcp_ops(stream.stream.clone(), buf, noreply, db_token).await
+            self.tcp_ops(stream.stream.clone(), buf, noreply, db_token)
+                .await
         }
     }
 

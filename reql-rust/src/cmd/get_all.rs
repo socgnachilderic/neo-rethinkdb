@@ -44,6 +44,7 @@ impl<T: Serialize> GetAllArg for (Vec<T>, GetAllOption) {
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct GetAllOption {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub index: Option<Cow<'static, str>>,
 }
 

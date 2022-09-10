@@ -84,4 +84,3 @@ mod tests {
         tear_down(conn, TABLE_NAMES[0]).await
     }
 }
-

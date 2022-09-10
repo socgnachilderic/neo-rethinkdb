@@ -3,7 +3,7 @@
 // pub mod append;
 pub mod args;
 // pub mod asc;
-// pub mod avg;
+pub mod avg;
 pub mod between;
 // pub mod binary;
 // pub mod bit_and;
@@ -22,8 +22,8 @@ pub mod between;
 pub mod concat_map;
 // pub mod config;
 pub mod connect;
-// pub mod contains;
-// pub mod count;
+pub mod contains;
+pub mod count;
 // pub mod date;
 // pub mod day;
 // pub mod day_of_week;
@@ -38,7 +38,7 @@ pub mod delete;
 // pub mod desc;
 // pub mod difference;
 // pub mod distance;
-// pub mod distinct;
+pub mod distinct;
 // pub mod div;
 // pub mod do_;
 // pub mod downcase;
@@ -51,7 +51,7 @@ pub mod expr;
 // pub mod fill;
 pub mod filter;
 // pub mod floor;
-// pub mod fold;
+pub mod fold;
 // pub mod for_each;
 pub(crate) mod func;
 // pub mod ge;
@@ -94,9 +94,9 @@ pub mod limit;
 // pub mod lt;
 pub mod map;
 // pub mod match_;
-// pub mod max;
+pub mod max;
 // pub mod merge;
-// pub mod min;
+pub mod min;
 // pub mod minutes;
 // pub mod month;
 // pub mod mul;
@@ -118,7 +118,7 @@ pub mod outer_join;
 // pub mod range;
 // pub mod rebalance;
 // pub mod reconfigure;
-// pub mod reduce;
+pub mod reduce;
 // pub mod rem;
 pub mod replace;
 // pub mod round;
@@ -136,7 +136,7 @@ pub mod slice;
 // pub mod split;
 // pub mod status;
 // pub mod sub;
-// pub mod sum;
+pub mod sum;
 pub mod sync;
 pub mod table;
 pub mod table_create;
@@ -150,7 +150,7 @@ pub mod table_list;
 // pub mod to_iso8601;
 // pub mod to_json;
 // pub mod type_of;
-// pub mod ungroup;
+pub mod ungroup;
 pub mod union;
 // pub mod upcase;
 pub mod update;
@@ -174,10 +174,10 @@ use serde::Serialize;
 use serde_json::Value;
 
 pub use crate::proto::Arg;
+use crate::types::AnyParam;
 use crate::Command;
 use crate::Func;
 use crate::Result;
-use crate::types::AnyParam;
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
@@ -363,48 +363,45 @@ impl<'a> Command {
         group::new(args).with_parent(self)
     }
 
-    // fn ungroup();
+    pub fn ungroup(self) -> Self {
+        ungroup::new().with_parent(self)
+    }
 
-    // fn reduce<A>(&self, func: Func) -> cmd::reduce::ReduceBuilder<A>
-    // where
-    //     A: Unpin + Serialize + DeserializeOwned,
-    // {
-    //     cmd::reduce::ReduceBuilder::new(func)._with_parent(self.get_parent())
-    // }
+    pub fn reduce(self, func: Func) -> Self {
+        reduce::new(func).with_parent(self)
+    }
 
-    // fn fold<A, B>(&self, base: A, func: Func) -> cmd::fold::FoldBuilder<A, B>
-    // where
-    //     A: Serialize,
-    //     B: Unpin + Serialize + DeserializeOwned,
-    // {
-    //     cmd::fold::FoldBuilder::new(base, func)._with_parent(self.get_parent())
-    // }
+    pub fn fold(self, base: AnyParam, func: Func) -> Self {
+        fold::new(base, func).with_parent(self)
+    }
 
-    // fn count();
+    pub fn count(self, args: impl count::CountArg) -> Self {
+        count::new(args).with_parent(self)
+    }
 
-    // fn sum(&self) -> cmd::sum::SumBuilder {
-    //     cmd::sum::SumBuilder::new()._with_parent(self.get_parent())
-    // }
+    pub fn sum(self, args: impl sum::SumArg) -> Self {
+        sum::new(args).with_parent(self)
+    }
 
-    // fn avg(&self) -> cmd::avg::AvgBuilder {
-    //     cmd::avg::AvgBuilder::new()._with_parent(self.get_parent())
-    // }
+    pub fn avg(self, args: impl avg::AvgArg) -> Self {
+        avg::new(args).with_parent(self)
+    }
 
-    // fn min(&self) -> cmd::min::MinBuilder<T> {
-    //     cmd::min::MinBuilder::new()._with_parent(self.get_parent())
-    // }
+    pub fn min(self, args: impl min::MinArg) -> Self {
+        min::new(args).with_parent(self)
+    }
 
-    // fn max(&self) -> cmd::max::MaxBuilder<T> {
-    //     cmd::max::MaxBuilder::new()._with_parent(self.get_parent())
-    // }
+    pub fn max(self, args: impl max::MaxArg) -> Self {
+        max::new(args).with_parent(self)
+    }
 
-    // fn distinct(&self) -> cmd::distinct::DistinctBuilder<Sequence<T>> {
-    //     cmd::distinct::DistinctBuilder::new()._with_parent(self.get_parent())
-    // }
+    pub fn distinct(self, args: impl distinct::DistinctArg) -> Self {
+        distinct::new(args).with_parent(self)
+    }
 
-    // fn contains(&self, values: impl Serialize) -> cmd::contains::ContainsBuilder {
-    //     cmd::contains::ContainsBuilder::new(values)._with_parent(self.get_parent())
-    // }
+    pub fn contains(self, args: impl contains::ContainsArg) -> Self {
+        contains::new(args).with_parent(self)
+    }
 
     // fn keys(&self) -> cmd::keys::KeysBuilder {
     //     cmd::keys::KeysBuilder::new()._with_parent(self.get_parent())
@@ -602,7 +599,7 @@ impl Into<Option<Command>> for CmdOpts {
         if let CmdOpts::Single(arg) = self {
             Some(arg)
         } else {
-             None
+            None
         }
     }
 }

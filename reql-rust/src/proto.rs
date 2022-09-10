@@ -132,7 +132,9 @@ impl Command {
     where
         T: Serialize,
     {
-        serde_json::to_value(arg).map_err(super::ReqlError::from).into()
+        serde_json::to_value(arg)
+            .map_err(super::ReqlError::from)
+            .into()
     }
 
     pub(crate) fn mark_change_feed(mut self) -> Self {

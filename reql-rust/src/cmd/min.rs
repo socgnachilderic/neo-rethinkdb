@@ -1,81 +1,90 @@
-use std::{borrow::Cow, marker::PhantomData};
+use std::borrow::Cow;
 
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
+use reql_rust_macros::CommandOptions;
+use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsObject};
 use crate::{Command, Func};
 
-use super::StaticString;
+pub(crate) fn new(args: impl MinArg) -> Command {
+    let (arg1, arg2, opts) = args.into_min_opts();
+    let mut command = Command::new(TermType::Min);
 
-#[derive(Debug, Clone)]
-pub struct MinBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
+    if let Some(arg) = arg1 {
+        command = command.with_arg(arg)
+    }
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub(crate) struct MinOption {
+    if let Some(arg) = arg2 {
+        command = command.with_arg(arg)
+    }
+
+    command.with_opts(opts)
+}
+
+pub trait MinArg {
+    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption);
+}
+
+impl MinArg for &str {
+    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
+        let arg = Command::from_json(self);
+
+        (None, Some(arg), Default::default())
+    }
+}
+
+impl MinArg for Func {
+    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
+        (None, Some(self.0), Default::default())
+    }
+}
+
+impl MinArg for MinOption {
+    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
+        (None, None, self)
+    }
+}
+
+impl MinArg for (Command, &str) {
+    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
+        let arg = Command::from_json(self.1);
+
+        (Some(self.0), Some(arg), Default::default())
+    }
+}
+
+impl MinArg for (Command, Func) {
+    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
+        (Some(self.0), None, Default::default())
+    }
+}
+
+impl MinArg for (Command, MinOption) {
+    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
+        (Some(self.0), None, self.1)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
+pub struct MinOption {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub index: Option<Cow<'static, str>>,
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> MinBuilder<T> {
-    pub(crate) fn new() -> Self {
-        Self::constructor(None)
-    }
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
 
-    pub(crate) fn new_by_value(field_name: &str) -> Self {
-        let arg = Command::from_json(field_name);
-        Self::constructor(Some(arg))
-    }
+    #[tokio::test]
+    async fn test_min_data() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: Post = table.min("view").run(&conn).await?.unwrap().parse()?;
 
-    pub(crate) fn new_by_func(func: Func) -> Self {
-        let Func(func) = func;
-        Self::constructor(Some(func))
-    }
+        assert!(Some(&data_obtained) == data.last());
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
-        self.get_parent().run::<_, T>(arg)
-    }
-
-    pub fn with_index(mut self, index: &'static str) -> Self {
-        let index = Some(index.static_string());
-        let index = MinOption { index };
-
-        self.0 = self.0.with_opts(index);
-
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-
-    fn constructor(arg: Option<Command>) -> Self {
-        let mut command = Command::new(TermType::Min);
-
-        if let Some(arg) = arg {
-            command = command.with_arg(arg)
-        }
-
-        Self(command, PhantomData)
-    }
-}
-
-impl<T> ReqlOpsObject<T> for MinBuilder<T> {}
-
-impl<T> ReqlOps for MinBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
-
-impl<T> Into<Command> for MinBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

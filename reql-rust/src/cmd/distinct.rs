@@ -1,67 +1,81 @@
 use std::borrow::Cow;
-use std::marker::PhantomData;
 
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::de::DeserializeOwned;
+use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::ops::{ReqlOpsSequence, ReqlOps, ReqlOpsDocManipulation};
 use crate::Command;
 
-use super::StaticString;
+pub(crate) fn new(args: impl DistinctArg) -> Command {
+    let (args, opts) = args.into_distinct_opts();
+    let mut command = Command::new(TermType::Distinct);
 
-#[derive(Debug, Clone)]
-pub struct DistinctBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
+    if let Some(arg) = args {
+        command = command.with_arg(arg)
+    }
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
-#[non_exhaustive]
+    command.with_opts(opts)
+}
+
+pub trait DistinctArg {
+    fn into_distinct_opts(self) -> (Option<Command>, DistinctOption);
+}
+
+impl DistinctArg for () {
+    fn into_distinct_opts(self) -> (Option<Command>, DistinctOption) {
+        (None, Default::default())
+    }
+}
+
+impl DistinctArg for DistinctOption {
+    fn into_distinct_opts(self) -> (Option<Command>, DistinctOption) {
+        (None, self)
+    }
+}
+
+impl DistinctArg for Command {
+    fn into_distinct_opts(self) -> (Option<Command>, DistinctOption) {
+        (Some(self), Default::default())
+    }
+}
+
+impl DistinctArg for (Command, DistinctOption) {
+    fn into_distinct_opts(self) -> (Option<Command>, DistinctOption) {
+        (Some(self.0), self.1)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct DistinctOption {
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub index: Option<Cow<'static, str>>,
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> DistinctBuilder<T> {
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::Distinct);
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
 
-        Self(command, PhantomData)
-    }
+    use super::DistinctOption;
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
+    #[tokio::test]
+    async fn test_distinct_data() -> Result<()> {
+        let mut data = Post::get_many_data()
+            .into_iter()
+            .map(|post| post.title)
+            .collect::<Vec<String>>();
+        data.pop();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: Vec<String> = table
+            .distinct(DistinctOption::default().index("title"))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
-        self.get_parent().run::<_, T>(arg)
-    }
+        assert!(data_obtained == data);
 
-    pub fn with_index(mut self, index: &'static str) -> Self {
-        let index = Some(index.static_string());
-        let index = DistinctOption { index };
-        
-        self.0 = self.0.with_opts(index);
-
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for DistinctBuilder<T> {}
-
-impl<T> ReqlOpsDocManipulation for DistinctBuilder<T> { }
-
-impl<T> ReqlOps for DistinctBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
-
-impl<T> Into<Command> for DistinctBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

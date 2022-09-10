@@ -1,53 +1,81 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 
-use crate::ops::ReqlOps;
+use crate::types::AnyParam;
 use crate::{Command, Func};
 
-#[derive(Debug, Clone)]
-pub struct CountBuilder(pub(crate) Command);
+pub(crate) fn new(args: impl CountArg) -> Command {
+    let mut command = Command::new(TermType::Count);
+    let (arg1, arg2) = args.into_count_arg();
 
-impl CountBuilder {
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::Count);
-        Self(command)
+    if let Some(arg) = arg1 {
+        command = command.with_arg(arg)
     }
 
-    pub(crate) fn new_by_value(value: impl Serialize) -> Self {
-        let arg = Command::from_json(value);
-        let command = Command::new(TermType::Count).with_arg(arg);
-        Self(command)
+    if let Some(arg) = arg2 {
+        command = command.with_arg(arg)
     }
 
-    pub(crate) fn new_by_func(func: Func) -> Self {
-        let Func(func) = func;
-        let command = Command::new(TermType::Count).with_arg(func);
-        Self(command)
-    }
+    command
+}
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<usize>> {
-        self.make_query(arg).try_next().await
-    }
+pub trait CountArg {
+    fn into_count_arg(self) -> (Option<Command>, Option<Command>);
+}
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<usize>> {
-        self.get_parent().run::<_, usize>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+impl CountArg for () {
+    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
+        (None, None)
     }
 }
 
-impl ReqlOps for CountBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+impl CountArg for AnyParam {
+    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
+        (Some(self.into()), None)
     }
 }
 
-impl Into<Command> for CountBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+impl CountArg for Command {
+    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
+        (Some(self), None)
+    }
+}
+
+impl CountArg for Func {
+    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
+        (Some(self.0), None)
+    }
+}
+
+impl CountArg for (AnyParam, Func) {
+    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
+        let Func(func) = self.1;
+
+        (Some(self.0.into()), Some(func))
+    }
+}
+
+impl CountArg for (Command, Func) {
+    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
+        let Func(func) = self.1;
+
+        (Some(self.0), Some(func))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
+
+    #[tokio::test]
+    async fn test_count_data() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: usize = table.count(()).run(&conn).await?.unwrap().parse()?;
+
+        assert!(data_obtained == data.len());
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

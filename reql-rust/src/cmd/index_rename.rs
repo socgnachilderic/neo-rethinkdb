@@ -26,7 +26,11 @@ impl IndexRenameArg for (&str, &str) {
         let old_arg = Command::from_json(self.0);
         let new_arg = Command::from_json(self.1);
 
-        (CmdOpts::Single(old_arg), CmdOpts::Single(new_arg), Default::default())
+        (
+            CmdOpts::Single(old_arg),
+            CmdOpts::Single(new_arg),
+            Default::default(),
+        )
     }
 }
 

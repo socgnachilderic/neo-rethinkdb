@@ -86,6 +86,38 @@ impl r {
         cmd::union::new(args)
     }
 
+    pub fn reduce(self, args: impl cmd::reduce::ReduceArg) -> Command {
+        cmd::reduce::new(args)
+    }
+
+    pub fn count(self, args: impl cmd::count::CountArg) -> Command {
+        cmd::count::new(args)
+    }
+
+    pub fn sum(self, args: impl cmd::sum::SumArg) -> Command {
+        cmd::sum::new(args)
+    }
+
+    pub fn avg(self, args: impl cmd::avg::AvgArg) -> Command {
+        cmd::avg::new(args)
+    }
+
+    pub fn min(self, args: impl cmd::min::MinArg) -> Command {
+        cmd::min::new(args)
+    }
+
+    pub fn max(self, args: impl cmd::max::MaxArg) -> Command {
+        cmd::max::new(args)
+    }
+
+    pub fn distinct(self, args: impl cmd::distinct::DistinctArg) -> Command {
+        cmd::distinct::new(args)
+    }
+
+    pub fn contains(self, args: impl cmd::contains::ContainsArg) -> Command {
+        cmd::contains::new(args)
+    }
+
     /* pub fn literal(self, document: impl Serialize) -> String {
     //     cmd::literal::LiteralBuilder::new(document)
     // }

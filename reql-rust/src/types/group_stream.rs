@@ -4,7 +4,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 
 #[derive(Debug, Default, Clone, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct GroupStream<G, V>(Vec<GroupItem<G, V>>);
+pub struct GroupStream<G: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
+    Vec<GroupItem<G, V>>,
+);
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct GroupItem<G, V> {
@@ -28,25 +30,35 @@ where
         Deserialize::deserialize(deserializer).map(|item| {
             let inner: InnerGroup = item;
 
-            let data: Vec<GroupItem<G, V>> = inner.data.into_iter().map(|item| {                
-                let group: G = serde_json::from_value(item[0].clone()).unwrap();
-                let values: Vec<V> = serde_json::from_value(item[1].clone()).unwrap();
-                
-                GroupItem {
-                    group,
-                    values
-                }
-            }).collect();
-            
+            let data: Vec<GroupItem<G, V>> = inner
+                .data
+                .into_iter()
+                .map(|item| {
+                    let group: G = serde_json::from_value(item[0].clone()).unwrap();
+                    let values: Vec<V> = serde_json::from_value(item[1].clone()).unwrap();
+
+                    GroupItem { group, values }
+                })
+                .collect();
 
             GroupStream(data)
         })
     }
 }
 
+impl<G, V> GroupStream<G, V>
+where
+    G: DeserializeOwned + Serialize,
+    V: DeserializeOwned + Serialize,
+{
+    pub fn collect(self) -> Vec<GroupItem<G, V>> {
+        self.0
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use serde::{Serialize, Deserialize};
+    use serde::{Deserialize, Serialize};
 
     use super::GroupStream;
 
@@ -110,6 +122,5 @@ mod tests {
 
         let elememt: GroupStream<u8, Posts> = serde_json::from_str(data).unwrap();
         dbg!(elememt);
-    
     }
 }

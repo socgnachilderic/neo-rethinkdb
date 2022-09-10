@@ -42,7 +42,7 @@ mod tests {
             .parse()?;
 
         data_obtained.sort_by(|a, b| a.id.cmp(&b.id));
-        
+
         assert!(data_obtained == data);
 
         tear_down(conn, TABLE_NAMES[0]).await

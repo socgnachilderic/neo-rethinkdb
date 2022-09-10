@@ -6,7 +6,8 @@ use crate::{Command, Func};
 use super::CmdOpts;
 
 pub(crate) fn new(args: impl OffsetsOfArg) -> Command {
-    args.into_offsets_of_opts().add_to_cmd(Command::new(TermType::OffsetsOf))
+    args.into_offsets_of_opts()
+        .add_to_cmd(Command::new(TermType::OffsetsOf))
 }
 
 pub trait OffsetsOfArg {

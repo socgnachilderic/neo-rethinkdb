@@ -1,8 +1,8 @@
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 enum Byte {
-    BINARY
+    BINARY,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
