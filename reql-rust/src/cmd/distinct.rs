@@ -16,7 +16,7 @@ pub struct DistinctBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub(crate) struct DistinctOption {
+pub struct DistinctOption {
     pub index: Option<Cow<'static, str>>,
 }
 

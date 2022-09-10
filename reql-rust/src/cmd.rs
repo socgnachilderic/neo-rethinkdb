@@ -19,7 +19,7 @@ pub mod between;
 // pub mod changes;
 // pub mod circle;
 // pub mod coerce_to;
-// pub mod concat_map;
+pub mod concat_map;
 // pub mod config;
 pub mod connect;
 // pub mod contains;
@@ -45,7 +45,7 @@ pub mod delete;
 // pub mod during;
 // pub mod epoch_time;
 // pub mod eq;
-// pub mod eq_join;
+pub mod eq_join;
 // pub mod error;
 pub mod expr;
 // pub mod fill;
@@ -78,21 +78,21 @@ pub mod index_rename;
 pub mod index_status;
 pub mod index_wait;
 // pub mod info;
-// pub mod inner_join;
+pub mod inner_join;
 pub mod insert;
 // pub mod insert_at;
 // pub mod intersects;
-// pub mod is_empty;
+pub mod is_empty;
 // pub mod iso8601;
 // pub mod js;
 // pub mod json;
 // pub mod keys;
 // pub mod le;
-// pub mod limit;
+pub mod limit;
 // pub mod line;
 // pub mod literal;
 // pub mod lt;
-// pub mod map;
+pub mod map;
 // pub mod match_;
 // pub mod max;
 // pub mod merge;
@@ -103,12 +103,12 @@ pub mod insert;
 // pub mod ne;
 // pub mod not;
 // pub mod now;
-// pub mod nth;
+pub mod nth;
 // pub mod object;
-// pub mod offsets_of;
+pub mod offsets_of;
 // pub mod or;
-// pub mod order_by;
-// pub mod outer_join;
+pub mod order_by;
+pub mod outer_join;
 // pub mod pluck;
 // pub mod point;
 // pub mod polygon;
@@ -123,15 +123,15 @@ pub mod insert;
 pub mod replace;
 // pub mod round;
 pub mod run;
-// pub mod sample;
+pub mod sample;
 // pub mod seconds;
 // pub mod set_difference;
 // pub mod set_insert;
 // pub mod set_intersection;
 // pub mod set_union;
 pub mod set_write_hook;
-// pub mod skip;
-// pub mod slice;
+pub mod skip;
+pub mod slice;
 // pub mod splice_at;
 // pub mod split;
 // pub mod status;
@@ -151,16 +151,16 @@ pub mod table_list;
 // pub mod to_json;
 // pub mod type_of;
 // pub mod ungroup;
-// pub mod union;
+pub mod union;
 // pub mod upcase;
 pub mod update;
 // pub mod uuid;
 // pub mod values;
 // pub mod wait;
-// pub mod with_fields;
+pub mod with_fields;
 // pub mod without;
 // pub mod year;
-// pub mod zip;
+pub mod zip;
 
 use std::borrow::Cow;
 use std::str;
@@ -175,7 +175,9 @@ use serde_json::Value;
 
 pub use crate::proto::Arg;
 use crate::Command;
+use crate::Func;
 use crate::Result;
+use crate::types::AnyParam;
 
 pub trait StaticString {
     fn static_string(self) -> Cow<'static, str>;
@@ -281,7 +283,7 @@ impl<'a> Command {
         get::new(primary_key).with_parent(self)
     }
 
-    pub fn get_all(self, values: impl get_all::GetAllArg) -> Command {
+    pub fn get_all(self, values: impl get_all::GetAllArg) -> Self {
         get_all::new(values).with_parent(self)
     }
 
@@ -292,6 +294,124 @@ impl<'a> Command {
     pub fn filter(self, args: impl filter::FilterArg) -> Self {
         filter::new(args).with_parent(self)
     }
+
+    pub fn inner_join(self, other_sequence: Command, func: Func) -> Self {
+        inner_join::new(other_sequence, func).with_parent(self)
+    }
+
+    pub fn outer_join(self, other_sequence: Command, func: Func) -> Self {
+        outer_join::new(other_sequence, func).with_parent(self)
+    }
+
+    pub fn eq_join(self, args: impl eq_join::EqJoinArg) -> Self {
+        eq_join::new(args).with_parent(self)
+    }
+
+    pub fn zip(self) -> Self {
+        zip::new().with_parent(self)
+    }
+
+    pub fn map(self, args: impl map::MapArg) -> Self {
+        map::new(args).with_parent(self)
+    }
+
+    pub fn with_fields(self, fields: AnyParam) -> Self {
+        with_fields::new(fields).with_parent(self)
+    }
+
+    pub fn concat_map(self, func: Func) -> Command {
+        concat_map::new(func).with_parent(self)
+    }
+
+    pub fn order_by(self, args: impl order_by::OrderByArg) -> Self {
+        order_by::new(args).with_parent(self)
+    }
+
+    pub fn skip(self, number_of_element: usize) -> Self {
+        skip::new(number_of_element).with_parent(self)
+    }
+
+    pub fn limit(self, number_of_element: usize) -> Self {
+        limit::new(number_of_element).with_parent(self)
+    }
+
+    pub fn slice(self, args: impl slice::SliceArg) -> Self {
+        slice::new(args).with_parent(self)
+    }
+
+    pub fn nth(self, index: isize) -> Self {
+        nth::new(index).with_parent(self)
+    }
+
+    pub fn offsets_of(self, args: impl offsets_of::OffsetsOfArg) -> Self {
+        offsets_of::new(args).with_parent(self)
+    }
+
+    pub fn is_empty(self) -> Self {
+        is_empty::new().with_parent(self)
+    }
+
+    pub fn union(self, args: impl union::UnionArg) -> Self {
+        union::new(args).with_parent(self)
+    }
+
+    pub fn sample(self, number: usize) -> Self {
+        sample::new(number).with_parent(self)
+    }
+
+    // fn group<G>(&self, fields: &[&str]) -> cmd::group::GroupBuilder<G, T>
+    // where
+    //     G: Unpin + Serialize + DeserializeOwned,
+    // {
+    //     cmd::group::GroupBuilder::new(fields)._with_parent(self.get_parent())
+    // }
+
+    // fn ungroup();
+
+    // fn reduce<A>(&self, func: Func) -> cmd::reduce::ReduceBuilder<A>
+    // where
+    //     A: Unpin + Serialize + DeserializeOwned,
+    // {
+    //     cmd::reduce::ReduceBuilder::new(func)._with_parent(self.get_parent())
+    // }
+
+    // fn fold<A, B>(&self, base: A, func: Func) -> cmd::fold::FoldBuilder<A, B>
+    // where
+    //     A: Serialize,
+    //     B: Unpin + Serialize + DeserializeOwned,
+    // {
+    //     cmd::fold::FoldBuilder::new(base, func)._with_parent(self.get_parent())
+    // }
+
+    // fn count();
+
+    // fn sum(&self) -> cmd::sum::SumBuilder {
+    //     cmd::sum::SumBuilder::new()._with_parent(self.get_parent())
+    // }
+
+    // fn avg(&self) -> cmd::avg::AvgBuilder {
+    //     cmd::avg::AvgBuilder::new()._with_parent(self.get_parent())
+    // }
+
+    // fn min(&self) -> cmd::min::MinBuilder<T> {
+    //     cmd::min::MinBuilder::new()._with_parent(self.get_parent())
+    // }
+
+    // fn max(&self) -> cmd::max::MaxBuilder<T> {
+    //     cmd::max::MaxBuilder::new()._with_parent(self.get_parent())
+    // }
+
+    // fn distinct(&self) -> cmd::distinct::DistinctBuilder<Sequence<T>> {
+    //     cmd::distinct::DistinctBuilder::new()._with_parent(self.get_parent())
+    // }
+
+    // fn contains(&self, values: impl Serialize) -> cmd::contains::ContainsBuilder {
+    //     cmd::contains::ContainsBuilder::new(values)._with_parent(self.get_parent())
+    // }
+
+    // fn keys(&self) -> cmd::keys::KeysBuilder {
+    //     cmd::keys::KeysBuilder::new()._with_parent(self.get_parent())
+    // }
 
     // pub fn merge(self, arg: impl merge::Arg) -> Self {
     //     arg.arg().into_cmd().with_parent(self)

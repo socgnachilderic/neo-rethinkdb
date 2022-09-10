@@ -1,50 +1,34 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsArray, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct LimitBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
+pub(crate) fn new(step: usize) -> Command {
+    let arg = Command::from_json(step);
 
-impl<T: Unpin + DeserializeOwned> LimitBuilder<T> {
-    pub(crate) fn new(step: usize) -> Self {
-        let arg = Command::from_json(step);
-        let command = Command::new(TermType::Limit).with_arg(arg);
-
-        Self(command, PhantomData)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
-        self.get_parent().run::<_, T>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+    Command::new(TermType::Limit).with_arg(arg)
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for LimitBuilder<T> {}
-impl<T> ReqlOpsArray for LimitBuilder<T> {}
-impl<T> ReqlOpsDocManipulation for LimitBuilder<T> {}
+#[cfg(test)]
+mod tests {
+    use crate::cmd::order_by::OrderByOption;
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
 
-impl<T> ReqlOps for LimitBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
+    #[tokio::test]
+    async fn test_limit_data() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: Vec<Post> = table
+            .order_by(OrderByOption::default().index("title"))
+            .limit(1)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+            
+        assert!(data_obtained.first() == data.first());
 
-impl<T> Into<Command> for LimitBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

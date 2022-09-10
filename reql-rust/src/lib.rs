@@ -5,10 +5,10 @@ pub mod connection;
 mod constants;
 mod err;
 
-#[cfg(test)]
-mod spec;
 pub mod prelude;
 mod proto;
+#[cfg(test)]
+mod spec;
 pub mod types;
 
 use futures::Future;
@@ -74,23 +74,19 @@ impl r {
         cmd::table::new(args)
     }
 
-    /* pub fn map<A: Unpin + DeserializeOwned>(
-        self,
-        sequences: &[impl Serialize],
-        func: Func,
-    ) -> cmd::map::MapBuilder<A> {
-        cmd::map::MapBuilder::new(func).with_sequences(sequences)
+    pub fn map(self, args: impl cmd::map::MapArg) -> Command {
+        cmd::map::new(args)
     }
 
-    pub fn union<A, T>(self, sequence: &[&A]) -> cmd::union::UnionBuilder<T>
-    where
-        A: ReqlOps,
-        T: Unpin + Serialize + DeserializeOwned,
-    {
-        cmd::union::UnionBuilder::new(sequence)
+    pub fn order_by(self, args: impl cmd::order_by::OrderByArg) -> Command {
+        cmd::order_by::new(args)
     }
 
-    // pub fn literal(self, document: impl Serialize) -> String {
+    pub fn union(self, args: impl cmd::union::UnionArg) -> Command {
+        cmd::union::new(args)
+    }
+
+    /* pub fn literal(self, document: impl Serialize) -> String {
     //     cmd::literal::LiteralBuilder::new(document)
     // }
 

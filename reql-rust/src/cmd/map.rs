@@ -1,58 +1,43 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
 
-use crate::ops::{ReqlOps, ReqlOpsArray, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::{Command, Func};
 
-#[derive(Debug, Clone)]
-pub struct MapBuilder<A>(pub(crate) Command, pub(crate) PhantomData<A>);
+pub(crate) fn new(args: impl MapArg) -> Command {
+    let (sequence, func) = args.into_map_opts();
 
-impl<A: Unpin + DeserializeOwned> MapBuilder<A> {
-    pub(crate) fn new(func: Func) -> Self {
-        let Func(func) = func;
-        let command = Command::new(TermType::Map).with_arg(func);
+    let mut command = Command::new(TermType::Map);
 
-        Self(command, PhantomData)
+    for arg in sequence {
+        command = command.with_arg(arg)
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<A>> {
-        self.make_query(arg).try_next().await
-    }
+    command.with_arg(func)
+}
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<A>> {
-        self.get_parent().run::<_, A>(arg)
-    }
+pub trait MapArg {
+    fn into_map_opts(self) -> (Vec<Command>, Command);
+}
 
-    pub fn with_sequences(mut self, sequences: &[impl Serialize]) -> Self {
-        for seq in sequences {
-            let arg = Command::from_json(seq);
-            self.0 = self.0.with_arg(arg)
-        }
-
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+impl MapArg for Func {
+    fn into_map_opts(self) -> (Vec<Command>, Command) {
+        (Vec::new(), self.0)
     }
 }
 
-impl<A: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<A> for MapBuilder<A> {}
-impl<A> ReqlOpsArray for MapBuilder<A> {}
-impl<T> ReqlOpsDocManipulation for MapBuilder<T> {}
+impl MapArg for (Command, Func) {
+    fn into_map_opts(self) -> (Vec<Command>, Command) {
+        let Func(func) = self.1;
 
-impl<A> ReqlOps for MapBuilder<A> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+        (vec![self.0], func)
     }
 }
 
-impl<T> Into<Command> for MapBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+impl MapArg for (Vec<Command>, Func) {
+    fn into_map_opts(self) -> (Vec<Command>, Command) {
+        let Func(func) = self.1;
+
+        (self.0, func)
     }
 }
+
+// TODO write test

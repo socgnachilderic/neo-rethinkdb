@@ -100,7 +100,7 @@ pub struct ChangesBuilder<T>(
 /// Optional arguments to `changes`
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
 #[non_exhaustive]
-pub(crate) struct ChangesOption {
+pub struct ChangesOption {
     /// Controls how change notifications are batched
     #[serde(skip_serializing_if = "Option::is_none")]
     pub squash: Option<Squash>,

@@ -1,70 +1,111 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
+use reql_rust_macros::CommandOptions;
+use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsArray};
-use crate::types::Interleave;
-use crate::{Command, Result};
+use crate::types::{AnyParam, Interleave};
+use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct UnionBuilder<T>(
-    pub(crate) Command,
-    pub(crate) UnionOption,
-    pub(crate) PhantomData<T>,
-);
+pub(crate) fn new(args: impl UnionArg) -> Command {
+    let (values, opts) = args.into_union_opts();
+    let mut command = Command::new(TermType::Union);
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub(crate) struct UnionOption {
+    for val in values {
+        command = command.with_arg(val);
+    }
+
+    command.with_opts(opts)
+}
+
+pub trait UnionArg {
+    fn into_union_opts(self) -> (Vec<Command>, UnionOption);
+}
+
+impl UnionArg for Command {
+    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
+        (vec![self], Default::default())
+    }
+}
+
+impl UnionArg for Vec<Command> {
+    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
+        (self, Default::default())
+    }
+}
+
+impl UnionArg for AnyParam {
+    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
+        (vec![self.into()], Default::default())
+    }
+}
+
+impl UnionArg for (Command, UnionOption) {
+    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
+        (vec![self.0], self.1)
+    }
+}
+
+impl UnionArg for (Vec<Command>, UnionOption) {
+    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
+        (self.0, self.1)
+    }
+}
+
+impl UnionArg for (AnyParam, UnionOption) {
+    fn into_union_opts(self) -> (Vec<Command>, UnionOption) {
+        (vec![self.0.into()], self.1)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
+pub struct UnionOption {
     pub interleave: Option<Interleave>,
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> UnionBuilder<T> {
-    pub(crate) fn new(values: &[&impl ReqlOps]) -> Self {
-        let mut command = Command::new(TermType::Union);
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+    use serde_json::json;
 
-        for val in values {
-            command = command.with_arg(val.get_parent());
-        }
+    use crate::prelude::*;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::AnyParam;
+    use crate::{r, Result};
 
-        Self(command, UnionOption::default(), PhantomData)
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+    struct AuthorPost {
+        id: Option<u8>,
+        first_name: Option<String>,
+        last_name: Option<String>,
+        title: Option<String>,
+        content: Option<String>,
+        view: Option<u8>,
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
+    #[tokio::test]
+    async fn test_union_data() -> Result<()> {
+        let authors_data = json!([
+            {"id": 1, "first_name": "john", "last_name": "doe"},
+            {"id": 2, "first_name": "juan", "last_name": "don"},
+            {"id": 3, "first_name": "jean", "last_name": "dupont"}
+        ]);
+        let (conn, table) = set_up(TABLE_NAMES[1], true).await?;
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = Result<T>> {
-        self.get_parent().run::<_, T>(arg)
-    }
+        r.table_create(TABLE_NAMES[2]).run(&conn).await?;
+        r.table(TABLE_NAMES[2])
+            .insert(AnyParam::new(authors_data))
+            .run(&conn)
+            .await?;
 
-    pub fn with_interleave(mut self, interleave: Interleave) -> Self {
-        self.1.interleave = Some(interleave);
-        self
-    }
+        let data_obtained: Vec<AuthorPost> = table
+            .union(r.table(TABLE_NAMES[2]))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+            
+        assert!(data_obtained.len() > 0);
 
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsArray for UnionBuilder<T> {}
-
-impl<T> ReqlOps for UnionBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0
-            .clone()
-            .with_opts(&self.1)
-            .into_arg::<()>()
-            .into_cmd()
-    }
-}
-
-impl<T> Into<Command> for UnionBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+        r.table_drop(TABLE_NAMES[2]).run(&conn).await?;
+        tear_down(conn, TABLE_NAMES[1]).await
     }
 }

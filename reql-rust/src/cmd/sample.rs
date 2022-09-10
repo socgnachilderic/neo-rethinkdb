@@ -1,50 +1,31 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsArray, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct SampleBuilder<T>(pub(crate) Command, pub(crate) PhantomData<T>);
-
-impl<T: Unpin + DeserializeOwned> SampleBuilder<T> {
-    pub(crate) fn new(number: usize) -> Self {
-        let arg = Command::from_json(number);
-        let command = Command::new(TermType::Sample).with_arg(arg);
-
-        Self(command, PhantomData)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {
-        self.get_parent().run::<_, T>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+pub(crate) fn new(number: usize) -> Command {
+    let arg = Command::from_json(number);
+    
+    Command::new(TermType::Sample).with_arg(arg)
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for SampleBuilder<T> {}
-impl<T> ReqlOpsArray for SampleBuilder<T> {}
-impl<T> ReqlOpsDocManipulation for SampleBuilder<T> {}
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES, Post};
+    use crate::Result;
 
-impl<T> ReqlOps for SampleBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
+    #[tokio::test]
+    async fn test_sample_data() -> Result<()> {
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: Vec<Post> = table
+            .sample(3)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+            
+        assert!(data_obtained.len() == 3);
 
-impl<T> Into<Command> for SampleBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }
