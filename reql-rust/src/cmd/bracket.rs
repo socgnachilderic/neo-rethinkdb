@@ -1,48 +1,34 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
-use serde_json::Value;
+use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct BracketBuilder(pub(crate) Command);
+pub(crate) fn new(attr: impl Serialize) -> Command {
+    let arg = Command::from_json(attr);
 
-impl BracketBuilder {
-    pub(crate) fn new(attr: impl Serialize) -> Self {
-        let arg = Command::from_json(attr);
-        let command = Command::new(TermType::Bracket).with_arg(arg);
-
-        Self(command)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Value>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Value>> {
-        self.get_parent().run::<_, Value>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+    Command::new(TermType::Bracket).with_arg(arg)
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for BracketBuilder {}
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
 
-impl ReqlOpsDocManipulation for BracketBuilder {}
+    #[tokio::test]
+    async fn test_bracket_data() -> Result<()> {
+        let data = Post::get_one_data();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: String = table
+            .get(1)
+            .bracket("title")
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-impl ReqlOps for BracketBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
+        assert!(data_obtained == data.title);
 
-impl Into<Command> for BracketBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

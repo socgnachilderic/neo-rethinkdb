@@ -1,51 +1,46 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{Serialize, de::DeserializeOwned};
+use serde::Serialize;
 
 use crate::Command;
-use crate::ops::{ReqlOps, ReqlOpsSequence, ReqlOpsDocManipulation};
 
-#[derive(Debug, Clone)]
-pub struct WithoutBuilder<T>(
-    pub(crate) Command,
-    pub(crate) PhantomData<T>
-);
+pub(crate) fn new(selector: impl Serialize) -> Command {
+    let arg = Command::from_json(selector);
 
-impl<T: Unpin + Serialize + DeserializeOwned> WithoutBuilder<T> {
-    pub(crate) fn new(fields: impl Serialize) -> Self {
-        let arg = Command::from_json(fields);
-        let command = Command::new(TermType::Without).with_arg(arg);
-
-        Self(command, PhantomData)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<T>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<T>> {        
-        self.get_parent().run::<_, T>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+    Command::new(TermType::Without).with_arg(arg)
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for WithoutBuilder<T> { }
-impl<T> ReqlOpsDocManipulation for WithoutBuilder<T> { }
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
 
-impl<T> ReqlOps for WithoutBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::Result;
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
+    struct InnerPost {
+        id: u8,
+        title: String,
     }
-}
 
-impl<T> Into<Command> for WithoutBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+    #[tokio::test]
+    async fn test_without_data() -> Result<()> {
+        let data = Post::get_one_data();
+        let data = InnerPost {
+            id: data.id,
+            title: data.title,
+        };
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: InnerPost = table
+            .get(1)
+            .without(["content", "view"])
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(data_obtained == data);
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

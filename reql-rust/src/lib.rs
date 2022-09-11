@@ -13,6 +13,7 @@ pub mod types;
 
 use futures::Future;
 pub use prelude::Func;
+use serde::Serialize;
 use std::sync::atomic::{AtomicU64, Ordering};
 
 pub use connection::*;
@@ -118,15 +119,15 @@ impl r {
         cmd::contains::new(args)
     }
 
-    /* pub fn literal(self, document: impl Serialize) -> String {
-    //     cmd::literal::LiteralBuilder::new(document)
-    // }
+    pub fn literal(self, value: impl Serialize) -> Command {
+        cmd::literal::new(value)
+    }
 
-    // pub fn object(self, arg: impl cmd::object::Arg) -> Command {
-    //     arg.arg().into_cmd()
-    // }
+    pub fn object(self, values: Vec<impl Serialize>) -> Command {
+        cmd::object::new(values)
+    }
 
-    pub fn random(self, arg: impl cmd::random::Arg) -> Command {
+    /* pub fn random(self, arg: impl cmd::random::Arg) -> Command {
         arg.arg().into_cmd()
     }
 

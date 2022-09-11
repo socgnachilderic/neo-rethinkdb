@@ -1,47 +1,32 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::{de::DeserializeOwned, Serialize};
-use serde_json::Value;
 
 use crate::Command;
-use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsSequence};
 
-#[derive(Debug, Clone)]
-pub struct DeleteAtBuilder(pub(crate) Command);
+pub(crate) fn new(args: impl DeleteAtArg) -> Command {
+    let (start_offset, end_offset) = args.into_delete_at_opts();
+    let mut command = Command::new(TermType::DeleteAt).with_arg(start_offset);
 
-impl DeleteAtBuilder {
-    pub(crate) fn new(offset: isize, end_offset: Option<isize>) -> Self {
-        let arg_offset = Command::from_json(offset);
-        let mut command = Command::new(TermType::DeleteAt).with_arg(arg_offset);
-
-        if let Some(end_offset) = end_offset {
-            let arg_end_offset = Command::from_json(end_offset);
-            command = command.with_arg(arg_end_offset);
-        }
-
-        Self(command)
+    if let Some(end_offset) = end_offset {
+        command = command.with_arg(end_offset);
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Value>> {
-        self.make_query(arg).try_next().await
-    }
+    command
+}
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Value>> {
-        self.get_parent().run::<_, Value>(arg)
-    }
+pub trait DeleteAtArg {
+    fn into_delete_at_opts(self) -> (Command, Option<Command>);
+}
 
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+impl DeleteAtArg for isize {
+    fn into_delete_at_opts(self) -> (Command, Option<Command>) {
+        (Command::from_json(self), None)
     }
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for DeleteAtBuilder {}
-
-impl ReqlOpsDocManipulation for DeleteAtBuilder {}
-
-impl ReqlOps for DeleteAtBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+impl DeleteAtArg for (isize, isize) {
+    fn into_delete_at_opts(self) -> (Command, Option<Command>) {
+        (Command::from_json(self.0), Some(Command::from_json(self.0)))
     }
 }
+
+// TODO write test

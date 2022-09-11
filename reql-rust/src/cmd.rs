@@ -1,6 +1,6 @@
 // pub mod add;
 // pub mod and;
-// pub mod append;
+pub mod append;
 pub mod args;
 // pub mod asc;
 pub mod avg;
@@ -12,10 +12,10 @@ pub mod between;
 // pub mod bit_sal;
 // pub mod bit_sar;
 // pub mod bit_xor;
-// pub mod bracket;
+pub mod bracket;
 // pub mod branch;
 // pub mod ceil;
-// pub mod change_at;
+pub mod change_at;
 // pub mod changes;
 // pub mod circle;
 // pub mod coerce_to;
@@ -34,14 +34,14 @@ pub mod db_drop;
 pub mod db_list;
 // pub mod default;
 pub mod delete;
-// pub mod delete_at;
+pub mod delete_at;
 // pub mod desc;
-// pub mod difference;
+pub mod difference;
 // pub mod distance;
 pub mod distinct;
 // pub mod div;
 // pub mod do_;
-// pub mod downcase;
+pub mod downcase;
 // pub mod during;
 // pub mod epoch_time;
 // pub mod eq;
@@ -58,14 +58,14 @@ pub(crate) mod func;
 // pub mod geojson;
 pub mod get;
 pub mod get_all;
-// pub mod get_field;
+pub mod get_field;
 // pub mod get_intersecting;
 // pub mod get_nearest;
 pub mod get_write_hook;
 // pub mod grant;
 pub mod group;
 // pub mod gt;
-// pub mod has_fields;
+pub mod has_fields;
 // pub mod hours;
 // pub mod http;
 // pub mod in_timezone;
@@ -80,22 +80,22 @@ pub mod index_wait;
 // pub mod info;
 pub mod inner_join;
 pub mod insert;
-// pub mod insert_at;
+pub mod insert_at;
 // pub mod intersects;
 pub mod is_empty;
 // pub mod iso8601;
 // pub mod js;
 // pub mod json;
-// pub mod keys;
+pub mod keys;
 // pub mod le;
 pub mod limit;
 // pub mod line;
-// pub mod literal;
+pub mod literal;
 // pub mod lt;
 pub mod map;
-// pub mod match_;
+pub mod match_;
 pub mod max;
-// pub mod merge;
+pub mod merge;
 pub mod min;
 // pub mod minutes;
 // pub mod month;
@@ -104,16 +104,16 @@ pub mod min;
 // pub mod not;
 // pub mod now;
 pub mod nth;
-// pub mod object;
+pub mod object;
 pub mod offsets_of;
 // pub mod or;
 pub mod order_by;
 pub mod outer_join;
-// pub mod pluck;
+pub mod pluck;
 // pub mod point;
 // pub mod polygon;
 // pub mod polygon_sub;
-// pub mod prepend;
+pub mod prepend;
 // pub mod random;
 // pub mod range;
 // pub mod rebalance;
@@ -125,15 +125,15 @@ pub mod replace;
 pub mod run;
 pub mod sample;
 // pub mod seconds;
-// pub mod set_difference;
-// pub mod set_insert;
-// pub mod set_intersection;
-// pub mod set_union;
+pub mod set_difference;
+pub mod set_insert;
+pub mod set_intersection;
+pub mod set_union;
 pub mod set_write_hook;
 pub mod skip;
 pub mod slice;
-// pub mod splice_at;
-// pub mod split;
+pub mod splice_at;
+pub mod split;
 // pub mod status;
 // pub mod sub;
 pub mod sum;
@@ -152,13 +152,13 @@ pub mod table_list;
 // pub mod type_of;
 pub mod ungroup;
 pub mod union;
-// pub mod upcase;
+pub mod upcase;
 pub mod update;
 // pub mod uuid;
-// pub mod values;
+pub mod values;
 // pub mod wait;
 pub mod with_fields;
-// pub mod without;
+pub mod without;
 // pub mod year;
 pub mod zip;
 
@@ -170,6 +170,7 @@ use async_net::TcpStream;
 use futures::stream::Stream;
 use futures::TryStreamExt;
 use ql2::term::TermType;
+use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
@@ -403,13 +404,101 @@ impl<'a> Command {
         contains::new(args).with_parent(self)
     }
 
-    // fn keys(&self) -> cmd::keys::KeysBuilder {
-    //     cmd::keys::KeysBuilder::new()._with_parent(self.get_parent())
-    // }
+    pub fn pluck(self, selector: impl Serialize) -> Self {
+        pluck::new(selector).with_parent(self)
+    }
 
-    // pub fn merge(self, arg: impl merge::Arg) -> Self {
-    //     arg.arg().into_cmd().with_parent(self)
-    // }
+    pub fn without(self, selector: impl Serialize) -> Self {
+        without::new(selector).with_parent(self)
+    }
+
+    pub fn merge(self, args: impl merge::MergeArg) -> Self {
+        merge::new(args).with_parent(self)
+    }
+
+    pub fn append(self, value: impl Serialize) -> Self {
+        append::new(value).with_parent(self)
+    }
+
+    pub fn prepend(self, value: impl Serialize) -> Self {
+        prepend::new(value).with_parent(self)
+    }
+
+    pub fn difference(self, values: Vec<impl Serialize>) -> Self {
+        difference::new(values).with_parent(self)
+    }
+
+    pub fn set_insert(self, value: impl Serialize) -> Self {
+        set_insert::new(value).with_parent(self)
+    }
+
+    pub fn set_union(self, values: Vec<impl Serialize>) -> Self {
+        set_union::new(values).with_parent(self)
+    }
+
+    pub fn set_intersection(self, values: Vec<impl Serialize>) -> Self {
+        set_intersection::new(values).with_parent(self)
+    }
+
+    pub fn set_difference(self, values: Vec<impl Serialize>) -> Self {
+        set_difference::new(values).with_parent(self)
+    }
+
+    pub fn bracket(self, value: impl Serialize) -> Self {
+        bracket::new(value).with_parent(self)
+    }
+
+    pub fn get_field(self, attr: impl Serialize) -> Self {
+        get_field::new(attr).with_parent(self)
+    }
+
+    pub fn g(self, attr: impl Serialize) -> Self {
+        get_field::new(attr).with_parent(self)
+    }
+
+    pub fn has_fields(self, selector: impl Serialize) -> Self {
+        has_fields::new(selector).with_parent(self)
+    }
+
+    pub fn insert_at(self, offset: isize, value: impl Serialize) -> Self {
+        insert_at::new(offset, value).with_parent(self)
+    }
+
+    pub fn splice_at(self, offset: isize, value: impl Serialize) -> Self {
+        splice_at::new(offset, value).with_parent(self)
+    }
+
+    pub fn delete_at(self, args: impl delete_at::DeleteAtArg) -> Self {
+        delete_at::new(args).with_parent(self)
+    }
+
+    pub fn change_at(self, offset: isize, value: impl Serialize) -> Self {
+        change_at::new(offset, value).with_parent(self)
+    }
+
+    pub fn keys(self) -> Self {
+        keys::new().with_parent(self)
+    }
+
+    pub fn values(self) -> Self {
+        values::new().with_parent(self)
+    }
+
+    pub fn match_(self, regexp: Regex) -> Self {
+        match_::new(regexp).with_parent(self)
+    }
+
+    pub fn split(self, args: impl split::SplitArg) -> Self {
+        split::new(args).with_parent(self)
+    }
+
+    pub fn upcase(self) -> Self {
+        upcase::new().with_parent(self)
+    }
+
+    pub fn downcase(self) -> Self {
+        downcase::new().with_parent(self)
+    }
 
     /* pub fn and(self, arg: impl and::Arg) -> Self {
         arg.arg().into_cmd().with_parent(self)
