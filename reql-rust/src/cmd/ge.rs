@@ -1,12 +1,63 @@
-use crate::{cmd, Command};
 use ql2::term::TermType;
+use serde::Serialize;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+use crate::{types::AnyParam, Command};
+
+use super::CmdOpts;
+
+pub(crate) fn new(args: impl GeArg) -> Command {
+    args.into_ge_opts().add_to_cmd(Command::new(TermType::Ge))
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Ge).with_arg(self).into_arg()
+pub trait GeArg {
+    fn into_ge_opts(self) -> CmdOpts;
+}
+
+impl GeArg for AnyParam {
+    fn into_ge_opts(self) -> CmdOpts {
+        CmdOpts::Single(self.into())
+    }
+}
+
+impl<T: Serialize> GeArg for Vec<T> {
+    fn into_ge_opts(self) -> CmdOpts {
+        let commands = self.iter().map(|arg| Command::from_json(arg)).collect();
+
+        CmdOpts::Many(commands)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::AnyParam;
+    use crate::{r, Result};
+
+    #[tokio::test]
+    async fn test_ge_data() -> Result<()> {
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_obtained: bool = table
+            .get(1)
+            .g("view")
+            .ge(AnyParam::new(10))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(data_obtained);
+
+        tear_down(conn, TABLE_NAMES[0]).await
+    }
+
+    #[tokio::test]
+    async fn test_ge_data_r() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let data_obtained: bool = r.ge(vec![7, 6, 5]).run(&conn).await?.unwrap().parse()?;
+
+        assert!(data_obtained);
+
+        Ok(())
     }
 }

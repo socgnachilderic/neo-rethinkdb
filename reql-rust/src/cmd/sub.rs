@@ -1,24 +1,39 @@
-use crate::{cmd, Command};
-use ql2::term::TermType;
 use std::ops::Sub;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use ql2::term::TermType;
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Sub).with_arg(self).into_arg()
-    }
-}
+use crate::Command;
 
-impl<T> Sub<T> for Command
-where
-    T: Arg,
-{
+impl<T: SubArg> Sub<T> for Command {
     type Output = Self;
 
     fn sub(self, arg: T) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+        Command::new(TermType::Sub)
+            .with_arg(arg.into_sub_opts())
+            .with_parent(self)
     }
 }
+
+pub trait SubArg {
+    fn into_sub_opts(self) -> Command;
+}
+
+impl SubArg for f64 {
+    fn into_sub_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl SubArg for Vec<f64> {
+    fn into_sub_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl SubArg for Command {
+    fn into_sub_opts(self) -> Command {
+        self
+    }
+}
+
+// TODO write test

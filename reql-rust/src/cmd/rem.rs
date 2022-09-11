@@ -1,24 +1,33 @@
-use crate::{cmd, Command};
-use ql2::term::TermType;
 use std::ops::Rem;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use ql2::term::TermType;
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Mod).with_arg(self).into_arg()
-    }
-}
+use crate::Command;
 
-impl<T> Rem<T> for Command
-where
-    T: Arg,
-{
+impl<T: RemArg> Rem<T> for Command {
     type Output = Self;
 
     fn rem(self, arg: T) -> Self {
-        arg.arg().with_parent(self).into_cmd()
+        Command::new(TermType::Mod)
+            .with_arg(arg.into_rem_opts())
+            .with_parent(self)
     }
 }
+
+pub trait RemArg {
+    fn into_rem_opts(self) -> Command;
+}
+
+impl RemArg for f64 {
+    fn into_rem_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl RemArg for Command {
+    fn into_rem_opts(self) -> Command {
+        self
+    }
+}
+
+// TODO write test

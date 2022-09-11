@@ -1,24 +1,39 @@
-use crate::{cmd, Command};
-use ql2::term::TermType;
 use std::ops::BitOr;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use ql2::term::TermType;
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::BitOr).with_arg(self).into_arg()
-    }
-}
+use crate::Command;
 
-impl<T> BitOr<T> for Command
-where
-    T: Arg,
-{
+impl<T: BitOrArg> BitOr<T> for Command {
     type Output = Self;
 
     fn bitor(self, arg: T) -> Self {
-        arg.arg().with_parent(self).into_cmd()
+        Command::new(TermType::BitOr)
+            .with_arg(arg.into_bit_or_opts())
+            .with_parent(self)
     }
 }
+
+pub trait BitOrArg {
+    fn into_bit_or_opts(self) -> Command;
+}
+
+impl BitOrArg for f64 {
+    fn into_bit_or_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl BitOrArg for Vec<f64> {
+    fn into_bit_or_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl BitOrArg for Command {
+    fn into_bit_or_opts(self) -> Command {
+        self
+    }
+}
+
+// TODO write test

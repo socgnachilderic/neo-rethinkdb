@@ -1,20 +1,20 @@
-// pub mod add;
-// pub mod and;
+pub mod add;
+pub mod and;
 pub mod append;
 pub mod args;
 // pub mod asc;
 pub mod avg;
 pub mod between;
 // pub mod binary;
-// pub mod bit_and;
-// pub mod bit_not;
-// pub mod bit_or;
-// pub mod bit_sal;
-// pub mod bit_sar;
-// pub mod bit_xor;
+pub mod bit_and;
+pub mod bit_not;
+pub mod bit_or;
+pub mod bit_sal;
+pub mod bit_sar;
+pub mod bit_xor;
 pub mod bracket;
 // pub mod branch;
-// pub mod ceil;
+pub mod ceil;
 pub mod change_at;
 // pub mod changes;
 // pub mod circle;
@@ -39,22 +39,22 @@ pub mod delete_at;
 pub mod difference;
 // pub mod distance;
 pub mod distinct;
-// pub mod div;
+pub mod div;
 // pub mod do_;
 pub mod downcase;
 // pub mod during;
 // pub mod epoch_time;
-// pub mod eq;
+pub mod eq;
 pub mod eq_join;
 // pub mod error;
 pub mod expr;
 // pub mod fill;
 pub mod filter;
-// pub mod floor;
+pub mod floor;
 pub mod fold;
 // pub mod for_each;
 pub(crate) mod func;
-// pub mod ge;
+pub mod ge;
 // pub mod geojson;
 pub mod get;
 pub mod get_all;
@@ -64,7 +64,7 @@ pub mod get_field;
 pub mod get_write_hook;
 // pub mod grant;
 pub mod group;
-// pub mod gt;
+pub mod gt;
 pub mod has_fields;
 // pub mod hours;
 // pub mod http;
@@ -87,11 +87,11 @@ pub mod is_empty;
 // pub mod js;
 // pub mod json;
 pub mod keys;
-// pub mod le;
+pub mod le;
 pub mod limit;
 // pub mod line;
 pub mod literal;
-// pub mod lt;
+pub mod lt;
 pub mod map;
 pub mod match_;
 pub mod max;
@@ -99,14 +99,14 @@ pub mod merge;
 pub mod min;
 // pub mod minutes;
 // pub mod month;
-// pub mod mul;
-// pub mod ne;
-// pub mod not;
+pub mod mul;
+pub mod ne;
+pub mod not;
 // pub mod now;
 pub mod nth;
 pub mod object;
 pub mod offsets_of;
-// pub mod or;
+pub mod or;
 pub mod order_by;
 pub mod outer_join;
 pub mod pluck;
@@ -114,14 +114,14 @@ pub mod pluck;
 // pub mod polygon;
 // pub mod polygon_sub;
 pub mod prepend;
-// pub mod random;
+pub mod random;
 // pub mod range;
 // pub mod rebalance;
 // pub mod reconfigure;
 pub mod reduce;
-// pub mod rem;
+pub mod rem;
 pub mod replace;
-// pub mod round;
+pub mod round;
 pub mod run;
 pub mod sample;
 // pub mod seconds;
@@ -135,7 +135,7 @@ pub mod slice;
 pub mod splice_at;
 pub mod split;
 // pub mod status;
-// pub mod sub;
+pub mod sub;
 pub mod sum;
 pub mod sync;
 pub mod table;
@@ -163,6 +163,7 @@ pub mod without;
 pub mod zip;
 
 use std::borrow::Cow;
+use std::ops::{BitAnd, BitOr, BitXor};
 use std::str;
 
 use async_native_tls::TlsStream;
@@ -500,76 +501,76 @@ impl<'a> Command {
         downcase::new().with_parent(self)
     }
 
-    /* pub fn and(self, arg: impl and::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn and(self, args: impl and::AndArg) -> Self {
+        and::new(args).with_parent(self)
     }
 
-    pub fn or(self, arg: impl or::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn or(self, args: impl or::OrArg) -> Self {
+        or::new(args).with_parent(self)
     }
 
-    pub fn eq(self, arg: impl eq::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn eq(self, args: impl eq::EqArg) -> Self {
+        eq::new(args).with_parent(self)
     }
 
-    pub fn ne(self, arg: impl ne::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn ne(self, args: impl ne::NeArg) -> Self {
+        ne::new(args).with_parent(self)
     }
 
-    pub fn gt(self, arg: impl gt::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn gt(self, args: impl gt::GtArg) -> Self {
+        gt::new(args).with_parent(self)
     }
 
-    pub fn ge(self, arg: impl ge::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn ge(self, args: impl ge::GeArg) -> Self {
+        ge::new(args).with_parent(self)
     }
 
-    pub fn lt(self, arg: impl lt::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn lt(self, args: impl lt::LtArg) -> Self {
+        lt::new(args).with_parent(self)
     }
 
-    pub fn le(self, arg: impl le::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn le(self, args: impl le::LeArg) -> Self {
+        le::new(args).with_parent(self)
     }
 
-    pub fn not(self, arg: impl not::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn not(self) -> Self {
+        not::new(()).with_parent(self)
     }
 
-    pub fn bit_and(self, arg: impl bit_and::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn round(self) -> Self {
+        round::new(()).with_parent(self)
     }
 
-    pub fn bit_or(self, arg: impl bit_or::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn ceil(self) -> Self {
+        ceil::new(()).with_parent(self)
     }
 
-    pub fn bit_xor(self, arg: impl bit_xor::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn floor(self) -> Self {
+        floor::new(()).with_parent(self)
+    }
+
+    pub fn bit_and(self, args: impl bit_and::BitAndArg) -> Self {
+        self.bitand(args)
+    }
+
+    pub fn bit_or(self, args: impl bit_or::BitOrArg) -> Self {
+        self.bitor(args)
+    }
+
+    pub fn bit_xor(self, args: impl bit_xor::BitXorArg) -> Self {
+        self.bitxor(args)
     }
 
     pub fn bit_not(self) -> Self {
         !self
     }
 
-    pub fn bit_sal(self, arg: impl bit_sal::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn bit_sal(self, args: impl bit_sal::BitSalArg) -> Self {
+        bit_sal::new(args).with_parent(self)
     }
 
-    pub fn bit_sar(self, arg: impl bit_sar::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    } */
-
-    pub fn round(self) -> Self {
-        Self::new(TermType::Round).with_parent(self)
-    }
-
-    pub fn ceil(self) -> Self {
-        Self::new(TermType::Ceil).with_parent(self)
-    }
-
-    pub fn floor(self) -> Self {
-        Self::new(TermType::Floor).with_parent(self)
+    pub fn bit_sar(self, args: impl bit_sar::BitSarArg) -> Self {
+        bit_sar::new(args).with_parent(self)
     }
 
     // pub fn timezone(self) -> Self {

@@ -1,6 +1,8 @@
-use crate::Command;
-use ql2::term::TermType;
 use std::ops::Not;
+
+use ql2::term::TermType;
+
+use crate::Command;
 
 impl Not for Command {
     type Output = Self;
@@ -9,3 +11,5 @@ impl Not for Command {
         Self::new(TermType::Not).with_arg(self)
     }
 }
+
+// TODO write test

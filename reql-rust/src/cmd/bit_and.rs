@@ -1,24 +1,39 @@
-use crate::{cmd, Command};
-use ql2::term::TermType;
 use std::ops::BitAnd;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use ql2::term::TermType;
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::BitAnd).with_arg(self).into_arg()
-    }
-}
+use crate::Command;
 
-impl<T> BitAnd<T> for Command
-where
-    T: Arg,
-{
+impl<T: BitAndArg> BitAnd<T> for Command {
     type Output = Self;
 
     fn bitand(self, arg: T) -> Self {
-        arg.arg().with_parent(self).into_cmd()
+        Command::new(TermType::BitAnd)
+            .with_arg(arg.into_bit_and_opts())
+            .with_parent(self)
     }
 }
+
+pub trait BitAndArg {
+    fn into_bit_and_opts(self) -> Command;
+}
+
+impl BitAndArg for f64 {
+    fn into_bit_and_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl BitAndArg for Vec<f64> {
+    fn into_bit_and_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl BitAndArg for Command {
+    fn into_bit_and_opts(self) -> Command {
+        self
+    }
+}
+
+// TODO write test

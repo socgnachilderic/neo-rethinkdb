@@ -1,24 +1,34 @@
-use crate::{cmd, Command};
-use ql2::term::TermType;
 use std::ops::Div;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
-}
+use ql2::term::TermType;
+use serde::Serialize;
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Div).with_arg(self).into_arg()
-    }
-}
+use crate::Command;
 
-impl<T> Div<T> for Command
-where
-    T: Arg,
-{
+impl<T: DivArg> Div<T> for Command {
     type Output = Self;
 
     fn div(self, arg: T) -> Self {
-        arg.arg().with_parent(self).into_cmd()
+        Command::new(TermType::Div)
+            .with_arg(arg.into_div_opts())
+            .with_parent(self)
     }
 }
+
+pub trait DivArg {
+    fn into_div_opts(self) -> Command;
+}
+
+impl<T: Serialize> DivArg for T {
+    fn into_div_opts(self) -> Command {
+        Command::from_json(self)
+    }
+}
+
+impl DivArg for Command {
+    fn into_div_opts(self) -> Command {
+        self
+    }
+}
+
+// TODO write test

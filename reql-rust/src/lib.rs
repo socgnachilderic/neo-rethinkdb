@@ -11,13 +11,14 @@ mod proto;
 mod spec;
 pub mod types;
 
-use futures::Future;
-pub use prelude::Func;
-use serde::Serialize;
 use std::sync::atomic::{AtomicU64, Ordering};
+
+use futures::Future;
+use serde::Serialize;
 
 pub use connection::*;
 pub use err::*;
+pub use prelude::Func;
 pub use proto::Command;
 
 #[doc(hidden)]
@@ -127,23 +128,59 @@ impl r {
         cmd::object::new(values)
     }
 
-    /* pub fn random(self, arg: impl cmd::random::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn and(self, args: impl cmd::and::AndArg) -> Command {
+        cmd::and::new(args)
     }
 
-    pub fn round(self, arg: impl cmd::round::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn or(self, args: impl cmd::or::OrArg) -> Command {
+        cmd::or::new(args)
     }
 
-    pub fn ceil(self, arg: impl cmd::ceil::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn eq(self, args: impl cmd::eq::EqArg) -> Command {
+        cmd::eq::new(args)
     }
 
-    pub fn floor(self, arg: impl cmd::floor::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn ne(self, args: impl cmd::ne::NeArg) -> Command {
+        cmd::ne::new(args)
     }
 
-    pub fn now(self) -> DateTime {
+    pub fn gt(self, args: impl cmd::gt::GtArg) -> Command {
+        cmd::gt::new(args)
+    }
+
+    pub fn ge(self, args: impl cmd::ge::GeArg) -> Command {
+        cmd::ge::new(args)
+    }
+
+    pub fn lt(self, args: impl cmd::lt::LtArg) -> Command {
+        cmd::lt::new(args)
+    }
+
+    pub fn le(self, args: impl cmd::le::LeArg) -> Command {
+        cmd::le::new(args)
+    }
+
+    pub fn not(self, value: bool) -> Command {
+        cmd::not::new(value)
+    }
+
+    pub fn random(self, args: impl cmd::random::RandomArg) -> Command {
+        cmd::random::new(args)
+    }
+
+    pub fn round(self, value: f64) -> Command {
+        cmd::round::new(value)
+    }
+
+    pub fn ceil(self, value: f64) -> Command {
+        cmd::ceil::new(value)
+    }
+
+    pub fn floor(self, value: f64) -> Command {
+        cmd::floor::new(value)
+    }
+
+    /* pub fn now(self) -> DateTime {
         DateTime::now()
     }
 
