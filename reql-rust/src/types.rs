@@ -9,16 +9,16 @@ use uuid::Uuid;
 // pub use document::Document;
 pub use group_stream::{GroupItem, GroupStream};
 // pub use sequence::Sequence;
-// pub use datetime::DateTime;
 pub use binary::Binary;
+pub use datetime::DateTime;
 
 use crate::Command;
 
 // mod document;
 mod group_stream;
 // mod sequence;
-// mod datetime;
 mod binary;
+mod datetime;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
@@ -134,14 +134,14 @@ pub struct GrantResponseType {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct RebalanceResponseType {
     pub rebalanced: u8,
-    pub status_changes: Vec<ConfigChange<StatusResponseType>>,
+    pub status_changes: Vec<ConfigChange<StatusResponse>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReconfigureResponseType {
     pub reconfigured: u8,
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
-    pub status_changes: Vec<ConfigChange<StatusResponseType>>,
+    pub status_changes: Vec<ConfigChange<StatusResponse>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -173,13 +173,33 @@ pub struct GrantChangeValue {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct StatusResponseType {
+pub struct StatusResponse {
     pub db: Option<Cow<'static, str>>,
     pub id: Option<Cow<'static, str>>,
     pub name: Option<Cow<'static, str>>,
     pub raft_leader: Option<Cow<'static, str>>,
     pub shards: Option<Vec<ShardType<ShardReplicasType>>>,
     pub status: Option<StatusResponseTypeStatus>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct InfoResponse {
+    pub db: DbInfo,
+    pub doc_count_estimates: Vec<usize>,
+    pub id: Cow<'static, str>,
+    pub indexes: Vec<Cow<'static, str>>,
+    pub name: Cow<'static, str>,
+    pub primary_key: Cow<'static, str>,
+    #[serde(rename = "type")]
+    pub typ: TypeOf,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct DbInfo {
+    id: Cow<'static, str>,
+    name: Cow<'static, str>,
+    #[serde(rename = "type")]
+    pub typ: TypeOf,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -216,7 +236,7 @@ impl<T: Serialize + Clone> GeoJson<T> {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub enum Replicas {
     Int(u8),
@@ -226,7 +246,7 @@ pub enum Replicas {
     },
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub enum ReturnChanges {
     Bool(bool),
@@ -286,7 +306,7 @@ pub enum WaitFor {
 }
 
 /// Controls how change notifications are batched
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
 #[serde(untagged)]
 pub enum Squash {
@@ -304,7 +324,7 @@ pub enum Squash {
     Float(f32),
 }
 
-#[derive(Debug, Clone, Serialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
 #[serde(untagged)]
 pub enum Interleave {
@@ -312,7 +332,7 @@ pub enum Interleave {
     FieldName(&'static str),
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[serde(rename_all = "lowercase")]
 #[non_exhaustive]
 pub enum Status {
@@ -320,14 +340,14 @@ pub enum Status {
     Closed,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum EmergencyRepair {
     UnsafeRollback,
     UnsafeRollbackOrErase,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum Unit {
     #[serde(rename = "m")]
     Meter,
@@ -341,11 +361,45 @@ pub enum Unit {
     InternationalFoot,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum GeoSystem {
     #[serde(rename = "unit_sphere")]
     UnitSphere,
     WGS84,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum TypeOf {
+    Array,
+    Bool,
+    Db,
+    Function,
+    GroupedData,
+    GroupedStream,
+    Maxval,
+    Minval,
+    Null,
+    Number,
+    Object,
+
+    #[serde(rename = "PTYPE<BINARY>")]
+    PtypeBinary,
+    #[serde(rename = "PTYPE<GEOMETRY>")]
+    PtypeGeometry,
+    #[serde(rename = "PTYPE<TIME>")]
+    PtypeTime,
+    #[serde(rename = "SELECTION<ARRAY>")]
+    SelectionArray,
+    #[serde(rename = "SELECTION<OBJECT>")]
+    SelectionObject,
+    #[serde(rename = "SELECTION<STREAM>")]
+    SelectionStream,
+
+    Stream,
+    String,
+    TableSlice,
+    Table,
 }
 
 #[derive(Debug, Clone)]

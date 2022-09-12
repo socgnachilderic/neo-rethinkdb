@@ -1,12 +1,25 @@
-use crate::{cmd, Command};
 use ql2::term::TermType;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+use crate::Command;
+
+pub(crate) fn new() -> Command {
+    Command::new(TermType::Info)
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Info).with_arg(self).into_arg()
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::{InfoResponse, TypeOf};
+    use crate::Result;
+
+    #[tokio::test]
+    async fn test_info_table() -> Result<()> {
+        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        let data_obtained: InfoResponse = table.info().run(&conn).await?.unwrap().parse()?;
+
+        assert!(data_obtained.typ == TypeOf::Table);
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

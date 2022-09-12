@@ -5,7 +5,7 @@ pub mod args;
 // pub mod asc;
 pub mod avg;
 pub mod between;
-// pub mod binary;
+pub mod binary;
 pub mod bit_and;
 pub mod bit_not;
 pub mod bit_or;
@@ -13,12 +13,12 @@ pub mod bit_sal;
 pub mod bit_sar;
 pub mod bit_xor;
 pub mod bracket;
-// pub mod branch;
+pub mod branch;
 pub mod ceil;
 pub mod change_at;
 // pub mod changes;
 // pub mod circle;
-// pub mod coerce_to;
+pub mod coerce_to;
 pub mod concat_map;
 // pub mod config;
 pub mod connect;
@@ -32,7 +32,7 @@ pub mod db;
 pub mod db_create;
 pub mod db_drop;
 pub mod db_list;
-// pub mod default;
+pub mod default;
 pub mod delete;
 pub mod delete_at;
 // pub mod desc;
@@ -40,19 +40,19 @@ pub mod difference;
 // pub mod distance;
 pub mod distinct;
 pub mod div;
-// pub mod do_;
+pub mod do_;
 pub mod downcase;
 // pub mod during;
 // pub mod epoch_time;
 pub mod eq;
 pub mod eq_join;
-// pub mod error;
+pub mod error;
 pub mod expr;
 // pub mod fill;
 pub mod filter;
 pub mod floor;
 pub mod fold;
-// pub mod for_each;
+pub mod for_each;
 pub(crate) mod func;
 pub mod ge;
 // pub mod geojson;
@@ -67,7 +67,7 @@ pub mod group;
 pub mod gt;
 pub mod has_fields;
 // pub mod hours;
-// pub mod http;
+pub mod http;
 // pub mod in_timezone;
 // pub mod includes;
 // pub mod index;
@@ -77,15 +77,15 @@ pub mod index_list;
 pub mod index_rename;
 pub mod index_status;
 pub mod index_wait;
-// pub mod info;
+pub mod info;
 pub mod inner_join;
 pub mod insert;
 pub mod insert_at;
 // pub mod intersects;
 pub mod is_empty;
 // pub mod iso8601;
-// pub mod js;
-// pub mod json;
+pub mod js;
+pub mod json;
 pub mod keys;
 pub mod le;
 pub mod limit;
@@ -115,7 +115,7 @@ pub mod pluck;
 // pub mod polygon_sub;
 pub mod prepend;
 pub mod random;
-// pub mod range;
+pub mod range;
 // pub mod rebalance;
 // pub mod reconfigure;
 pub mod reduce;
@@ -148,13 +148,13 @@ pub mod table_list;
 // pub mod to_epoch_time;
 // pub mod to_geojson;
 // pub mod to_iso8601;
-// pub mod to_json;
-// pub mod type_of;
+pub mod to_json;
+pub mod type_of;
 pub mod ungroup;
 pub mod union;
 pub mod upcase;
 pub mod update;
-// pub mod uuid;
+pub mod uuid;
 pub mod values;
 // pub mod wait;
 pub mod with_fields;
@@ -170,7 +170,6 @@ use async_native_tls::TlsStream;
 use async_net::TcpStream;
 use futures::stream::Stream;
 use futures::TryStreamExt;
-use ql2::term::TermType;
 use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
@@ -329,12 +328,12 @@ impl<'a> Command {
         order_by::new(args).with_parent(self)
     }
 
-    pub fn skip(self, number_of_element: usize) -> Self {
-        skip::new(number_of_element).with_parent(self)
+    pub fn skip(self, n: usize) -> Self {
+        skip::new(n).with_parent(self)
     }
 
-    pub fn limit(self, number_of_element: usize) -> Self {
-        limit::new(number_of_element).with_parent(self)
+    pub fn limit(self, n: usize) -> Self {
+        limit::new(n).with_parent(self)
     }
 
     pub fn slice(self, args: impl slice::SliceArg) -> Self {
@@ -629,36 +628,36 @@ impl<'a> Command {
     //     Self::new(TermType::ToEpochTime).with_parent(self)
     // }
 
-    /* pub fn binary(self, arg: impl binary::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn do_(self, args: impl do_::DoArg) -> Self {
+        do_::new(args).with_parent(self)
     }
 
-    pub fn branch(self, arg: impl branch::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn branch(self, args: impl branch::BranchArg) -> Self {
+        branch::new(args).with_parent(self)
     }
 
-    pub fn for_each(self, arg: impl for_each::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn for_each(self, write_function: Func) -> Self {
+        for_each::new(write_function).with_parent(self)
     }
 
-    pub fn default(self, arg: impl default::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
+    pub fn default(self, args: impl default::DefaultArg) -> Self {
+        default::new(args).with_parent(self)
     }
 
-    pub fn coerce_to(self, arg: impl coerce_to::Arg) -> Self {
-        arg.arg().into_cmd().with_parent(self)
-    } */
+    pub fn coerce_to(self, value: impl Serialize) -> Self {
+        coerce_to::new(value).with_parent(self)
+    }
 
     pub fn type_of(self) -> Self {
-        Self::new(TermType::TypeOf).with_parent(self)
+        type_of::new().with_parent(self)
     }
 
     pub fn info(self) -> Self {
-        Self::new(TermType::Info).with_parent(self)
+        info::new().with_parent(self)
     }
 
     pub fn to_json(self) -> Self {
-        Self::new(TermType::ToJsonString).with_parent(self)
+        to_json::new().with_parent(self)
     }
 
     pub async fn run(self, arg: impl run::Arg) -> Result<Option<Value>> {

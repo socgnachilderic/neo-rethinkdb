@@ -1,12 +1,9 @@
-use crate::{cmd, Command};
 use ql2::term::TermType;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+use crate::{Command, Func};
+
+pub(crate) fn new(arg: Func) -> Command {
+    Command::new(TermType::ForEach).with_arg(arg.0)
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::ForEach).with_arg(self).into_arg()
-    }
-}
+// TODO write test

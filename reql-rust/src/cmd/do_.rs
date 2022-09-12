@@ -1,102 +1,42 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 
-use crate::ops::ReqlOps;
-use crate::types::Document;
 use crate::{Command, Func};
 
-#[derive(Debug, Clone)]
-pub struct DoBuilder(pub(crate) Command);
+pub(crate) fn new(args: impl DoArg) -> Command {
+    let (args, func) = args.into_do_opts();
+    let mut command = Command::new(TermType::Funcall);
 
-impl DoBuilder {
-    pub(crate) fn new(func: Func) -> Self {
-        let Func(func) = func;
-        let command = Command::new(TermType::Funcall).with_arg(func);
-
-        Self(command)
+    for arg in args {
+        command = command.with_arg(arg)
     }
 
-    pub async fn run<A, T>(self, arg: A) -> crate::Result<Option<Document<T>>>
-    where
-        A: super::run::Arg,
-        T: Unpin + DeserializeOwned,
-    {
-        self.make_query(arg).try_next().await
-    }
+    command.with_arg(func)
+}
 
-    pub fn make_query<A, T>(self, arg: A) -> impl Stream<Item = crate::Result<Document<T>>>
-    where
-        A: super::run::Arg,
-        T: Unpin + DeserializeOwned,
-    {
-        self.get_parent().run::<_, Document<T>>(arg)
-    }
+pub trait DoArg {
+    fn into_do_opts(self) -> (Vec<Command>, Command);
+}
 
-    pub fn with_args<T: Serialize>(mut self, args: &[T]) -> Self {
-        for arg in args {
-            let arg = Command::from_json(arg);
-            self.0 = self.0.with_arg(arg);
-        }
-
-        self
-    }
-
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
+impl DoArg for Func {
+    fn into_do_opts(self) -> (Vec<Command>, Command) {
+        (Vec::new(), self.0)
     }
 }
 
-impl ReqlOps for DoBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+impl DoArg for (Command, Func) {
+    fn into_do_opts(self) -> (Vec<Command>, Command) {
+        let Func(func) = self.1;
+
+        (vec![self.0], func)
     }
 }
 
-impl Into<Command> for DoBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+impl DoArg for (Vec<Command>, Func) {
+    fn into_do_opts(self) -> (Vec<Command>, Command) {
+        let Func(func) = self.1;
+
+        (self.0, func)
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::prelude::*;
-    use crate::{self as reql_rust, cmd, r};
-
-    #[test]
-    fn r_do() {
-        let counter = crate::current_counter();
-        let query = r.do_(func!(|x, y| x + y)).with_args(&[10, 20]);
-        let serialised = cmd::serialise(&query.get_parent());
-        let expected = format!(
-            r#"[64,[[69,[[2,[2,3]],[24,[[10,[{}]],[10,[{}]]]]]],10,20]]"#,
-            counter,
-            counter + 1
-        );
-        assert_eq!(serialised, expected);
-    }
-
-    #[test]
-    fn r_db_table_get_do() {
-        let counter = crate::current_counter();
-        let query = r
-            .db("mydb")
-            .table::<serde_json::Value>("table1")
-            .get("johndoe@example.com");
-        // .do_(func!(|doc| r
-        //     .db("mydb")
-        //     .table("table2")
-        //     .get(doc.get_field("id"))));
-        let serialised = cmd::serialise(&query.get_parent());
-        let expected = format!(
-            r#"[64,[[69,[[2,[1]],[16,[[15,[[14,["mydb"]],"table2"]],[31,[[10,[{}]],"id"]]]]]],[16,[[15,[[14,["mydb"]],"table1"]],"johndoe@example.com"]]]]"#,
-            counter
-        );
-        assert_eq!(serialised, expected);
-        todo!();
-    }
-}
+// TODO write test

@@ -1,21 +1,33 @@
-use crate::{cmd, Command};
 use ql2::term::TermType;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+use crate::Command;
+
+pub(crate) fn new(message: &str) -> Command {
+    let arg = Command::from_json(message);
+
+    Command::new(TermType::Error).with_arg(arg)
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Error).with_arg(self).into_arg()
-    }
-}
+#[cfg(test)]
+mod tests {
+    use crate::{r, ReqlError, ReqlRuntimeError, Result};
 
-impl<T> Arg for T
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self.into()).arg()
+    #[tokio::test]
+    async fn test_error_ops() -> Result<()> {
+        let msg = "Error";
+        let conn = r.connection().connect().await?;
+        let err = r.error(msg).run(&conn).await.err().unwrap();
+
+        if let ReqlError::Runtime(err) = err {
+            if let ReqlRuntimeError::User(err) = err {
+                assert!(err == msg);
+
+                return Ok(());
+            }
+        }
+
+        assert!(false);
+
+        Ok(())
     }
 }

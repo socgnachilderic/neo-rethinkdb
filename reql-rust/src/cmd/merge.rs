@@ -7,7 +7,7 @@ use super::CmdOpts;
 
 pub(crate) fn new(args: impl MergeArg) -> Command {
     args.into_merge_opts()
-        .add_to_cmd(Command::new(TermType::Without))
+        .add_to_cmd(Command::new(TermType::Merge))
 }
 
 pub trait MergeArg {

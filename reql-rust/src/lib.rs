@@ -20,6 +20,8 @@ pub use connection::*;
 pub use err::*;
 pub use prelude::Func;
 pub use proto::Command;
+use time::{Date, Time, UtcOffset};
+use types::{Binary, DateTime};
 
 #[doc(hidden)]
 pub static VAR_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -180,7 +182,7 @@ impl r {
         cmd::floor::new(value)
     }
 
-    /* pub fn now(self) -> DateTime {
+    pub fn now(self) -> DateTime {
         DateTime::now()
     }
 
@@ -188,7 +190,7 @@ impl r {
         DateTime::time(date, timezone, time)
     }
 
-    pub fn epoch_time(self, timestamp: i64) -> crate::Result<DateTime> {
+    pub fn epoch_time(self, timestamp: i64) -> Result<DateTime> {
         DateTime::epoch_time(timestamp)
     }
 
@@ -200,47 +202,57 @@ impl r {
         DateTime::iso8601(iso_datetime, default_timezone)
     }
 
-    pub fn do_(self, func: Func) -> cmd::do_::DoBuilder {
-        cmd::do_::DoBuilder::new(func)
+    // TODO Review Date and Times Commands
+
+    pub fn args(self, values: Vec<impl Serialize>) -> Command {
+        cmd::args::new(values)
     }
 
-    pub fn branch(self, arg: impl cmd::branch::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn binary(self, data: &[u8]) -> Binary {
+        cmd::binary::new(data)
     }
 
-    pub fn range(self, arg: impl cmd::range::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn do_(self, args: impl cmd::do_::DoArg) -> Command {
+        cmd::do_::new(args)
     }
 
-    pub fn error(self, arg: impl cmd::error::Arg) -> Command {
-        arg.arg().into_cmd()
-    }*/
-
-    pub fn expr(self, arg: impl cmd::expr::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn branch(self, args: impl cmd::branch::BranchArg) -> Command {
+        cmd::branch::new(args)
     }
 
-    /*pub fn js(self, arg: impl cmd::js::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn range(self, args: impl cmd::range::RangeArg) -> Command {
+        cmd::range::new(args)
     }
 
-    pub fn info(self, arg: impl cmd::info::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn error(self, message: &str) -> Command {
+        cmd::error::new(message)
     }
 
-    pub fn json(self, arg: impl cmd::json::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn expr(self, value: impl Serialize) -> Command {
+        cmd::expr::new(value)
     }
 
-    pub fn http(self, arg: impl cmd::http::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn js(self, args: impl cmd::js::JsArg) -> Command {
+        cmd::js::new(args)
     }
 
-    pub fn uuid(self, arg: impl cmd::uuid::Arg) -> Command {
-        arg.arg().into_cmd()
+    pub fn info(self, any: Command) -> Command {
+        any.info()
     }
 
-    pub fn circle(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Polygon> {
+    pub fn json(self, value: &str) -> Command {
+        cmd::json::new(value)
+    }
+
+    pub fn http(self, args: impl cmd::http::HttpArg) -> Command {
+        cmd::http::new(args)
+    }
+
+    pub fn uuid(self, args: impl cmd::uuid::UuidArg) -> Command {
+        cmd::uuid::new(args)
+    }
+
+    /* pub fn circle(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Polygon> {
         cmd::circle::CircleBuilder::new(point, radius)
     }
 
@@ -282,10 +294,6 @@ impl r {
     pub fn index(self, arg: impl cmd::index::Arg) -> cmd::index::Index {
         cmd::index::Index(arg.arg().into_cmd())
     } */
-
-    pub fn args<T>(self, arg: T) -> cmd::args::Args<T> {
-        cmd::args::Args(arg)
-    }
 
     pub fn min_val() -> Command {
         Command::new(ql2::term::TermType::Minval)

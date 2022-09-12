@@ -1,35 +1,45 @@
-use super::args::Args;
-use crate::{cmd, Command};
 use ql2::term::TermType;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+use crate::Command;
+
+pub(crate) fn new(args: impl UuidArg) -> Command {
+    let mut command = Command::new(TermType::Uuid);
+
+    if let Some(arg) = args.into_uui_opts() {
+        command = command.with_arg(arg)
+    }
+
+    command
 }
 
-impl Arg for cmd::Arg<()> {
-    fn arg(self) -> cmd::Arg<()> {
-        self
+pub trait UuidArg {
+    fn into_uui_opts(self) -> Option<Command>;
+}
+
+impl UuidArg for () {
+    fn into_uui_opts(self) -> Option<Command> {
+        None
     }
 }
 
-impl Arg for () {
-    fn arg(self) -> cmd::Arg<()> {
-        Command::new(TermType::Uuid).into_arg()
+impl UuidArg for &str {
+    fn into_uui_opts(self) -> Option<Command> {
+        Some(Command::from_json(self))
     }
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        ().arg().with_arg(self)
-    }
-}
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::{r, Result};
 
-impl<T> Arg for Args<T>
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<()> {
-        let Args(arg) = self;
-        Command::from_json(arg.into()).arg()
+    #[tokio::test]
+    async fn test_uuid_ops() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response: String = r.uuid(()).run(&conn).await?.unwrap().parse()?;
+
+        assert!(!response.is_empty());
+
+        Ok(())
     }
 }

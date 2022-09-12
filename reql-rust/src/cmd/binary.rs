@@ -1,38 +1,46 @@
-use ql2::term::TermType;
-
 use crate::types::Binary;
-use crate::{cmd, r, Command};
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+pub(crate) fn new(bytes: &[u8]) -> Binary {
+    Binary::new(bytes)
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Binary).with_arg(self).into_arg()
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::{AnyParam, Binary};
+    use crate::{r, Result};
+
+    #[derive(Debug, Serialize, Deserialize)]
+    struct User {
+        id: u8,
+        name: String,
+        avatar: Binary,
     }
-}
 
-impl Arg for Binary {
-    fn arg(self) -> cmd::Arg<()> {
-        r.expr(self).arg()
-    }
-}
+    #[tokio::test]
+    async fn test_binary_ops() -> Result<()> {
+        let avatar_img = std::fs::read("logo.png")?;
+        let user = User {
+            id: 1,
+            name: "John Doe".to_string(),
+            avatar: r.binary(&avatar_img),
+        };
 
-impl Arg for &[u8] {
-    fn arg(self) -> cmd::Arg<()> {
-        Binary::new(self).arg()
-    }
-}
+        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        table
+            .clone()
+            .insert(AnyParam::new(&user))
+            .run(&conn)
+            .await?;
+        let response: User = table.get(1).run(&conn).await?.unwrap().parse()?;
 
-impl Arg for &Vec<u8> {
-    fn arg(self) -> cmd::Arg<()> {
-        Binary::new(self).arg()
-    }
-}
+        assert!(response.id == user.id);
+        assert!(response.name == user.name);
+        assert!(!response.avatar.data.is_empty());
 
-impl Arg for Vec<u8> {
-    fn arg(self) -> cmd::Arg<()> {
-        Binary::new(&self).arg()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

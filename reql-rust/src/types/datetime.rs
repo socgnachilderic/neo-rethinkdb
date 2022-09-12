@@ -64,27 +64,6 @@ impl DateTime {
         Ok(Self::default().create_datetime_command(Some(datetime), Some(TermType::Iso8601)))
     }
 
-    /// Return a new time object with a different timezone. While the time stays the same,
-    /// the results returned by methods such as hours() will change since they take the timezone into account.
-    /// The timezone argument has to be of the ISO 8601 format.
-    ///
-    /// ## Example
-    ///
-    /// Hour of the day in San Francisco (UTC/GMT -8, without daylight saving time).
-    ///
-    /// ```
-    /// use reql_rust::prelude::*;
-    /// use reql_rust::{r, Result};
-    /// use serde_json::{json, Value};
-    /// use time::macros::offset;
-    ///
-    /// async fn example() -> Result<()> {
-    ///     let session = r.connection().connect().await?;
-    ///     let _ = r.now().in_timezone(offset!(-08:00));
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
     pub fn in_timezone(&self, timezone: UtcOffset) -> Self {
         let datetime = self.0.clone().replace_offset(timezone);
 
@@ -92,25 +71,6 @@ impl DateTime {
             .create_datetime_command(Some(datetime), Some(TermType::InTimezone))
     }
 
-    /// Return the timezone of the time object.
-    ///
-    /// ## Example
-    ///
-    /// Return Timezone “-07:00”.
-    ///
-    /// ```
-    /// use reql_rust::prelude::*;
-    /// use reql_rust::{r, Result};
-    /// use serde_json::{json, Value};
-    /// use time::macros::offset;
-    ///
-    /// async fn example() -> Result<()> {
-    ///     let session = r.connection().connect().await?;
-    ///     let _ = r.now().in_timezone(offset!(-07:00)).timezone();
-    ///
-    ///     Ok(())
-    /// }
-    /// ```
     pub fn timezone(&self) -> UtcOffset {
         self.0.offset()
     }

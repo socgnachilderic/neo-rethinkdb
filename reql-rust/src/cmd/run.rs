@@ -18,7 +18,7 @@ use super::args::Args;
 use crate::constants::{DATA_SIZE, DEFAULT_RETHINKDB_DBNAME, HEADER_SIZE, TOKEN_SIZE};
 use crate::proto::{Payload, Query};
 use crate::types::{Durability, ReadMode};
-use crate::{err, r, Command, Connection, Result, Session};
+use crate::{err, Command, Connection, Result, Session};
 
 #[derive(Deserialize, Debug)]
 #[allow(dead_code)]
@@ -128,7 +128,8 @@ impl Arg for Args<(&mut Session, Options)> {
     fn into_run_opts(self) -> Result<(Connection, Options)> {
         let Args((session, options)) = self;
         let conn = session.connection()?;
-        r.args((conn, options)).into_run_opts()
+
+        Args((conn, options)).into_run_opts()
     }
 }
 
