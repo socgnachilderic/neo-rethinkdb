@@ -2,7 +2,7 @@ pub mod add;
 pub mod and;
 pub mod append;
 pub mod args;
-// pub mod asc;
+pub mod asc;
 pub mod avg;
 pub mod between;
 pub mod binary;
@@ -16,7 +16,7 @@ pub mod bracket;
 pub mod branch;
 pub mod ceil;
 pub mod change_at;
-// pub mod changes;
+pub mod changes;
 pub mod circle;
 pub mod coerce_to;
 pub mod concat_map;
@@ -35,7 +35,7 @@ pub mod db_list;
 pub mod default;
 pub mod delete;
 pub mod delete_at;
-// pub mod desc;
+pub mod desc;
 pub mod difference;
 pub mod distance;
 pub mod distinct;
@@ -70,7 +70,6 @@ pub mod has_fields;
 pub mod http;
 // pub mod in_timezone;
 pub mod includes;
-// pub mod index;
 pub mod index_create;
 pub mod index_drop;
 pub mod index_list;
@@ -212,11 +211,11 @@ impl StaticString for &Cow<'static, str> {
     }
 }
 
-// fn changes(&self) -> cmd::changes::ChangesBuilder<Document<T>> {
-//     cmd::changes::ChangesBuilder::new()._with_parent(self.get_parent())
-// }
-
 impl<'a> Command {
+    pub fn changes(self, args: impl changes::ChangesArg) -> Self {
+        changes::new(args).with_parent(self)
+    }
+
     pub fn table_create(self, args: impl table_create::TableCreateArg) -> Self {
         table_create::new(args).with_parent(self)
     }

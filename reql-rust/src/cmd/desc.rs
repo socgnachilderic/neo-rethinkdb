@@ -1,24 +1,26 @@
-use crate::{cmd, Command};
 use ql2::term::TermType;
 
-#[derive(Debug, Clone)]
-pub struct Desc(pub(crate) Command);
+use crate::prelude::Func;
+use crate::Command;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+pub(crate) fn new(args: impl DescArg) -> Command {
+    Command::new(TermType::Desc).with_arg(args.into_desc_opts())
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Desc).with_arg(self).into_arg()
+pub trait DescArg {
+    fn into_desc_opts(self) -> Command;
+}
+
+impl DescArg for &str {
+    fn into_desc_opts(self) -> Command {
+        Command::from_json(self)
     }
 }
 
-impl<T> Arg for T
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self.into()).arg()
+impl DescArg for Func {
+    fn into_desc_opts(self) -> Command {
+        self.0
     }
 }
+
+// TODO write test

@@ -1,38 +1,26 @@
-use crate::{cmd, Command};
-use crate::prelude::Func;
 use ql2::term::TermType;
 
-#[derive(Debug, Clone)]
-pub struct Asc(pub(crate) Command);
+use crate::prelude::Func;
+use crate::Command;
 
-pub trait Arg {
-    fn arg(self) -> cmd::Arg<()>;
+pub(crate) fn new(args: impl AscArg) -> Command {
+    Command::new(TermType::Asc).with_arg(args.into_asc_opts())
 }
 
-impl Arg for cmd::Arg<()> {
-    fn arg(self) -> cmd::Arg<()> {
-        self
+pub trait AscArg {
+    fn into_asc_opts(self) -> Command;
+}
+
+impl AscArg for &str {
+    fn into_asc_opts(self) -> Command {
+        Command::from_json(self)
     }
 }
 
-impl Arg for Command {
-    fn arg(self) -> cmd::Arg<()> {
-        Self::new(TermType::Asc).with_arg(self).into_arg()
+impl AscArg for Func {
+    fn into_asc_opts(self) -> Command {
+        self.0
     }
 }
 
-impl<T> Arg for T
-where
-    T: Into<String>,
-{
-    fn arg(self) -> cmd::Arg<()> {
-        Command::from_json(self.into()).arg()
-    }
-}
-
-impl Arg for Func {
-    fn arg(self) -> cmd::Arg<()> {
-        let Func(func) = self;
-        func.arg()
-    }
-}
+// TODO write test

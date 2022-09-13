@@ -31,11 +31,6 @@ pub fn var_counter() -> u64 {
     VAR_COUNTER.fetch_add(1, Ordering::SeqCst)
 }
 
-// #[cfg(test)]
-// fn current_counter() -> u64 {
-//     VAR_COUNTER.load(Ordering::SeqCst)
-// }
-
 pub type Result<T> = std::result::Result<T, ReqlError>;
 
 #[allow(non_camel_case_types)]
@@ -284,17 +279,13 @@ impl r {
         cmd::grant::new(args)
     }
 
-    /* pub fn asc(self, arg: impl cmd::asc::Arg) -> cmd::asc::Asc {
-        cmd::asc::Asc(arg.arg().into_cmd())
+    pub fn asc(self, args: impl cmd::asc::AscArg) -> Command {
+        cmd::asc::new(args)
     }
 
-    pub fn desc(self, arg: impl cmd::desc::Arg) -> cmd::desc::Desc {
-        cmd::desc::Desc(arg.arg().into_cmd())
+    pub fn desc(self, args: impl cmd::desc::DescArg) -> Command {
+        cmd::desc::new(args)
     }
-
-    pub fn index(self, arg: impl cmd::index::Arg) -> cmd::index::Index {
-        cmd::index::Index(arg.arg().into_cmd())
-    } */
 
     pub fn min_val() -> Command {
         Command::new(ql2::term::TermType::Minval)
