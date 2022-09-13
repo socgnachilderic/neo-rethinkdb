@@ -3,24 +3,20 @@ use std::{borrow::Cow, collections::HashMap};
 use serde::{Deserialize, Serialize, Serializer};
 use uuid::Uuid;
 
-// pub use crate::cmd::line::Line;
-// pub use crate::cmd::point::Point;
-// pub use crate::cmd::polygon::Polygon;
-// pub use document::Document;
+pub use crate::cmd::line::Line;
+pub use crate::cmd::point::Point;
+pub use crate::cmd::polygon::Polygon;
 pub use group_stream::{GroupItem, GroupStream};
-// pub use sequence::Sequence;
 pub use binary::Binary;
 pub use datetime::DateTime;
 
 use crate::Command;
 
-// mod document;
 mod group_stream;
-// mod sequence;
 mod binary;
 mod datetime;
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord)]
 #[non_exhaustive]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ReqlType {
@@ -28,7 +24,7 @@ pub enum ReqlType {
     GroupStream,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum GeoType {
     LineString,
@@ -179,7 +175,7 @@ pub struct StatusResponse {
     pub name: Option<Cow<'static, str>>,
     pub raft_leader: Option<Cow<'static, str>>,
     pub shards: Option<Vec<ShardType<ShardReplicasType>>>,
-    pub status: Option<StatusResponseTypeStatus>,
+    pub status: Option<StatusResponseStatus>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -203,11 +199,17 @@ pub struct DbInfo {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct StatusResponseTypeStatus {
+pub struct StatusResponseStatus {
     pub all_replicas_ready: Option<bool>,
     pub ready_for_outdated_reads: Option<bool>,
     pub ready_for_reads: Option<bool>,
     pub ready_for_writes: Option<bool>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
+pub struct ClosestDocumentResponse<T> {
+    pub dist: f64,
+    pub doc: Option<T>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -223,8 +225,8 @@ pub struct ShardReplicasType {
     pub state: Cow<'static, str>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
-pub struct GeoJson<T: Serialize + Clone> {
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+pub struct GeoJson<T: Serialize> {
     #[serde(rename = "type")]
     pub typ: GeoType,
     pub coordinates: T,

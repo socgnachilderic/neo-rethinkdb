@@ -17,7 +17,7 @@ pub mod branch;
 pub mod ceil;
 pub mod change_at;
 // pub mod changes;
-// pub mod circle;
+pub mod circle;
 pub mod coerce_to;
 pub mod concat_map;
 // pub mod config;
@@ -37,7 +37,7 @@ pub mod delete;
 pub mod delete_at;
 // pub mod desc;
 pub mod difference;
-// pub mod distance;
+pub mod distance;
 pub mod distinct;
 pub mod div;
 pub mod do_;
@@ -48,19 +48,19 @@ pub mod eq;
 pub mod eq_join;
 pub mod error;
 pub mod expr;
-// pub mod fill;
+pub mod fill;
 pub mod filter;
 pub mod floor;
 pub mod fold;
 pub mod for_each;
 pub(crate) mod func;
 pub mod ge;
-// pub mod geojson;
+pub mod geojson;
 pub mod get;
 pub mod get_all;
 pub mod get_field;
-// pub mod get_intersecting;
-// pub mod get_nearest;
+pub mod get_intersecting;
+pub mod get_nearest;
 pub mod get_write_hook;
 // pub mod grant;
 pub mod group;
@@ -69,7 +69,7 @@ pub mod has_fields;
 // pub mod hours;
 pub mod http;
 // pub mod in_timezone;
-// pub mod includes;
+pub mod includes;
 // pub mod index;
 pub mod index_create;
 pub mod index_drop;
@@ -81,7 +81,7 @@ pub mod info;
 pub mod inner_join;
 pub mod insert;
 pub mod insert_at;
-// pub mod intersects;
+pub mod intersects;
 pub mod is_empty;
 // pub mod iso8601;
 pub mod js;
@@ -89,7 +89,7 @@ pub mod json;
 pub mod keys;
 pub mod le;
 pub mod limit;
-// pub mod line;
+pub mod line;
 pub mod literal;
 pub mod lt;
 pub mod map;
@@ -110,9 +110,9 @@ pub mod or;
 pub mod order_by;
 pub mod outer_join;
 pub mod pluck;
-// pub mod point;
-// pub mod polygon;
-// pub mod polygon_sub;
+pub mod point;
+pub mod polygon;
+pub mod polygon_sub;
 pub mod prepend;
 pub mod random;
 pub mod range;
@@ -146,7 +146,7 @@ pub mod table_list;
 // pub mod time_of_day;
 // pub mod timezone;
 // pub mod to_epoch_time;
-// pub mod to_geojson;
+pub mod to_geojson;
 // pub mod to_iso8601;
 pub mod to_json;
 pub mod type_of;
@@ -174,6 +174,7 @@ use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::prelude::Geometry;
 pub use crate::proto::Arg;
 use crate::types::AnyParam;
 use crate::Command;
@@ -210,6 +211,10 @@ impl StaticString for &Cow<'static, str> {
         }
     }
 }
+
+// fn changes(&self) -> cmd::changes::ChangesBuilder<Document<T>> {
+//     cmd::changes::ChangesBuilder::new()._with_parent(self.get_parent())
+// }
 
 impl<'a> Command {
     pub fn table_create(self, args: impl table_create::TableCreateArg) -> Self {
@@ -659,6 +664,54 @@ impl<'a> Command {
     pub fn to_json(self) -> Self {
         to_json::new().with_parent(self)
     }
+
+    pub fn distance(self, args: impl distance::DistanceArg) -> Self {
+        distance::new(args).with_parent(self)
+    }
+
+    pub fn to_geojson(self) -> Self {
+        to_geojson::new().with_parent(self)
+    }
+
+    pub fn get_intersecting(self, geometry: impl Geometry, index: &'static str) -> Self {
+        get_intersecting::new(geometry, index).with_parent(self)
+    }
+
+    pub fn get_nearest(self, args: impl get_nearest::GetNearestArg) -> Self {
+        get_nearest::new(args).with_parent(self)
+    }
+
+    pub fn includes(self, args: impl includes::IncludesArg) -> Self {
+        includes::new(args).with_parent(self)
+    }
+
+    pub fn intersects(self, geometry: impl Geometry) -> Self {
+        intersects::new(geometry).with_parent(self)
+    }
+
+    /* pub fn grant(&self, username: &str) -> super::grant::GrantBuilder {
+        super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
+    }
+
+    pub fn config(&self) -> super::config::ConfigBuilder {
+        super::config::ConfigBuilder::new()._with_parent(self.get_parent())
+    }
+
+    pub fn rebalance(&self) -> super::rebalance::RebalanceBuilder {
+        super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
+    }
+
+    pub fn reconfigure(&self) -> super::reconfigure::ReconfigureBuilder {
+        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
+    }
+
+    pub fn status(&self) -> super::status::StatusBuilder {
+        super::status::StatusBuilder::new()._with_parent(self.get_parent())
+    }
+
+    pub fn wait(&self) -> super::wait::WaitBuilder {
+        super::wait::WaitBuilder::new()._with_parent(self.get_parent())
+    } */
 
     pub async fn run(self, arg: impl run::Arg) -> Result<Option<Value>> {
         self.make_query(arg).try_next().await

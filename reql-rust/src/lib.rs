@@ -21,7 +21,7 @@ pub use err::*;
 pub use prelude::Func;
 pub use proto::Command;
 use time::{Date, Time, UtcOffset};
-use types::{Binary, DateTime};
+use types::{Binary, DateTime, GeoJson};
 
 #[doc(hidden)]
 pub static VAR_COUNTER: AtomicU64 = AtomicU64::new(1);
@@ -252,18 +252,15 @@ impl r {
         cmd::uuid::new(args)
     }
 
-    /* pub fn circle(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Polygon> {
-        cmd::circle::CircleBuilder::new(point, radius)
+    pub fn circle(self, args: impl cmd::circle::CircleArg) -> Command {
+        cmd::circle::new(args)
     }
 
-    pub fn circle_unfill(self, point: &Point, radius: u32) -> cmd::circle::CircleBuilder<Line> {
-        cmd::circle::CircleBuilder::new(point, radius).with_fill(false)
+    pub fn distance(self, args: impl cmd::distance::DistanceArg) -> Command {
+        cmd::distance::new(args)
     }
 
-    pub fn geojson<T>(self, geojson: &GeoJson<T>) -> cmd::geojson::ReqlGeoJson<T>
-    where
-        T: Unpin + Serialize + DeserializeOwned + Clone,
-    {
+    pub fn geojson<T: Serialize>(self, geojson: GeoJson<T>) -> cmd::geojson::ReqlGeoJson<T> {
         cmd::geojson::ReqlGeoJson::new(geojson)
     }
 
@@ -279,7 +276,11 @@ impl r {
         cmd::polygon::Polygon::new(points)
     }
 
-    pub fn grant(self, username: &str) -> cmd::grant::GrantBuilder {
+    pub fn intersects(self, args: impl cmd::intersects::IntersectsArg) -> Command {
+        cmd::intersects::new(args)
+    }
+
+    /* pub fn grant(self, username: &str) -> cmd::grant::GrantBuilder {
         cmd::grant::GrantBuilder::new(username)
     }
 

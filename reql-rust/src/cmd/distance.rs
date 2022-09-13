@@ -1,16 +1,51 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
+use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::ops::{ReqlOps, ReqlOpsGeometry};
+use crate::prelude::Geometry;
 use crate::types::{GeoSystem, Unit};
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct DistanceBuilder(pub(crate) Command, pub(crate) DistanceOption);
+pub(crate) fn new(args: impl DistanceArg) -> Command {
+    let (arg1, arg2, opts) = args.into_distance_opts();
+    let mut command = Command::new(TermType::Distance).with_arg(arg1);
 
-#[derive(Debug, Clone, Serialize, Default)]
-#[non_exhaustive]
+    if let Some(arg) = arg2 {
+        command = command.with_arg(arg)
+    }
+
+    command.with_opts(opts)
+}
+
+pub trait DistanceArg {
+    fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption);
+}
+
+impl<T: Geometry> DistanceArg for T  {
+    fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
+        (self.into(), None, Default::default())
+    }
+}
+
+impl<T: Geometry, G: Geometry> DistanceArg for (T, G)  {
+    fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
+        (self.0.into(), Some(self.1.into()), Default::default())
+    }
+}
+
+impl<T: Geometry> DistanceArg for (T, DistanceOption)  {
+    fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
+        (self.0.into(), None, self.1)
+    }
+}
+
+impl<T: Geometry, G: Geometry> DistanceArg for (T, G, DistanceOption)  {
+    fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
+        (self.0.into(), Some(self.1.into()), self.2)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq, PartialOrd, Ord, CommandOptions)]
 pub struct DistanceOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub geo_system: Option<GeoSystem>,
@@ -18,46 +53,30 @@ pub struct DistanceOption {
     pub unit: Option<Unit>,
 }
 
-impl DistanceBuilder {
-    pub(crate) fn new<A: ReqlOpsGeometry + Serialize>(geometry: A) -> Self {
-        let arg = Command::from_json(geometry);
-        let command = Command::new(TermType::Distance).with_arg(arg);
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::types::Unit;
+    use crate::{r, Result};
 
-        Self(command, DistanceOption::default())
-    }
+    use super::DistanceOption;
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<usize>> {
-        self.make_query(arg).try_next().await
-    }
+    #[tokio::test]
+    async fn test_distance_data() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let point1 = r.point(-122.423246, 37.779388);
+        let point2 = r.point(-117.220406, 32.719464);
+        let distance_option = DistanceOption::default().unit(Unit::Kilometer);
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<usize>> {
-        self.get_parent().run::<_, usize>(arg)
-    }
+        let response: f64 = r
+            .distance((point1, point2, distance_option))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+        
+        assert!(response == 734.125249602186);
 
-    pub fn with_geo_system(mut self, geo_system: GeoSystem) -> Self {
-        self.1.geo_system = Some(geo_system);
-        self
-    }
-
-    pub fn with_unit(mut self, unit: Unit) -> Self {
-        self.1.unit = Some(unit);
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl ReqlOps for DistanceBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().with_opts(&self.1).into_arg::<()>().into_cmd()
-    }
-}
-
-impl Into<Command> for DistanceBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+        Ok(())
     }
 }

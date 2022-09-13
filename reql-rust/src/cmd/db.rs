@@ -1,47 +1,12 @@
-use crate::Command;
 use ql2::term::TermType;
+
+use crate::Command;
 
 pub(crate) fn new(db_name: &str) -> Command {
     let arg = Command::from_json(db_name);
 
     Command::new(TermType::Db).with_arg(arg)
 }
-
-/* #[derive(Debug, Clone)]
-pub struct DbBuilder(pub(crate) Command);
-
-impl DbBuilder {
-    pub(crate) fn new(db_name: &str) -> Self {
-        let args = Command::from_json(db_name);
-
-        Self(
-            Command::new(TermType::Db)
-                .with_arg(args)
-                .into_arg::<()>()
-                .into_cmd(),
-        )
-    }
-
-    pub fn grant(self, username: &str) -> super::grant::GrantBuilder {
-        super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
-    }
-
-    pub fn config(self) -> super::config::ConfigBuilder {
-        super::config::ConfigBuilder::new()._with_parent(self.get_parent())
-    }
-
-    pub fn rebalance(self) -> super::rebalance::RebalanceBuilder {
-        super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
-    }
-
-    pub fn reconfigure(self) -> super::reconfigure::ReconfigureBuilder {
-        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
-    }
-
-    pub fn wait(self) -> super::wait::WaitBuilder {
-        super::wait::WaitBuilder::new()._with_parent(self.get_parent())
-    }
-} */
 
 #[cfg(test)]
 mod tests {

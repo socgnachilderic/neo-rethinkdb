@@ -1,51 +1,56 @@
-use std::marker::PhantomData;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
-use serde::de::DeserializeOwned;
 
 use crate::Command;
-use crate::ops::{ReqlOpsGeometry, ReqlOps};
-use crate::types::GeoJson;
 
-#[derive(Debug, Clone)]
-pub struct ToGeoJsonBuilder<T>(pub(crate) Command, PhantomData<T>);
-
-impl<T: Unpin + Serialize + DeserializeOwned + Clone> ToGeoJsonBuilder<T> {
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::ToGeojson);
-
-        Self(command, PhantomData)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<GeoJson<T>>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<GeoJson<T>>> {
-        self.get_parent().run::<_, GeoJson<T>>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+pub(crate) fn new() -> Command {
+    Command::new(TermType::ToGeojson)
 }
 
-impl<T> ReqlOpsGeometry for ToGeoJsonBuilder<T> {}
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
 
-impl<T> ReqlOps for ToGeoJsonBuilder<T> {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
+    use crate::cmd::point::Point;
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::{AnyParam, GeoJson, GeoType};
+    use crate::{r, Result};
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct User {
+        id: u8,
+        name: String,
+        location: Point,
     }
-}
 
-impl<T> Into<Command> for ToGeoJsonBuilder<T> {
-    fn into(self) -> Command {
-        self.get_parent()
+    #[tokio::test]
+    async fn test_to_geojson_ops() -> Result<()> {
+        let user = User {
+            id: 1,
+            name: "sfo".to_string(),
+            location: r.point(-122.423246, 37.779388),
+        };
+        let geo: GeoJson<[f64; 2]> = GeoJson {
+            typ: GeoType::Point,
+            coordinates: [-122.423246, 37.779388]
+        };
+        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        table
+            .clone()
+            .insert(AnyParam::new(&user))
+            .run(&conn)
+            .await?;
+        let location: GeoJson<[f64; 2]> = table
+            .get(1)
+            .g("location")
+            .to_geojson()
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(location == geo);
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

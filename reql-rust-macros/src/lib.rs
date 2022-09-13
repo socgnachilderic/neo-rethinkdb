@@ -1,4 +1,4 @@
-mod document;
+mod geometry;
 mod func;
 mod options;
 
@@ -15,7 +15,7 @@ pub fn command_opts(input: TokenStream) -> TokenStream {
     options::parse(input)
 }
 
-#[proc_macro_derive(Document)]
+#[proc_macro_derive(Geometry)]
 pub fn make_document(input: TokenStream) -> TokenStream {
-    document::parse(input)
+    geometry::parse(input)
 }

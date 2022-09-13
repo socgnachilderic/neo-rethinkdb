@@ -1,47 +1,38 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 
-use crate::ops::{ReqlOps, ReqlOpsGeometry};
-use crate::types::Polygon;
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct FillBuilder(pub(crate) Command);
-
-impl FillBuilder {
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::Fill);
-
-        Self(command)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Polygon>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<Polygon>> {
-        self.get_parent().run::<_, Polygon>(arg)
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+pub(crate) fn new() -> Command {
+    Command::new(TermType::Fill)
 }
 
-impl ReqlOpsGeometry for FillBuilder {}
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::types::{Point, Polygon};
+    use crate::{r, Result};
 
-impl ReqlOps for FillBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
+    #[tokio::test]
+    async fn test_fill_ops() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let rectangle = r.line(&[
+            Point::new(-122.423246, 37.779388),
+            Point::new(-122.423246, 37.329898),
+            Point::new(-121.886420, 37.329898),
+            Point::new(-121.886420, 37.779388),
+        ]);
+        let data = Polygon::new(&[
+            Point::new(-122.423246, 37.779388),
+            Point::new(-122.423246, 37.329898),
+            Point::new(-121.88642, 37.329898),
+            Point::new(-121.88642, 37.779388),
+            Point::new(-122.423246, 37.779388),
+        ]);
 
-impl Into<Command> for FillBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+        let response: Polygon = rectangle.fill().run(&conn).await?.unwrap().parse()?;
+        
+        assert!(response == data);
+
+        Ok(())
     }
 }

@@ -1,104 +1,64 @@
-pub mod geometry {
-    use futures::{Stream, TryStreamExt};
-    use ql2::term::TermType;
-    use serde::Serialize;
+use ql2::term::TermType;
 
-    use crate::cmd::run;
-    use crate::ops::{ReqlOps, ReqlOpsGeometry};
-    use crate::Command;
+use crate::{prelude::Geometry, Command};
 
-    #[derive(Debug, Clone)]
-    pub struct IntersectsBuilder(pub(crate) Command);
+use super::CmdOpts;
 
-    impl IntersectsBuilder {
-        pub(crate) fn new<T: ReqlOpsGeometry + Serialize>(geometry: T) -> Self {
-            let arg = Command::from_json(geometry);
-            let command = Command::new(TermType::Intersects).with_arg(arg);
+pub(crate) fn new(geometry: impl IntersectsArg) -> Command {
+    let (arg1, arg) = geometry.into_intersects_opts();
+    let mut command = Command::new(TermType::Intersects);
 
-            Self(command)
-        }
-
-        pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<bool>> {
-            self.make_query(arg).try_next().await
-        }
-
-        pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = crate::Result<bool>> {
-            self.get_parent().run::<_, bool>(arg)
-        }
-
-        pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-            self.0 = self.0.with_parent(parent);
-            self
-        }
+    if let Some(arg) = arg1 {
+        command = arg.add_to_cmd(command);
     }
 
-    impl ReqlOps for IntersectsBuilder {
-        fn get_parent(&self) -> Command {
-            self.0.clone().into_arg::<()>().into_cmd()
-        }
-    }
+    command.with_arg(arg)
+}
 
-    impl Into<Command> for IntersectsBuilder {
-        fn into(self) -> Command {
-            self.get_parent()
-        }
+pub trait IntersectsArg {
+    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command);
+}
+
+impl<T: Geometry> IntersectsArg for T {
+    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
+        (None, self.into())
     }
 }
 
-pub mod sequence {
-    use std::marker::PhantomData;
-
-    use futures::{Stream, TryStreamExt};
-    use ql2::term::TermType;
-    use serde::de::DeserializeOwned;
-    use serde::Serialize;
-
-    use crate::cmd::run;
-    use crate::ops::{ReqlOps, ReqlOpsDocManipulation, ReqlOpsGeometry, ReqlOpsSequence};
-    use crate::types::Sequence;
-    use crate::Command;
-
-    #[derive(Debug, Clone)]
-    pub struct IntersectsBuilder<T>(pub(crate) Command, PhantomData<T>);
-
-    impl<T: ReqlOpsGeometry + Serialize + DeserializeOwned + Unpin> IntersectsBuilder<T> {
-        pub(crate) fn new(sequence: &[T]) -> Self {
-            let arg = Command::from_json(sequence);
-            let command = Command::new(TermType::Intersects).with_arg(arg);
-
-            Self(command, PhantomData)
-        }
-
-        pub async fn run(self, arg: impl run::Arg) -> crate::Result<Option<Sequence<T>>> {
-            self.make_query(arg).try_next().await
-        }
-
-        pub fn make_query(
-            self,
-            arg: impl run::Arg,
-        ) -> impl Stream<Item = crate::Result<Sequence<T>>> {
-            self.get_parent().run::<_, Sequence<T>>(arg)
-        }
-
-        pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-            self.0 = self.0.with_parent(parent);
-            self
-        }
+impl<T: Geometry, R: Geometry> IntersectsArg for (T, R) {
+    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
+        (Some(CmdOpts::Single(self.0.into())), self.1.into())
     }
+}
 
-    impl<T: Unpin + Serialize + DeserializeOwned> ReqlOpsSequence<T> for IntersectsBuilder<T> {}
+impl<T: Geometry, R: Geometry> IntersectsArg for (Vec<T>, R) {
+    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
+        let seq = CmdOpts::Many(self.0.into_iter().map(|geo| geo.get_command()).collect());
 
-    impl<T> ReqlOpsDocManipulation for IntersectsBuilder<T> {}
-
-    impl<T> ReqlOps for IntersectsBuilder<T> {
-        fn get_parent(&self) -> Command {
-            self.0.clone().into_arg::<()>().into_cmd()
-        }
+        (Some(seq), self.1.into())
     }
+}
 
-    impl<T> Into<Command> for IntersectsBuilder<T> {
-        fn into(self) -> Command {
-            self.get_parent()
-        }
+#[cfg(test)]
+mod tests {
+    use crate::{prelude::Converter, r, Result};
+
+    #[tokio::test]
+    async fn test_intersects_geo() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let point1 = r.point(-117.220406, 32.719464);
+        let point2 = r.point(-117.206201, 32.725186);
+
+        let response: bool = r
+            .circle((point1, 2000.))
+            .intersects(point2)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(response);
+
+        Ok(())
     }
 }

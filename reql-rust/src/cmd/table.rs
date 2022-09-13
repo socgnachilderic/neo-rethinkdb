@@ -43,56 +43,6 @@ pub struct TableOption {
     pub identifier_format: Option<IdentifierFormat>,
 }
 
-/* impl<T: Unpin + Serialize + DeserializeOwned> TableBuilder<T> {
-    pub fn do_(&self, func: Func) -> super::do_::DoBuilder {
-        super::do_::DoBuilder::new(func)._with_parent(self.get_parent())
-    }
-
-    pub fn order_by(&self) -> super::order_by::OrderByBuilder<T> {
-        super::order_by::OrderByBuilder::new()._with_parent(self.get_parent())
-    }
-    pub fn get_intersecting<A>(
-        &self,
-        geometry: &A,
-        index: &'static str,
-    ) -> super::get_intersecting::GetIntersectingBuilder<A>
-    where
-        A: ReqlOpsGeometry + Serialize,
-    {
-        super::get_intersecting::GetIntersectingBuilder::new(geometry, index)
-            ._with_parent(self.get_parent())
-    }
-
-    pub fn get_nearest(&self, point: &Point, index: &'static str) -> super::get_nearest::GetNearestBuilder {
-        super::get_nearest::GetNearestBuilder::new(point, index)._with_parent(self.get_parent())
-    }
-
-    pub fn grant(&self, username: &str) -> super::grant::GrantBuilder {
-        super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
-    }
-
-    pub fn config(&self) -> super::config::ConfigBuilder {
-        super::config::ConfigBuilder::new()._with_parent(self.get_parent())
-    }
-
-    pub fn rebalance(&self) -> super::rebalance::RebalanceBuilder {
-        super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
-    }
-
-    pub fn reconfigure(&self) -> super::reconfigure::ReconfigureBuilder {
-        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
-    }
-
-    pub fn status(&self) -> super::status::StatusBuilder {
-        super::status::StatusBuilder::new()._with_parent(self.get_parent())
-    }
-
-    pub fn wait(&self) -> super::wait::WaitBuilder {
-        super::wait::WaitBuilder::new()._with_parent(self.get_parent())
-    }
-}
- */
-
 // Sequence<Document<T>>
 #[cfg(test)]
 mod tests {

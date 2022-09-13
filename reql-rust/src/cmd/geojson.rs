@@ -1,68 +1,92 @@
-use std::fmt::Debug;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 
-use crate::ops::{ReqlOps, ReqlOpsGeometry};
+use crate::prelude::Geometry;
 use crate::types::{GeoJson, GeoType, ReqlType};
 use crate::Command;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct ReqlGeoJson<T> {
     #[serde(rename = "$reql_type$")]
     pub reql_type: ReqlType,
     pub coordinates: T,
     #[serde(rename = "type")]
     pub typ: GeoType,
-
-    #[serde(skip_deserializing, skip_serializing)]
-    pub(crate) command: Option<Command>,
 }
 
-impl<T: Unpin + Serialize + DeserializeOwned + Clone> ReqlGeoJson<T> {
-    pub fn new(geojson: &GeoJson<T>) -> Self {
-        let arg = Command::from_json(geojson);
-        let command = Command::new(TermType::Geojson).with_arg(arg);
-
+impl<T: Serialize> ReqlGeoJson<T> {
+    pub fn new(geojson: GeoJson<T>) -> Self {
         Self {
-            command: Some(command),
             reql_type: ReqlType::Geometry,
             typ: geojson.typ,
-            coordinates: geojson.coordinates.clone(),
+            coordinates: geojson.coordinates,
         }
     }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Self>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Self>> {
-        self.get_parent().run::<_, Self>(arg)
-    }
 }
 
-impl<T> ReqlOpsGeometry for ReqlGeoJson<T> {}
-
-impl<T> ReqlOps for ReqlGeoJson<T> {
-    fn get_parent(&self) -> Command {
-        self.command.clone().unwrap().into_arg::<()>().into_cmd()
-    }
-}
-
-impl<T> Into<Command> for ReqlGeoJson<T> {
+impl<T: Serialize> Into<Command> for ReqlGeoJson<T> {
     fn into(self) -> Command {
-        self.get_parent()
+        let geo: GeoJson<T> = self.into();
+        let arg = Command::from_json(geo);
+
+        Command::new(TermType::Geojson).with_arg(arg)
     }
 }
 
-impl<T: Debug> Debug for ReqlGeoJson<T> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ReqlGeoJson")
-            .field("reql_type", &self.reql_type)
-            .field("coordinates", &self.coordinates)
-            .field("typ", &self.typ)
-            .finish()
+impl<T: Serialize> Into<GeoJson<T>> for ReqlGeoJson<T> {
+    fn into(self) -> GeoJson<T> {
+        GeoJson {
+            typ: self.typ,
+            coordinates: self.coordinates,
+        }
+    }
+}
+
+impl<T: Serialize> Geometry for ReqlGeoJson<T> {
+    fn get_command(self) -> Command {
+        self.into()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
+
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::{AnyParam, GeoJson, GeoType};
+    use crate::{r, Result};
+
+    use super::ReqlGeoJson;
+
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct User {
+        id: u8,
+        name: String,
+        location: ReqlGeoJson<[f64; 2]>,
+    }
+
+    #[tokio::test]
+    async fn test_geojson_data() -> Result<()> {
+        let geo_json = GeoJson {
+            typ: GeoType::Point,
+            coordinates: [-122.423246, 37.779388],
+        };
+        let user = User {
+            id: 1,
+            name: "Yaoundé".to_string(),
+            location: r.geojson(geo_json),
+        };
+        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        table
+            .clone()
+            .insert(AnyParam::new(&user))
+            .run(&conn)
+            .await?;
+        let response: User = table.get(1).run(&conn).await?.unwrap().parse()?;
+
+        assert!(response == user);
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

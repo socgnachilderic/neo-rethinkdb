@@ -1,129 +1,95 @@
-use std::fmt::Debug;
-
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
-use crate::ops::{ReqlOps, ReqlOpsGeometry};
+use crate::prelude::Geometry;
 use crate::types::{GeoType, ReqlType};
 use crate::Command;
 
 use super::point::Point;
-use super::polygon_sub::PolygonSubBuilder;
+use super::polygon_sub;
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Geometry)]
 pub struct Polygon {
     #[serde(rename = "$reql_type$")]
     pub reql_type: ReqlType,
     pub coordinates: Vec<Vec<[f64; 2]>>,
     #[serde(rename = "type")]
     pub typ: GeoType,
-
-    #[serde(skip_deserializing, skip_serializing)]
-    pub(crate) command: Option<Command>,
 }
 
 impl Polygon {
     pub fn new(points: &[Point]) -> Self {
         assert!(points.len() >= 3);
-        let mut command = Command::new(TermType::Polygon);
-        let mut coordinates: Vec<[f64; 2]> = Vec::new();
-
-        for point in points.iter() {
-            command = command.with_arg(point.command.clone().unwrap());
-            coordinates.push(point.coordinates);
-        }
 
         Self {
-            coordinates: vec![coordinates],
-            command: Some(command),
             reql_type: ReqlType::Geometry,
             typ: GeoType::Polygon,
+            coordinates: vec![points.iter().map(|point| point.coordinates).collect()],
         }
     }
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<Self>> {
-        self.make_query(arg).try_next().await
+    pub fn new_from_vec(coordinates: Vec<Vec<[f64; 2]>>) -> Self {
+        Self {
+            reql_type: ReqlType::Geometry,
+            typ: GeoType::Polygon,
+            coordinates,
+        }
     }
 
-    pub fn make_query(self, arg: impl super::run::Arg) -> impl Stream<Item = crate::Result<Self>> {
-        self.get_parent().run::<_, Self>(arg)
-    }
-
-    /// Use polygon2 to “punch out” a hole in polygon1.
-    /// polygon2 must be completely contained within polygon1 and must have no holes itself (it must not be the output of polygon_sub itself).
-    ///
-    /// ## Example
-    ///
-    /// Define a polygon with a hole punched in it.
-    ///
-    /// ```
-    /// use reql_rust::prelude::*;
-    /// use reql_rust::{r, Result};
-    /// use reql_rust::types::Point;
-    /// use serde_json::{Value, json};
-    ///
-    /// async fn example() -> Result<()> {
-    ///     let session = r.connection().connect().await?;
-    ///     let outer_polygon = [
-    ///        Point::new(-122.4, 37.7),
-    ///        Point::new(-122.4, 37.3),
-    ///        Point::new(-121.8, 37.3),
-    ///        Point::new(-121.8, 37.7),
-    ///    ];
-    ///
-    ///    let inner_polygon = [
-    ///        Point::new(-122.3, 37.4),
-    ///        Point::new(-122.3, 37.6),
-    ///        Point::new(-122.0, 37.6),
-    ///        Point::new(-122.0, 37.4),
-    ///    ];
-    ///
-    ///    let outer_polygon = r.polygon(&outer_polygon);
-    ///    let inner_polygon = r.polygon(&inner_polygon);
-    ///
-    ///    let _ = outer_polygon.polygon_sub(&inner_polygon).run(&session).await?;
-    ///
-    ///    Ok(())
-    /// }
-    /// ```
-    pub fn polygon_sub(&self, polygon: &Polygon) -> PolygonSubBuilder {
-        PolygonSubBuilder::new(polygon)._with_parent(self.get_parent())
-    }
-}
-
-impl ReqlOpsGeometry for Polygon {}
-
-impl ReqlOps for Polygon {
-    fn get_parent(&self) -> Command {
-        self.command.clone().unwrap().into_arg::<()>().into_cmd()
+    pub fn polygon_sub(self, polygon: Polygon) -> Command {
+        polygon_sub::new(polygon).with_parent(self.into())
     }
 }
 
 impl Into<Command> for Polygon {
     fn into(self) -> Command {
-        self.get_parent()
+        self.coordinates
+            .iter()
+            .flatten()
+            .fold(Command::new(TermType::Polygon), |command, coord| {
+                let point: Command = Point::new(coord[0], coord[1]).into();
+
+                command.with_arg(point)
+            })
     }
 }
 
-impl Debug for Polygon {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("Polygon")
-            .field("reql_type", &self.reql_type)
-            .field("coordinates", &self.coordinates)
-            .field("typ", &self.typ)
-            .finish()
-    }
-}
+#[cfg(test)]
+mod tests {
+    use serde::{Deserialize, Serialize};
 
-impl PartialEq for Polygon {
-    fn eq(&self, other: &Self) -> bool {
-        self.coordinates == other.coordinates
-    }
-}
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::{AnyParam, Point, Polygon};
+    use crate::{r, Result};
 
-impl PartialOrd for Polygon {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        self.coordinates.partial_cmp(&other.coordinates)
+    #[derive(Debug, Serialize, Deserialize, PartialEq)]
+    struct Rectangle {
+        id: u8,
+        rectangle: Polygon,
+    }
+
+    #[tokio::test]
+    async fn test_polygon_data() -> Result<()> {
+        let rectangle = Rectangle {
+            id: 1,
+            rectangle: r.polygon(&[
+                Point::new(-122.423246, 37.779388),
+                Point::new(-122.423246, 37.329898),
+                Point::new(-121.886420, 37.329898),
+                Point::new(-121.886420, 37.779388),
+            ]),
+        };
+        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        table
+            .clone()
+            .insert(AnyParam::new(&rectangle))
+            .run(&conn)
+            .await?;
+        let response: Rectangle = table.get(1).run(&conn).await?.unwrap().parse()?;
+
+        assert!(response == rectangle);
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }
