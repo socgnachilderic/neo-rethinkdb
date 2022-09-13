@@ -1,54 +1,30 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
-use serde::Serialize;
 
-use crate::ops::ReqlOps;
-use crate::types::{ConfigChangeValue, WritingResponseType};
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct ConfigBuilder(pub(crate) Command);
-
-impl ConfigBuilder {
-    pub(crate) fn new() -> Self {
-        let command = Command::new(TermType::Config);
-
-        Self(command)
-    }
-
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<ConfigChangeValue>> {
-        self.make_query(arg).try_next().await
-    }
-
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<ConfigChangeValue>> {
-        self.get_parent().run::<_, ConfigChangeValue>(arg)
-    }
-
-    pub fn update(
-        &self,
-        configs: impl Serialize,
-    ) -> super::update::UpdateBuilder<WritingResponseType<()>> {
-        super::update::UpdateBuilder::new(configs)._with_parent(self.get_parent())
-    }
-
-    #[doc(hidden)]
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
+pub(crate) fn new() -> Command {
+    Command::new(TermType::Config)
 }
 
-impl ReqlOps for ConfigBuilder {
-    fn get_parent(&self) -> Command {
-        self.0.clone().into_arg::<()>().into_cmd()
-    }
-}
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::Result;
+    use crate::types::{ConfigChangeValue};
 
-impl Into<Command> for ConfigBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+    #[tokio::test]
+    async fn test_get_config_info() -> Result<()> {
+        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        let response: ConfigChangeValue = table
+            .config()
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+            
+        assert!(response.name == TABLE_NAMES[0]);
+
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

@@ -24,15 +24,14 @@ pub enum ReqlType {
     GroupStream,
 }
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]
-#[non_exhaustive]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub enum GeoType {
     LineString,
     Point,
     Polygon,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct ServerInfo {
     pub id: Uuid,
@@ -41,7 +40,7 @@ pub struct ServerInfo {
 }
 
 /// Structure of return data in `db` table
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct DbResponse {
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
@@ -52,7 +51,7 @@ pub struct DbResponse {
 }
 
 /// Structure of return data in `db` table
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct WritingResponse<T> {
     pub inserted: usize,
@@ -121,26 +120,26 @@ pub struct JoinResponse<L, R> {
     pub right: Option<R>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct GrantResponseType {
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub struct GrantResponse {
     pub granted: u8,
     pub permissions_changes: Vec<ConfigChange<GrantChangeValue>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RebalanceResponseType {
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub struct RebalanceResponse {
     pub rebalanced: u8,
     pub status_changes: Vec<ConfigChange<StatusResponse>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ReconfigureResponseType {
+#[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+pub struct ReconfigureResponse {
     pub reconfigured: u8,
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
     pub status_changes: Vec<ConfigChange<StatusResponse>>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
 pub struct ConfigChange<T> {
     pub new_val: Option<T>,
     pub old_val: Option<T>,
@@ -225,7 +224,7 @@ pub struct ShardReplicasType {
     pub state: Cow<'static, str>,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
 pub struct GeoJson<T: Serialize> {
     #[serde(rename = "type")]
     pub typ: GeoType,

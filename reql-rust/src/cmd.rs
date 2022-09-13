@@ -20,7 +20,7 @@ pub mod change_at;
 pub mod circle;
 pub mod coerce_to;
 pub mod concat_map;
-// pub mod config;
+pub mod config;
 pub mod connect;
 pub mod contains;
 pub mod count;
@@ -62,7 +62,7 @@ pub mod get_field;
 pub mod get_intersecting;
 pub mod get_nearest;
 pub mod get_write_hook;
-// pub mod grant;
+pub mod grant;
 pub mod group;
 pub mod gt;
 pub mod has_fields;
@@ -116,8 +116,8 @@ pub mod polygon_sub;
 pub mod prepend;
 pub mod random;
 pub mod range;
-// pub mod rebalance;
-// pub mod reconfigure;
+pub mod rebalance;
+pub mod reconfigure;
 pub mod reduce;
 pub mod rem;
 pub mod replace;
@@ -134,7 +134,7 @@ pub mod skip;
 pub mod slice;
 pub mod splice_at;
 pub mod split;
-// pub mod status;
+pub mod status;
 pub mod sub;
 pub mod sum;
 pub mod sync;
@@ -156,7 +156,7 @@ pub mod upcase;
 pub mod update;
 pub mod uuid;
 pub mod values;
-// pub mod wait;
+pub mod wait;
 pub mod with_fields;
 pub mod without;
 // pub mod year;
@@ -689,29 +689,29 @@ impl<'a> Command {
         intersects::new(geometry).with_parent(self)
     }
 
-    /* pub fn grant(&self, username: &str) -> super::grant::GrantBuilder {
-        super::grant::GrantBuilder::new(username)._with_parent(self.get_parent())
+    pub fn grant(self, args: impl grant::GrantArg) -> Self {
+        grant::new(args).with_parent(self)
     }
 
-    pub fn config(&self) -> super::config::ConfigBuilder {
-        super::config::ConfigBuilder::new()._with_parent(self.get_parent())
+    pub fn config(self) -> Self {
+        config::new().with_parent(self)
     }
 
-    pub fn rebalance(&self) -> super::rebalance::RebalanceBuilder {
-        super::rebalance::RebalanceBuilder::new()._with_parent(self.get_parent())
+    pub fn rebalance(self) -> Self {
+        rebalance::new().with_parent(self)
     }
 
-    pub fn reconfigure(&self) -> super::reconfigure::ReconfigureBuilder {
-        super::reconfigure::ReconfigureBuilder::new()._with_parent(self.get_parent())
+    pub fn reconfigure(self, opts: reconfigure::ReconfigureOption) -> Self {
+        reconfigure::new(opts).with_parent(self)
     }
 
-    pub fn status(&self) -> super::status::StatusBuilder {
-        super::status::StatusBuilder::new()._with_parent(self.get_parent())
+    pub fn status(self) -> Self {
+        status::new().with_parent(self)
     }
 
-    pub fn wait(&self) -> super::wait::WaitBuilder {
-        super::wait::WaitBuilder::new()._with_parent(self.get_parent())
-    } */
+    pub fn wait(self, args: impl wait::WaitArg) -> Self {
+        wait::new(args).with_parent(self)
+    }
 
     pub async fn run(self, arg: impl run::Arg) -> Result<Option<Value>> {
         self.make_query(arg).try_next().await

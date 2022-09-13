@@ -18,6 +18,8 @@ pub async fn set_up(table_name: &str, with_data: bool) -> Result<(Session, Comma
     let table = r.table(table_name);
 
     r.table_create(table_name).run(&conn).await?;
+    // TODO Create user for tests
+    // r.db("rethinkdb").table("users").insert(args)
 
     if with_data {
         let data = Post::get_many_data();

@@ -1,17 +1,35 @@
-use futures::{Stream, TryStreamExt};
 use ql2::term::TermType;
+use reql_rust_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::ops::ReqlOps;
-use crate::types::GrantResponseType;
 use crate::Command;
 
-#[derive(Debug, Clone)]
-pub struct GrantBuilder(pub(crate) Command, GrantOption);
+pub(crate) fn new(args: impl GrantArg) -> Command {
+    let (arg, opts) = args.into_grant_opts();
 
-#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub(crate) struct GrantOption {
+    Command::new(TermType::Grant)
+        .with_arg(arg)
+        .with_arg(Command::from_json(opts))
+}
+
+pub trait GrantArg {
+    fn into_grant_opts(self) -> (Command, GrantOption);
+}
+
+impl GrantArg for &str {
+    fn into_grant_opts(self) -> (Command, GrantOption) {
+        (Command::from_json(self), Default::default())
+    }
+}
+
+impl GrantArg for (&str, GrantOption) {
+    fn into_grant_opts(self) -> (Command, GrantOption) {
+        (Command::from_json(self.0), self.1)
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
+pub struct GrantOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read: Option<bool>,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -22,59 +40,41 @@ pub(crate) struct GrantOption {
     pub config: Option<bool>,
 }
 
-impl GrantBuilder {
-    pub(crate) fn new(username: &str) -> Self {
-        let arg = Command::from_json(username);
-        let command = Command::new(TermType::Grant).with_arg(arg);
-        Self(command, GrantOption::default())
-    }
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::{ConfigChange, GrantChangeValue, GrantResponse};
+    use crate::Result;
 
-    pub async fn run(self, arg: impl super::run::Arg) -> crate::Result<Option<GrantResponseType>> {
-        self.make_query(arg).try_next().await
-    }
+    use super::GrantOption;
 
-    pub fn make_query(
-        self,
-        arg: impl super::run::Arg,
-    ) -> impl Stream<Item = crate::Result<GrantResponseType>> {
-        self.get_parent().run::<_, GrantResponseType>(arg)
-    }
+    #[tokio::test]
+    async fn test_grant_permission() -> Result<()> {
+        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        let expected = GrantResponse {
+            granted: 1,
+            permissions_changes: vec![ConfigChange {
+                old_val: None,
+                new_val: Some(GrantChangeValue {
+                    write: Some(true),
+                    read: Some(true),
+                    config: None,
+                    connect: None,
+                }),
+            }],
+        };
+        let permissions = GrantOption::default().read(true).write(true);
+        // TODO Replace current user when test user should be created
+        let response: GrantResponse = table
+            .grant(("bob", permissions))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-    pub fn permit_read(mut self, read: bool) -> Self {
-        self.1.read = Some(read);
-        self
-    }
+        assert!(response == expected);
 
-    pub fn permit_write(mut self, write: bool) -> Self {
-        self.1.write = Some(write);
-        self
-    }
-
-    pub fn permit_connect(mut self, connect: bool) -> Self {
-        self.1.connect = Some(connect);
-        self
-    }
-
-    pub fn permit_config(mut self, config: bool) -> Self {
-        self.1.config = Some(config);
-        self
-    }
-
-    pub(crate) fn _with_parent(mut self, parent: Command) -> Self {
-        self.0 = self.0.with_parent(parent);
-        self
-    }
-}
-
-impl ReqlOps for GrantBuilder {
-    fn get_parent(&self) -> Command {
-        let permissions = Command::from_json(&self.1);
-        self.0.clone().with_arg(permissions).into_arg::<()>().into_cmd()
-    }
-}
-
-impl Into<Command> for GrantBuilder {
-    fn into(self) -> Command {
-        self.get_parent()
+        tear_down(conn, TABLE_NAMES[0]).await
     }
 }

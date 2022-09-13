@@ -280,11 +280,11 @@ impl r {
         cmd::intersects::new(args)
     }
 
-    /* pub fn grant(self, username: &str) -> cmd::grant::GrantBuilder {
-        cmd::grant::GrantBuilder::new(username)
+    pub fn grant(self, args: impl cmd::grant::GrantArg) -> Command {
+        cmd::grant::new(args)
     }
 
-    pub fn asc(self, arg: impl cmd::asc::Arg) -> cmd::asc::Asc {
+    /* pub fn asc(self, arg: impl cmd::asc::Arg) -> cmd::asc::Asc {
         cmd::asc::Asc(arg.arg().into_cmd())
     }
 
