@@ -32,9 +32,9 @@ impl Line {
     }
 }
 
-impl Into<Command> for Line {
-    fn into(self) -> Command {
-        self.coordinates
+impl From<Line> for Command {
+    fn from(line: Line) -> Self {
+        line.coordinates
             .iter()
             .fold(Command::new(TermType::Line), |command, coord| {
                 let point: Command = Point::new(coord[0], coord[1]).into();

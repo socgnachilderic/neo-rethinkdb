@@ -41,16 +41,16 @@ impl Polygon {
     }
 }
 
-impl Into<Command> for Polygon {
-    fn into(self) -> Command {
-        self.coordinates
-            .iter()
-            .flatten()
-            .fold(Command::new(TermType::Polygon), |command, coord| {
+impl From<Polygon> for Command {
+    fn from(polygon: Polygon) -> Self {
+        polygon.coordinates.iter().flatten().fold(
+            Command::new(TermType::Polygon),
+            |command, coord| {
                 let point: Command = Point::new(coord[0], coord[1]).into();
 
                 command.with_arg(point)
-            })
+            },
+        )
     }
 }
 

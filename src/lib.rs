@@ -150,7 +150,7 @@ impl r {
     }
 
     pub fn not(self, value: bool) -> Command {
-        cmd::not::new(value)
+        cmd::not_::new(value)
     }
 
     pub fn random(self, args: impl cmd::random::RandomArg) -> Command {

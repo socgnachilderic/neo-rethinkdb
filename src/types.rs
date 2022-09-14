@@ -416,8 +416,8 @@ impl AnyParam {
     }
 }
 
-impl Into<Command> for AnyParam {
-    fn into(self) -> Command {
-        self.0
+impl From<AnyParam> for Command {
+    fn from(param: AnyParam) -> Self {
+        param.0
     }
 }

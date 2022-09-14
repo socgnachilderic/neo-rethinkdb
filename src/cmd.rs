@@ -100,7 +100,7 @@ pub mod min;
 // pub mod month;
 pub mod mul;
 pub mod ne;
-pub mod not;
+pub mod not_;
 pub mod now;
 pub mod nth;
 pub mod object;
@@ -534,8 +534,8 @@ impl<'a> Command {
         le::new(args).with_parent(self)
     }
 
-    pub fn not(self) -> Self {
-        not::new(()).with_parent(self)
+    pub fn not_(self) -> Self {
+        not_::new(()).with_parent(self)
     }
 
     pub fn round(self) -> Self {
@@ -733,9 +733,9 @@ impl CmdOpts {
     }
 }
 
-impl Into<Option<Command>> for CmdOpts {
-    fn into(self) -> Option<Command> {
-        if let CmdOpts::Single(arg) = self {
+impl From<CmdOpts> for Option<Command> {
+    fn from(command: CmdOpts) -> Self {
+        if let CmdOpts::Single(arg) = command {
             Some(arg)
         } else {
             None

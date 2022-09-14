@@ -17,8 +17,8 @@ pub struct Point {
 
 impl Point {
     pub fn new(longitude: f64, latitude: f64) -> Self {
-        assert!(longitude <= MAX_LONGITUDE_VALUE && longitude >= -MAX_LONGITUDE_VALUE);
-        assert!(latitude <= MAX_LATITUDE_VALUE && latitude >= -MAX_LATITUDE_VALUE);
+        assert!((-MAX_LONGITUDE_VALUE..=MAX_LONGITUDE_VALUE).contains(&longitude));
+        assert!((-MAX_LATITUDE_VALUE..=MAX_LATITUDE_VALUE).contains(&latitude));
 
         Self {
             reql_type: ReqlType::Geometry,
@@ -28,9 +28,10 @@ impl Point {
     }
 }
 
-impl Into<Command> for Point {
-    fn into(self) -> Command {
-        self.coordinates
+impl From<Point> for Command {
+    fn from(point: Point) -> Self {
+        point
+            .coordinates
             .iter()
             .fold(Command::new(TermType::Point), |command, coord| {
                 command.with_arg(Command::from_json(coord))

@@ -88,7 +88,7 @@ impl DateTime {
 
     pub fn date(self) -> Self {
         let command = Command::new(TermType::Date);
-        let datetime = self.0.clone().replace_time(time!(12:00));
+        let datetime = self.0.replace_time(time!(12:00));
 
         self.create_datetime_command(Some(datetime), Some(command))
     }

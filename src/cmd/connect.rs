@@ -58,22 +58,21 @@ impl ConnectionCommand {
         if let Some(timeout) = self.timeout {
             let (sender, reciever) = oneshot::channel();
 
-            task::spawn(async move { sender.send(self.new().await) });
+            task::spawn(async move { sender.send(self.create_session().await) });
 
             let session = time::timeout(timeout, reciever)
                 .await
-                .expect(
-                    format!(
+                .unwrap_or_else(|_| {
+                    panic!(
                         "It took {} seconds to open the connection",
                         timeout.as_secs_f32()
                     )
-                    .as_str(),
-                )
+                })
                 .expect("The connection has been closed");
 
             session
         } else {
-            self.new().await
+            self.create_session().await
         }
     }
 
@@ -126,7 +125,7 @@ impl ConnectionCommand {
         self
     }
 
-    async fn new(self) -> Result<Session> {
+    async fn create_session(self) -> Result<Session> {
         let stream = TcpStream::connect((self.host.as_ref(), self.port)).await?;
         let mut stream = TcpStreamConnection {
             tls_stream: if let Some(connector) = &self.tls_connector {

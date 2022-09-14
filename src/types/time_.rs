@@ -25,11 +25,7 @@ impl Time {
     }
 
     pub fn is_valid(&self) -> bool {
-        if let Ok(_) = self.to_offset_date_time() {
-            true
-        } else {
-            false
-        }
+        self.to_offset_date_time().is_ok()
     }
 
     pub fn to_offset_date_time(&self) -> Result<OffsetDateTime> {

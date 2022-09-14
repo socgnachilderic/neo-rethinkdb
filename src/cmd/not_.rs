@@ -50,7 +50,7 @@ mod tests {
         let data_obtained: bool = r
             .object(object)
             .has_fields("content")
-            .not()
+            .not_()
             .run(&conn)
             .await?
             .unwrap()
