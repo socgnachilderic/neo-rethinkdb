@@ -42,21 +42,6 @@ impl Serialize for Datum {
     }
 }
 
-// #[allow(array_into_iter)]
-// #[allow(clippy::into_iter_on_ref)]
-// impl<const N: usize> From<[Command; N]> for Command {
-//     fn from(arr: [Command; N]) -> Self {
-//         let mut query = Self::new(TermType::MakeArray);
-//         // TODO remove this clone on Rust v1.53 once
-//         // https://twitter.com/m_ou_se/status/1385966446254166020
-//         // is available on stable
-//         for arg in arr.into_iter().cloned() {
-//             query = query.with_arg(arg);
-//         }
-//         query
-//     }
-// }
-
 impl From<Value> for Datum {
     fn from(value: Value) -> Self {
         match value {

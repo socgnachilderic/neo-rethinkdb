@@ -69,7 +69,7 @@ pub struct FilterOption {
 mod tests {
     use serde_json::json;
 
-    use crate::prelude::Converter;
+    use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
     use crate::types::AnyParam;
     use crate::Result;
@@ -81,6 +81,25 @@ mod tests {
         let data_filtered: Vec<Post> = table
             .clone()
             .filter(AnyParam::new(json!({"view": 2})))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(data_filtered.len() == 2);
+        assert!(data_filtered.first() == data.get(3));
+        assert!(data_filtered.last() == data.get(1));
+
+        tear_down(conn, TABLE_NAMES[0]).await
+    }
+
+    #[tokio::test]
+    async fn test_filter_data_with_func() -> Result<()> {
+        let data = Post::get_many_data();
+        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let data_filtered: Vec<Post> = table
+            .clone()
+            .filter(func!(|user| user.g("view").eq(AnyParam::new(2))))
             .run(&conn)
             .await?
             .unwrap()

@@ -23,6 +23,8 @@ use types::{Binary, DateTime, GeoJson};
 
 pub type Result<T> = std::result::Result<T, ReqlError>;
 
+// TODO Put Clone Copy in all derive macro as possible
+
 #[allow(non_camel_case_types)]
 pub struct r;
 
@@ -179,6 +181,7 @@ impl r {
         DateTime::epoch_time(timestamp)
     }
 
+    //
     pub fn iso8601(
         self,
         iso_datetime: &str,

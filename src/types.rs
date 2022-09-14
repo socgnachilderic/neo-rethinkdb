@@ -6,15 +6,19 @@ use uuid::Uuid;
 pub use crate::cmd::line::Line;
 pub use crate::cmd::point::Point;
 pub use crate::cmd::polygon::Polygon;
-pub use group_stream::{GroupItem, GroupStream};
 pub use binary::Binary;
 pub use datetime::DateTime;
+pub use group_stream::{GroupItem, GroupStream};
+pub use time_::Time;
+
+pub(crate) use datetime::timezone_to_string;
 
 use crate::Command;
 
-mod group_stream;
 mod binary;
 mod datetime;
+mod group_stream;
+mod time_;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord)]
 #[non_exhaustive]

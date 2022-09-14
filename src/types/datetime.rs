@@ -3,54 +3,59 @@ use std::hash::Hash;
 use std::ops::Deref;
 
 use ql2::term::TermType;
-use serde::{de, ser};
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use time::macros::time;
 use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
 use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
-use crate::Command;
+use crate::{cmd, Command};
 
-#[derive(Debug, Serialize, Deserialize)]
-#[non_exhaustive]
-struct Time {
-    #[serde(rename = "$reql_type$")]
-    reql_type: String,
-    #[serde(with = "epoch_time")]
-    epoch_time: String,
-    timezone: String,
-}
+use super::Time;
 
 #[derive(Clone)]
-pub struct DateTime(OffsetDateTime, pub(crate) Option<Command>);
+pub struct DateTime(pub OffsetDateTime, pub Option<Command>);
 
 impl DateTime {
     pub(crate) fn now() -> Self {
         let offset_datetime = OffsetDateTime::now_utc();
-        Self::default().create_datetime_command(Some(offset_datetime), Some(TermType::Now))
+
+        Self::default().create_datetime_command(Some(offset_datetime), Some(cmd::now::new()))
     }
 
     pub(crate) fn time(date: Date, timezone: UtcOffset, time: Option<time::Time>) -> Self {
         let mut primetive_datetime = PrimitiveDateTime::new(date, time!(0:00));
+        let timezone_formated = timezone_to_string(timezone);
 
         if let Some(time) = time {
             primetive_datetime = primetive_datetime.replace_time(time);
         }
 
         let offset_datetime = primetive_datetime.assume_offset(timezone);
-        Self::default().create_datetime_command(Some(offset_datetime), Some(TermType::Time))
+
+        Self::default().create_datetime_command(
+            Some(offset_datetime),
+            Some(cmd::time::new(
+                date,
+                timezone_formated,
+                Some(primetive_datetime),
+            )),
+        )
     }
 
     pub(crate) fn epoch_time(timestamp: i64) -> crate::Result<Self> {
         let offset_datetime = OffsetDateTime::from_unix_timestamp(timestamp)?;
-        Ok(Self::default()
-            .create_datetime_command(Some(offset_datetime), Some(TermType::EpochTime)))
+
+        Ok(Self::default().create_datetime_command(
+            Some(offset_datetime),
+            Some(cmd::epoch_time::epoch_time(timestamp)),
+        ))
     }
 
     pub(crate) fn iso8601(
         iso_datetime: &str,
         default_timezone: Option<UtcOffset>,
     ) -> crate::Result<Self> {
+        let command = Command::new(TermType::Iso8601);
         let mut datetime = iso_datetime.to_string();
 
         if let Some(timezone) = default_timezone {
@@ -61,85 +66,87 @@ impl DateTime {
         }
 
         let datetime = OffsetDateTime::parse(&datetime, &format_description::well_known::Rfc3339)?;
-        Ok(Self::default().create_datetime_command(Some(datetime), Some(TermType::Iso8601)))
+
+        Ok(Self::default().create_datetime_command(Some(datetime), Some(command)))
     }
 
-    pub fn in_timezone(&self, timezone: UtcOffset) -> Self {
-        let datetime = self.0.clone().replace_offset(timezone);
+    pub fn in_timezone(self, timezone: UtcOffset) -> Self {
+        let datetime = self.0.replace_offset(timezone);
 
-        self.clone()
-            .create_datetime_command(Some(datetime), Some(TermType::InTimezone))
+        self.create_datetime_command(Some(datetime), Some(cmd::in_timezone::new(timezone)))
     }
 
-    pub fn timezone(&self) -> UtcOffset {
-        self.0.offset()
+    pub fn timezone(self) -> (UtcOffset, Command) {
+        let command = Command::new(TermType::Timezone);
+
+        (self.0.offset(), command)
     }
 
-    pub fn during(&self, start_time: &DateTime, end_time: &DateTime) -> bool {
+    pub fn during(self, start_time: &DateTime, end_time: &DateTime) -> bool {
         self.le(start_time) && self.gt(end_time)
     }
 
-    pub fn date(&self) -> Self {
+    pub fn date(self) -> Self {
+        let command = Command::new(TermType::Date);
         let datetime = self.0.clone().replace_time(time!(12:00));
 
-        self.clone()
-            .create_datetime_command(Some(datetime), Some(TermType::Date))
+        self.create_datetime_command(Some(datetime), Some(command))
     }
 
-    pub fn time_of_day(&self) -> u32 {
+    pub fn time_of_day(self) -> u32 {
         let day: u32 = self.0.day().into();
+
         day * 60 * 60
     }
 
-    pub fn year(&self) -> i32 {
+    pub fn year(self) -> i32 {
         self.0.date().year()
     }
 
-    pub fn month(&self) -> time::Month {
+    pub fn month(self) -> time::Month {
         self.0.date().month()
     }
 
-    pub fn day(&self) -> u8 {
+    pub fn day(self) -> u8 {
         self.0.date().day()
     }
 
-    pub fn day_of_week(&self) -> time::Weekday {
+    pub fn day_of_week(self) -> time::Weekday {
         self.0.date().weekday()
     }
 
-    pub fn day_of_year(&self) -> u16 {
+    pub fn day_of_year(self) -> u16 {
         self.0.date().ordinal()
     }
 
-    pub fn hours(&self) -> u8 {
+    pub fn hours(self) -> u8 {
         self.0.time().hour()
     }
 
-    pub fn minutes(&self) -> u8 {
+    pub fn minutes(self) -> u8 {
         self.0.time().minute()
     }
 
-    pub fn seconds(&self) -> u8 {
+    pub fn seconds(self) -> u8 {
         self.0.time().second()
     }
 
-    pub fn to_iso8601(&self) -> String {
+    pub fn to_iso8601(self) -> String {
         self.0
             .format(&format_description::well_known::Rfc3339)
             .unwrap()
     }
 
-    pub fn to_epoch_time(&self) -> i64 {
+    pub fn to_epoch_time(self) -> i64 {
         self.0.unix_timestamp()
     }
 
     fn create_datetime_command(
         mut self,
         offset_datetime: Option<OffsetDateTime>,
-        term_type: Option<TermType>,
+        command: Option<Command>,
     ) -> Self {
-        if let Some(term_type) = term_type {
-            let command = Command::new(term_type);
+        if let Some(command) = command {
             self.1 = Some(command);
         }
 
@@ -149,6 +156,14 @@ impl DateTime {
 
         self
     }
+
+    pub fn cmd(self) -> Command {
+        Command::from(self)
+    }
+
+    pub fn value(self) -> Time {
+        Time::from(self)
+    }
 }
 
 impl<'de> Deserialize<'de> for DateTime {
@@ -157,6 +172,7 @@ impl<'de> Deserialize<'de> for DateTime {
         D: Deserializer<'de>,
     {
         let time = Time::deserialize(deserializer)?;
+        let epoch_time = time.epoch_time.to_string();
         let format = match format_description::parse("[offset_hour]:[offset_minute]") {
             Ok(fmt) => fmt,
             Err(error) => {
@@ -169,9 +185,9 @@ impl<'de> Deserialize<'de> for DateTime {
                 return Err(de::Error::custom(error));
             }
         };
-        let (secs, msecs) = match time.epoch_time.split_once('.') {
+        let (secs, msecs) = match epoch_time.split_once('.') {
             Some(parts) => parts,
-            None => (time.epoch_time.as_str(), "0"),
+            None => (epoch_time.as_str(), "0"),
         };
         let secs = match secs.parse::<i128>() {
             Ok(secs) => match secs.checked_mul(NANOS_PER_SEC) {
@@ -228,23 +244,7 @@ impl Serialize for DateTime {
     where
         S: Serializer,
     {
-        let dt = &self.0;
-        let offset = dt.offset();
-        let timezone = {
-            let (hours, minutes, _) = offset.as_hms();
-            format!(
-                "{}{:02}:{:02}",
-                if offset.is_negative() { '-' } else { '+' },
-                hours.abs(),
-                minutes.abs(),
-            )
-        };
-        let time = Time {
-            reql_type: "TIME".to_owned(),
-            epoch_time: format!("{}.{:03}", dt.unix_timestamp(), dt.millisecond()),
-            timezone,
-        };
-        time.serialize(serializer)
+        Time::from(self.to_owned()).serialize(serializer)
     }
 }
 
@@ -308,24 +308,24 @@ impl From<DateTime> for OffsetDateTime {
     }
 }
 
-mod epoch_time {
-    use super::*;
-
-    pub fn serialize<S>(epoch_time: &str, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match epoch_time.parse::<f64>() {
-            Ok(timestamp) => serializer.serialize_f64(timestamp),
-            Err(..) => Err(ser::Error::custom("invalid epoch timestamp")),
-        }
+impl From<DateTime> for Command {
+    fn from(date_time: DateTime) -> Self {
+        date_time.1.unwrap()
     }
+}
 
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<String, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let timestamp = f64::deserialize(deserializer)?;
-        Ok(timestamp.to_string())
+impl From<DateTime> for Time {
+    fn from(date_time: DateTime) -> Self {
+        Self::from(date_time.0)
+    }
+}
+
+pub fn timezone_to_string(timezone: UtcOffset) -> String {
+    if timezone.is_utc() {
+        String::from("Z")
+    } else {
+        let format =
+            format_description::parse("[offset_hour sign:mandatory ]:[offset_minute]").unwrap();
+        timezone.format(&format).unwrap()
     }
 }
