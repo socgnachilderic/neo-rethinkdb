@@ -22,21 +22,6 @@ use crate::constants::{
 };
 use crate::{InnerSession, Result, Session};
 
-/// Options accepted by [crate::r::connection]
-///
-/// An asynchronous Connection to connect RethinkDB Database Server.
-///
-/// # Example
-/// ```
-/// use reql_rust::r;
-///
-/// let conn = r.connection()
-///     .host("127.0.0.1")
-///     .port(28015)
-///     .db("test")
-///     .user("admin", "")
-///     .connect();
-/// ```
 #[derive(Debug)]
 #[non_exhaustive]
 pub struct ConnectionCommand {

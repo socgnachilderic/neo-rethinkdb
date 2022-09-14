@@ -4,7 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::{Command, prelude::Geometry};
+use crate::{prelude::Geometry, Command};
 
 pub(crate) fn new(geometry: impl Geometry, index: &'static str) -> Command {
     let opts = GetIntersectingOption::default().index(index);
@@ -72,7 +72,12 @@ mod tests {
             .run(&conn)
             .await?;
 
-        let response: Vec<Park> = table.get_intersecting(circle, "area").run(&conn).await?.unwrap().parse()?;
+        let response: Vec<Park> = table
+            .get_intersecting(circle, "area")
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
         assert!(response.len() == 1);
 

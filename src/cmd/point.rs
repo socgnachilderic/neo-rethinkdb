@@ -2,9 +2,9 @@ use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
 use crate::constants::{MAX_LATITUDE_VALUE, MAX_LONGITUDE_VALUE};
+use crate::prelude::Geometry;
 use crate::types::{GeoType, ReqlType};
 use crate::Command;
-use crate::prelude::Geometry;
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, PartialOrd, Geometry)]
 pub struct Point {

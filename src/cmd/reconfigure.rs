@@ -92,7 +92,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-            
+
         assert!(response.reconfigured == 1);
 
         tear_down(conn, TABLE_NAMES[0]).await

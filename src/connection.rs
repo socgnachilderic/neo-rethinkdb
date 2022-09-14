@@ -92,52 +92,6 @@ impl Session {
         Ok(Connection::new(self.clone(), rx, token))
     }
 
-    /// Close and reopen a connection.
-    /// Closing a connection normally waits until all outstanding requests have finished
-    /// and then frees any open resources associated with the connection.
-    /// By passing `false` as an optional boolean argument to `reconnect`,
-    /// the connection will be closed immediately, possibly aborting any outstanding noreply writes.
-    /// A optional second argument is a (`Option<std::time::Duration>`) timeout indicating how long you would like
-    /// `reconnect` to wait before closing the existing connection.
-    ///
-    /// A noreply query is executed by passing the `noreply` option to the
-    /// [run](crate::Command::run) command, indicating that `run()` should not
-    /// wait for the query to complete before returning. You may also
-    /// explicitly wait for a noreply query to complete by using the
-    /// [noreply_wait](crate::Session::noreply_wait) command.
-    ///
-    /// ## Example
-    ///
-    /// Cancel outstanding requests/queries that are no longer needed.
-    ///
-    /// ```
-    /// async fn example() -> reql_rust::Result<()> {
-    ///     let session = reql_rust::r.connection().connect().await?;
-    ///     session.reconnect(false, None).await
-    /// }
-    /// ```
-    ///
-    /// ## Example
-    ///
-    /// Wait up for outstanding requests to finish before reconnecting.
-    ///
-    /// ```
-    /// async fn example() -> reql_rust::Result<()> {
-    ///     let session = reql_rust::r.connection().connect().await?;
-    ///     session.reconnect(true, None).await
-    /// }
-    /// ```
-    ///
-    /// ## Example
-    ///
-    /// Cancel outstanding requests/queries that are no longer needed after a timeout.
-    ///
-    /// ```
-    /// async fn example() -> reql_rust::Result<()> {
-    ///     let session = reql_rust::r.connection().connect().await?;
-    ///     session.reconnect(false, Some(std::time::Duration::from_secs(5))).await
-    /// }
-    /// ```
     pub async fn reconnect(
         &self,
         noreply_wait: bool,
@@ -156,48 +110,10 @@ impl Session {
         Ok(())
     }
 
-    /// Change the default database on this connection
-    ///
-    /// ## Example
-    ///
-    /// Change the default database so that we don’t need to specify the
-    /// database when referencing a table.
-    ///
-    /// ```
-    /// use reql_rust::{r, Result};
-    ///
-    /// async fn example() -> Result<()> {
-    ///     let mut session = r.connection().connect().await?;
-    ///     session.use_("marvel").await;
-    ///     r.table::<serde_json::Value>("heroes").run(&session).await?; // refers to r.db("marvel").table("heroes")
-    ///     Ok(())
-    ///}
-    /// ```
-    ///
-    /// ## Related commands
-    /// * [connection](r::connection)
-    /// * [close](Connection::close)
     pub async fn use_(&mut self, db_name: &'static str) {
         *self.inner.db.lock().await = db_name.static_string();
     }
 
-    /// Ensures that previous queries with the `noreply` flag have been
-    /// processed by the server
-    ///
-    /// Note that this guarantee only applies to queries run on the given
-    /// connection.
-    ///
-    /// ## Example
-    ///
-    /// We have previously run queries with [noreply](crate::cmd::run::Options::noreply())
-    /// set to `true`. Now wait until the server has processed them.
-    ///
-    /// ```
-    /// async fn example() -> reql_rust::Result<()> {
-    ///     let session = reql_rust::r.connection().connect().await?;
-    ///     session.noreply_wait().await
-    /// }
-    /// ```
     pub async fn noreply_wait(&self) -> Result<()> {
         let mut conn = self.connection()?;
         let payload = Payload(QueryType::NoreplyWait, None, Default::default());
@@ -214,28 +130,6 @@ impl Session {
         Ok(())
     }
 
-    ///
-    /// Return information about the server being used by a connection.
-    ///
-    /// The server command returns `ServerInfo` struct with two or three fields:
-    ///
-    /// - `id` : the UUID of the server the client is connected to.
-    /// - `proxy` : a boolean indicating whether the server is a [RethinkDB proxy node](https://rethinkdb.com/docs/sharding-and-replication/#running-a-proxy-node).
-    /// - `name` : the server name. If `proxy` is `true`, this field will not be returned.
-    ///
-    /// ## Example
-    ///
-    /// Return server information.
-    ///
-    /// ```
-    /// use reql_rust::{r, Result};
-    /// use reql_rust::types::ServerInfo;
-    ///
-    /// async fn example() -> Result<ServerInfo> {
-    ///     let session = r.connection().connect().await?;
-    ///     session.server().await
-    /// }
-    /// ```
     pub async fn server(&self) -> Result<ServerInfo> {
         let mut conn = self.connection()?;
         let payload = Payload(QueryType::ServerInfo, None, Default::default());
@@ -253,47 +147,6 @@ impl Session {
         Ok(info)
     }
 
-    /// Close an open connection
-    ///
-    /// Closing a connection normally waits until all outstanding requests have
-    /// finished and then frees any open resources associated with the
-    /// connection. By passing `SkipNoreplyWait` as the argument, the connection
-    /// will be closed immediately, possibly aborting any outstanding noreply
-    /// writes.
-    ///
-    /// A noreply query is executed by passing the `noreply` option to the
-    /// [run](crate::Command::run) command, indicating that `run()` should not
-    /// wait for the query to complete before returning. You may also
-    /// explicitly wait for a noreply query to complete by using the
-    /// [noreply_wait](crate::Session::noreply_wait) command.
-    ///
-    ///
-    /// ## Example
-    ///
-    /// Close an open connection, waiting for noreply writes to finish.
-    ///
-    /// ```
-    /// async fn example() -> reql_rust::Result<()> {
-    ///     let session = reql_rust::r.connection().connect().await?;
-    ///     session.close(true).await
-    /// }
-    /// ```
-    ///
-    /// ## Example
-    ///
-    /// Close an open connection immediately.
-    ///
-    /// ```
-    /// async fn example() -> reql_rust::Result<()> {
-    ///     let session = reql_rust::r.connection().connect().await?;
-    ///     session.close(false).await
-    /// }
-    /// ```
-    ///
-    /// ## Related commands
-    ///
-    /// * [connection](r::connection)
-    /// * [use_](crate::Session::use_)
     pub async fn close(&self, noreply_wait: bool) -> Result<()> {
         self.connection()?.close(noreply_wait).await
     }

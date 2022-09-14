@@ -10,19 +10,14 @@ pub(crate) fn new() -> Command {
 mod tests {
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::types::ConfigChangeValue;
     use crate::Result;
-    use crate::types::{ConfigChangeValue};
 
     #[tokio::test]
     async fn test_get_config_info() -> Result<()> {
         let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
-        let response: ConfigChangeValue = table
-            .config()
-            .run(&conn)
-            .await?
-            .unwrap()
-            .parse()?;
-            
+        let response: ConfigChangeValue = table.config().run(&conn).await?.unwrap().parse()?;
+
         assert!(response.name == TABLE_NAMES[0]);
 
         tear_down(conn, TABLE_NAMES[0]).await

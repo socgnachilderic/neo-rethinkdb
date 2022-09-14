@@ -17,7 +17,7 @@ mod tests {
         let conn = r.connection().connect().await?;
         let time1 = r.now().value();
         let time2: Time = r.now().cmd().run(&conn).await?.unwrap().parse()?;
-        
+
         assert!(time2 >= time1);
 
         Ok(())

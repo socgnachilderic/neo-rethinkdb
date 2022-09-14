@@ -30,7 +30,7 @@ mod tests {
         ]);
 
         let response: Polygon = rectangle.fill().run(&conn).await?.unwrap().parse()?;
-        
+
         assert!(response == data);
 
         Ok(())

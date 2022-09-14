@@ -43,7 +43,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-        
+
         assert!(response);
 
         Ok(())

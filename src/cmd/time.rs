@@ -3,7 +3,11 @@ use time::{Date, PrimitiveDateTime};
 
 use crate::Command;
 
-pub(crate) fn new(date: Date, timezone_formated: String, time: Option<PrimitiveDateTime>) -> Command {
+pub(crate) fn new(
+    date: Date,
+    timezone_formated: String,
+    time: Option<PrimitiveDateTime>,
+) -> Command {
     let month: u8 = date.month().into();
     let mut command = Command::new(TermType::Time);
     command = command.with_arg(Command::from_json(date.year()));
