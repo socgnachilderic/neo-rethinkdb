@@ -21,7 +21,7 @@ impl LeArg for AnyParam {
 
 impl<T: Serialize> LeArg for Vec<T> {
     fn into_le_opts(self) -> CmdOpts {
-        let commands = self.iter().map(|arg| Command::from_json(arg)).collect();
+        let commands = self.iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }

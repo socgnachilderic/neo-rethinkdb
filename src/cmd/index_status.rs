@@ -34,10 +34,7 @@ impl IndexStatusArg for &str {
 
 impl IndexStatusArg for Vec<&str> {
     fn into_index_status_opts(self) -> Option<CmdOpts> {
-        let args = self
-            .into_iter()
-            .map(|arg| Command::from_json(arg))
-            .collect();
+        let args = self.into_iter().map(Command::from_json).collect();
 
         Some(CmdOpts::Many(args))
     }

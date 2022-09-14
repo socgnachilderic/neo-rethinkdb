@@ -130,13 +130,6 @@ impl Command {
     pub(crate) fn change_feed(&self) -> bool {
         self.change_feed
     }
-
-    pub(crate) fn into_arg<T>(self) -> Arg<T> {
-        Arg {
-            arg: self,
-            opts: None,
-        }
-    }
 }
 
 impl From<Datum> for Command {
@@ -210,51 +203,6 @@ fn to_query_result(args: &VecDeque<super::Result<Command>>) -> super::Result<Vec
         vec.push(Query(arg));
     }
     Ok(vec)
-}
-
-#[derive(Debug, Clone)]
-pub struct Arg<T> {
-    #[doc(hidden)]
-    pub arg: Command,
-    #[doc(hidden)]
-    pub opts: Option<T>,
-}
-
-impl<T> Arg<T>
-where
-    T: Serialize,
-{
-    // pub(crate) fn new() -> Self {
-    //     Self {
-    //         arg: Command::new(TermType::Datum),
-    //         opts: None,
-    //     }
-    // }
-
-    pub(crate) fn with_parent(mut self, parent: Command) -> Self {
-        self.arg = self.arg.with_parent(parent);
-        self
-    }
-
-    pub(crate) fn with_arg<Q>(mut self, arg: Q) -> Self
-    where
-        Q: Into<Command>,
-    {
-        self.arg = self.arg.with_arg(arg);
-        self
-    }
-
-    pub(crate) fn _with_opts(mut self, opts: T) -> Self {
-        self.opts = Some(opts);
-        self
-    }
-
-    pub(crate) fn into_cmd(self) -> Command {
-        match self.opts {
-            Some(opts) => self.arg.with_opts(opts),
-            None => self.arg,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]

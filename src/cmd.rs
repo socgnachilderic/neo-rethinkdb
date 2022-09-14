@@ -173,8 +173,7 @@ use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::prelude::{Geometry, Func};
-pub use crate::proto::Arg;
+use crate::prelude::{Func, Geometry};
 use crate::types::AnyParam;
 use crate::Command;
 use crate::Result;

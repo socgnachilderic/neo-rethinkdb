@@ -30,10 +30,7 @@ impl GroupArg for &str {
 
 impl GroupArg for Vec<&str> {
     fn into_group_opts(self) -> (CmdOpts, GroupOption) {
-        let args = self
-            .into_iter()
-            .map(|field| Command::from_json(field))
-            .collect();
+        let args = self.into_iter().map(Command::from_json).collect();
 
         (CmdOpts::Many(args), Default::default())
     }
@@ -55,11 +52,7 @@ impl GroupArg for (&str, GroupOption) {
 
 impl GroupArg for (Vec<&str>, GroupOption) {
     fn into_group_opts(self) -> (CmdOpts, GroupOption) {
-        let args = self
-            .0
-            .into_iter()
-            .map(|field| Command::from_json(field))
-            .collect();
+        let args = self.0.into_iter().map(Command::from_json).collect();
 
         (CmdOpts::Many(args), self.1)
     }

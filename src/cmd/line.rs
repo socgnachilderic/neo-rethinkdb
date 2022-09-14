@@ -1,9 +1,9 @@
 use ql2::term::TermType;
 use serde::{Deserialize, Serialize};
 
+use crate::prelude::Geometry;
 use crate::types::{GeoType, ReqlType};
 use crate::Command;
-use crate::prelude::Geometry;
 
 use super::point::Point;
 

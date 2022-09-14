@@ -15,11 +15,4 @@ impl Func {
                 .with_arg(body),
         )
     }
-
-    pub(crate) fn row<T>(body: T) -> Self
-    where
-        T: Into<Command>,
-    {
-        Self::new(vec![0], body)
-    }
 }

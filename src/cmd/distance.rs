@@ -21,25 +21,25 @@ pub trait DistanceArg {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption);
 }
 
-impl<T: Geometry> DistanceArg for T  {
+impl<T: Geometry> DistanceArg for T {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
         (self.into(), None, Default::default())
     }
 }
 
-impl<T: Geometry, G: Geometry> DistanceArg for (T, G)  {
+impl<T: Geometry, G: Geometry> DistanceArg for (T, G) {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
         (self.0.into(), Some(self.1.into()), Default::default())
     }
 }
 
-impl<T: Geometry> DistanceArg for (T, DistanceOption)  {
+impl<T: Geometry> DistanceArg for (T, DistanceOption) {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
         (self.0.into(), None, self.1)
     }
 }
 
-impl<T: Geometry, G: Geometry> DistanceArg for (T, G, DistanceOption)  {
+impl<T: Geometry, G: Geometry> DistanceArg for (T, G, DistanceOption) {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
         (self.0.into(), Some(self.1.into()), self.2)
     }
@@ -74,7 +74,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-        
+
         assert!(response == 734.125249602186);
 
         Ok(())

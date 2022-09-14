@@ -32,7 +32,7 @@ mod tests {
         };
         let geo: GeoJson<[f64; 2]> = GeoJson {
             typ: GeoType::Point,
-            coordinates: [-122.423246, 37.779388]
+            coordinates: [-122.423246, 37.779388],
         };
         let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
         table

@@ -5,8 +5,9 @@ use reql_macros::CommandOptions;
 use serde::Serialize;
 
 use crate::{
+    prelude::Geometry,
     types::{GeoSystem, Unit},
-    Command, prelude::Geometry,
+    Command,
 };
 
 pub(crate) fn new(args: impl GetNearestArg) -> Command {
@@ -103,7 +104,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-            
+
         assert!(response.len() > 0);
 
         r.table_drop(TABLE_NAMES[0]).run(&conn).await?;

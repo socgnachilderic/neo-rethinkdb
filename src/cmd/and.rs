@@ -20,7 +20,7 @@ impl AndArg for bool {
 
 impl AndArg for Vec<bool> {
     fn into_and_opts(self) -> CmdOpts {
-        let commands = self.iter().map(|arg| Command::from_json(arg)).collect();
+        let commands = self.iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }
