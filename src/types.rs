@@ -26,6 +26,8 @@ mod time_;
 pub enum ReqlType {
     Geometry,
     GroupStream,
+    Binary,
+    Time,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]

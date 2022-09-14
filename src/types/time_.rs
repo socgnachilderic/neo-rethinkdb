@@ -6,11 +6,13 @@ use crate::{
     ReqlDriverError, ReqlError, Result,
 };
 
+use super::ReqlType;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct Time {
     #[serde(rename = "$reql_type$")]
-    pub reql_type: String,
+    pub reql_type: ReqlType,
     pub epoch_time: f64,
     pub timezone: String,
 }
@@ -20,7 +22,7 @@ impl Time {
         Self {
             epoch_time,
             timezone,
-            reql_type: "TIME".to_owned(),
+            reql_type: ReqlType::Time,
         }
     }
 
