@@ -24,20 +24,20 @@ impl<T: Serialize> ReqlGeoJson<T> {
     }
 }
 
-impl<T: Serialize> Into<Command> for ReqlGeoJson<T> {
-    fn into(self) -> Command {
-        let geo: GeoJson<T> = self.into();
+impl<T: Serialize> From<ReqlGeoJson<T>> for Command {
+    fn from(geo: ReqlGeoJson<T>) -> Self {
+        let geo: GeoJson<T> = geo.into();
         let arg = Command::from_json(geo);
 
         Command::new(TermType::Geojson).with_arg(arg)
     }
 }
 
-impl<T: Serialize> Into<GeoJson<T>> for ReqlGeoJson<T> {
-    fn into(self) -> GeoJson<T> {
-        GeoJson {
-            typ: self.typ,
-            coordinates: self.coordinates,
+impl<T: Serialize> From<ReqlGeoJson<T>> for GeoJson<T> {
+    fn from(geo: ReqlGeoJson<T>) -> Self {
+        Self {
+            typ: geo.typ,
+            coordinates: geo.coordinates,
         }
     }
 }
