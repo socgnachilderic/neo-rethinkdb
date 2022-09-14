@@ -22,12 +22,12 @@ pub struct GetIntersectingOption {
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
 
     use crate::cmd::index_create::IndexCreateOption;
     use crate::cmd::point::Point;
     use crate::cmd::polygon::Polygon;
     use crate::prelude::Converter;
-    use crate::spec::TABLE_NAMES;
     use crate::types::AnyParam;
     use crate::{r, Result};
 
@@ -51,15 +51,16 @@ mod tests {
             Park::new(2, r.point(-120.6, 58.9)),
             Park::new(3, r.point(-11.220, 25.764)),
         ];
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
-        let table = r.table(TABLE_NAMES[0]);
+        let table = r.table(table_name.as_str());
         let circle: Polygon = r
             .circle((r.point(-117.220406, 32.719464), 10.))
             .run(&conn)
             .await?
             .unwrap()
             .parse()?;
-        r.table_create(TABLE_NAMES[0]).run(&conn).await?;
+        r.table_create(table_name.as_str()).run(&conn).await?;
         table
             .clone()
             .index_create(("area", IndexCreateOption::default().geo(true)))
@@ -81,7 +82,7 @@ mod tests {
 
         assert!(response.len() == 1);
 
-        r.table_drop(TABLE_NAMES[0]).run(&conn).await?;
+        r.table_drop(table_name.as_str()).run(&conn).await?;
         Ok(())
     }
 }

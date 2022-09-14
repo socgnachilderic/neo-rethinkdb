@@ -78,7 +78,7 @@ pub struct OrderByOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post};
     use crate::types::AnyParam;
     use crate::Result;
 
@@ -87,7 +87,7 @@ mod tests {
     #[tokio::test]
     async fn test_order_by_with_opts() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: Vec<Post> = table
             .order_by(OrderByOption::default().index("id"))
             .run(&conn)
@@ -97,13 +97,13 @@ mod tests {
 
         assert!(data_obtained == data);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_order_by_title_with_opts() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(TABLE_NAMES[1], true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let order_by_option = OrderByOption::default().index("title");
         let data_obtained: Vec<Post> = table
             .order_by((AnyParam::new("id"), order_by_option))
@@ -114,6 +114,6 @@ mod tests {
 
         assert!(data_obtained == data);
 
-        tear_down(conn, TABLE_NAMES[1]).await
+        tear_down(conn, &table_name).await
     }
 }

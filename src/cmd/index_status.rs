@@ -42,14 +42,14 @@ impl IndexStatusArg for Vec<&str> {
 
 #[cfg(test)]
 mod tests {
-    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down};
     use crate::types::IndexStatusResponse;
     use crate::Result;
     use crate::{prelude::*, Command, Session};
 
     #[tokio::test]
     async fn test_get_index_status() -> Result<()> {
-        let (conn, table) = set_up(TABLE_NAMES[1], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         generate_index(&conn, &table).await?;
 
         let index_status: Vec<IndexStatusResponse> = table
@@ -62,12 +62,12 @@ mod tests {
 
         assert!(index_status.len() == 3);
 
-        tear_down(conn, TABLE_NAMES[1]).await
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_get_index_status_with_param() -> Result<()> {
-        let (conn, table) = set_up(TABLE_NAMES[2], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         generate_index(&conn, &table).await?;
 
         let index_status: Vec<IndexStatusResponse> = table
@@ -81,12 +81,12 @@ mod tests {
         assert!(index_status.len() == 1);
         assert!(index_status.first().unwrap().index == "author");
 
-        tear_down(conn, TABLE_NAMES[2]).await
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_get_index_status_with_params() -> Result<()> {
-        let (conn, table) = set_up(TABLE_NAMES[3], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         generate_index(&conn, &table).await?;
 
         let index_status: Vec<IndexStatusResponse> = table
@@ -101,7 +101,7 @@ mod tests {
         assert!(index_status.first().unwrap().index == "age");
         assert!(index_status.last().unwrap().index == "name");
 
-        tear_down(conn, TABLE_NAMES[3]).await
+        tear_down(conn, &table_name).await
     }
 
     async fn generate_index(conn: &Session, table: &Command) -> Result<()> {

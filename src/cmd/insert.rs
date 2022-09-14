@@ -60,8 +60,10 @@ pub struct InsertOption {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use crate::prelude::*;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post};
     use crate::types::{AnyParam, ReturnChanges, WritingResponse};
     use crate::{r, Result};
 
@@ -70,7 +72,7 @@ mod tests {
     #[tokio::test]
     async fn test_insert_data() -> Result<()> {
         let data = Post::get_one_data();
-        let (conn, table) = set_up(TABLE_NAMES[1], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         let data_inserted: WritingResponse<Post> = table
             .clone()
             .insert(AnyParam::new(&data))
@@ -81,13 +83,13 @@ mod tests {
 
         assert!(data_inserted.inserted == 1);
 
-        tear_down(conn, TABLE_NAMES[1]).await
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_insert_many_data() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(TABLE_NAMES[2], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         let data_inserted: WritingResponse<Post> = table
             .clone()
             .insert(AnyParam::new(&data))
@@ -98,15 +100,16 @@ mod tests {
 
         assert!(data_inserted.inserted == data.len());
 
-        tear_down(conn, TABLE_NAMES[2]).await
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_insert_data_by_copy() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(TABLE_NAMES[3], false).await?;
+        let table_name2 = Uuid::new_v4().to_string();
+        let (conn, table, table_name) = set_up(false).await?;
 
-        r.table_create(TABLE_NAMES[5]).run(&conn).await?;
+        r.table_create(table_name2.as_str()).run(&conn).await?;
         table
             .clone()
             .insert(AnyParam::new(&data))
@@ -114,7 +117,7 @@ mod tests {
             .await?;
 
         let data_inserted: WritingResponse<Post> = r
-            .table(TABLE_NAMES[5])
+            .table(table_name2.as_str())
             .insert(table.clone())
             .run(&conn)
             .await?
@@ -123,14 +126,14 @@ mod tests {
 
         assert!(data_inserted.inserted == data.len());
 
-        r.table_drop(TABLE_NAMES[5]).run(&conn).await?;
-        tear_down(conn, TABLE_NAMES[3]).await
+        r.table_drop(table_name2.as_str()).run(&conn).await?;
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_insert_data_with_opts() -> Result<()> {
         let data = Post::get_one_data();
-        let (conn, table) = set_up(TABLE_NAMES[4], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         let insert_options = InsertOption::default().return_changes(ReturnChanges::Bool(true));
         let data_inserted: WritingResponse<Post> = table
             .clone()
@@ -150,6 +153,6 @@ mod tests {
             .new_val;
         assert!(expected_data == Some(data));
 
-        tear_down(conn, TABLE_NAMES[4]).await
+        tear_down(conn, &table_name).await
     }
 }

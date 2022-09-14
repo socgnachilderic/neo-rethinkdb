@@ -48,7 +48,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_index_waited() -> Result<()> {
-        let (conn, table) = set_up("malik1", false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         generate_data(&conn, &table).await?;
 
         let indexes_waited: Vec<IndexStatusResponse> = table
@@ -64,12 +64,12 @@ mod tests {
             .iter()
             .for_each(|index_waited| assert!(index_waited.ready));
 
-        tear_down(conn, "malik1").await
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_get_index_status_with_param() -> Result<()> {
-        let (conn, table) = set_up("malik2", false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         generate_data(&conn, &table).await?;
 
         let index_waited = table
@@ -85,12 +85,12 @@ mod tests {
         assert!(index_waited.index == "author");
         assert!(index_waited.ready);
 
-        tear_down(conn, "malik2").await
+        tear_down(conn, &table_name).await
     }
 
     #[tokio::test]
     async fn test_get_index_status_with_params() -> Result<()> {
-        let (conn, table) = set_up("malik3", false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         generate_data(&conn, &table).await?;
 
         let indexes_waited: Vec<IndexStatusResponse> = table
@@ -106,7 +106,7 @@ mod tests {
             .iter()
             .for_each(|index_waited| assert!(index_waited.ready));
 
-        tear_down(conn, "malik3").await
+        tear_down(conn, &table_name).await
     }
 
     async fn generate_data(conn: &Session, table: &Command) -> Result<()> {

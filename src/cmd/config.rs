@@ -9,17 +9,17 @@ pub(crate) fn new() -> Command {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down};
     use crate::types::ConfigChangeValue;
     use crate::Result;
 
     #[tokio::test]
     async fn test_get_config_info() -> Result<()> {
-        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         let response: ConfigChangeValue = table.config().run(&conn).await?.unwrap().parse()?;
 
-        assert!(response.name == TABLE_NAMES[0]);
+        assert!(response.name == table_name);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, table_name.as_str()).await
     }
 }

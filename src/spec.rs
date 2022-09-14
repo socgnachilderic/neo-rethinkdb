@@ -1,23 +1,16 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::cmd::insert::InsertOption;
 use crate::types::{AnyParam, Durability};
 use crate::{r, Command, Result, Session};
 
-pub const TABLE_NAMES: [&'static str; 6] = [
-    "malik",
-    "malik1",
-    "malik2",
-    "malik3",
-    "malik4",
-    "malik_backup",
-];
-
-pub async fn set_up(table_name: &str, with_data: bool) -> Result<(Session, Command)> {
+pub async fn set_up(with_data: bool) -> Result<(Session, Command, String)> {
+    let table_name = Uuid::new_v4().to_string();
     let conn = r.connection().connect().await?;
-    let table = r.table(table_name);
+    let table = r.table(table_name.as_str());
 
-    r.table_create(table_name).run(&conn).await?;
+    r.table_create(table_name.as_str()).run(&conn).await?;
     // TODO Create user for tests
     // r.db("rethinkdb").table("users").insert(args)
 
@@ -34,7 +27,7 @@ pub async fn set_up(table_name: &str, with_data: bool) -> Result<(Session, Comma
             .await?;
     }
 
-    Ok((conn, table))
+    Ok((conn, table, table_name))
 }
 
 pub async fn tear_down(conn: Session, table_name: &str) -> Result<()> {

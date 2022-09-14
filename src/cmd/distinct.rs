@@ -54,7 +54,7 @@ pub struct DistinctOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post};
     use crate::Result;
 
     use super::DistinctOption;
@@ -66,7 +66,7 @@ mod tests {
             .map(|post| post.title)
             .collect::<Vec<String>>();
         data.pop();
-        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: Vec<String> = table
             .distinct(DistinctOption::default().index("title"))
             .run(&conn)
@@ -76,6 +76,6 @@ mod tests {
 
         assert!(data_obtained == data);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

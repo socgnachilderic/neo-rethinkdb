@@ -64,13 +64,13 @@ pub struct SliceOption {
 mod tests {
     use crate::cmd::order_by::OrderByOption;
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post};
     use crate::Result;
 
     #[tokio::test]
     async fn test_slice_data() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: Vec<Post> = table
             .order_by(OrderByOption::default().index("id"))
             .slice((4, 5))
@@ -81,6 +81,6 @@ mod tests {
 
         assert!(data_obtained.last() == data.last());
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

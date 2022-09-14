@@ -44,7 +44,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down};
     use crate::types::{AnyParam, Point};
     use crate::{r, Result};
 
@@ -62,7 +62,7 @@ mod tests {
             name: "Yaoundé".to_string(),
             location: r.point(-122.423246, 37.779388),
         };
-        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         table
             .clone()
             .insert(AnyParam::new(&user))
@@ -72,6 +72,6 @@ mod tests {
 
         assert!(response == user);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

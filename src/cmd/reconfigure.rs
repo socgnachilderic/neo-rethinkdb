@@ -74,7 +74,7 @@ impl Serialize for ReconfigureOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down};
     use crate::types::{ReconfigureResponse, Replicas};
     use crate::Result;
 
@@ -82,7 +82,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_reconfigure_table() -> Result<()> {
-        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let reconfigure_option = ReconfigureOption::default()
             .shards(2)
             .replicas(Replicas::Int(1));
@@ -95,6 +95,6 @@ mod tests {
 
         assert!(response.reconfigured == 1);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

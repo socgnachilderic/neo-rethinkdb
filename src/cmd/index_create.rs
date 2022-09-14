@@ -67,6 +67,8 @@ pub struct IndexCreateOption {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use crate::prelude::*;
     use crate::types::IndexResponse;
     use crate::{r, Command, Result, Session};
@@ -75,46 +77,46 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_index() -> Result<()> {
-        let table_name = "malik1";
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
-        let index_created = r.table(table_name).index_create("author");
+        let index_created = r.table(table_name.as_str()).index_create("author");
 
-        setup(table_name, index_created, &conn).await
+        setup(&table_name, index_created, &conn).await
     }
 
     #[tokio::test]
     async fn test_create_index_with_options() -> Result<()> {
-        let table_name = "malik2";
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
         let index_option = IndexCreateOption::default().multi(true);
-        let index_created = r.table(table_name).index_create(("author", index_option));
+        let index_created = r.table(table_name.as_str()).index_create(("author", index_option));
 
-        setup(table_name, index_created, &conn).await
+        setup(&table_name, index_created, &conn).await
     }
 
     /* #[tokio::test]
     async fn test_create_index_with_func() -> Result<()> {
-        let table_name = "malik3";
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
         let index_created = r
-            .table(table_name)
+            .table(table_name.as_str())
             .index_create(("author", func!(|row| row.bracket("author").bracket("name"))));
 
-        setup(table_name, index_created, &conn).await
+        setup(&table_name, index_created, &conn).await
     }
 
     #[tokio::test]
     async fn test_create_index_with_func_and_options() -> Result<()> {
-        let table_name = "malik2";
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
         let index_option = IndexCreateOption::default().multi(true);
-        let index_created = r.table(table_name).index_create((
+        let index_created = r.table(table_name.as_str()).index_create((
             "author",
             func!(|row| row.bracket("author").bracket("name")),
             index_option,
         ));
 
-        setup(table_name, index_created, &conn).await
+        setup(&table_name, index_created, &conn).await
     } */
 
     async fn setup(table_name: &str, index_created: Command, conn: &Session) -> Result<()> {

@@ -14,7 +14,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_list_index() -> Result<()> {
-        let (conn, table) = set_up("malik", false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         table.clone().index_create("author").run(&conn).await?;
         let index_list: Vec<String> = table
             .clone()
@@ -26,6 +26,6 @@ mod tests {
 
         assert!(index_list.len() > 0);
 
-        tear_down(conn, "malik").await
+        tear_down(conn, &table_name).await
     }
 }

@@ -64,9 +64,10 @@ pub struct UnionOption {
 mod tests {
     use serde::{Deserialize, Serialize};
     use serde_json::json;
+    use uuid::Uuid;
 
     use crate::prelude::*;
-    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down};
     use crate::types::AnyParam;
     use crate::{r, Result};
 
@@ -87,16 +88,17 @@ mod tests {
             {"id": 2, "first_name": "juan", "last_name": "don"},
             {"id": 3, "first_name": "jean", "last_name": "dupont"}
         ]);
-        let (conn, table) = set_up(TABLE_NAMES[1], true).await?;
+        let table_name2 = Uuid::new_v4().to_string();
+        let (conn, table, table_name) = set_up(true).await?;
 
-        r.table_create(TABLE_NAMES[2]).run(&conn).await?;
-        r.table(TABLE_NAMES[2])
+        r.table_create(table_name2.as_str()).run(&conn).await?;
+        r.table(table_name2.as_str())
             .insert(AnyParam::new(authors_data))
             .run(&conn)
             .await?;
 
         let data_obtained: Vec<AuthorPost> = table
-            .union(r.table(TABLE_NAMES[2]))
+            .union(r.table(table_name2.as_str()))
             .run(&conn)
             .await?
             .unwrap()
@@ -104,7 +106,7 @@ mod tests {
 
         assert!(data_obtained.len() > 0);
 
-        r.table_drop(TABLE_NAMES[2]).run(&conn).await?;
-        tear_down(conn, TABLE_NAMES[1]).await
+        r.table_drop(table_name2.as_str()).run(&conn).await?;
+        tear_down(conn, &table_name).await
     }
 }

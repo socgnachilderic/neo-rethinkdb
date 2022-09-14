@@ -109,7 +109,7 @@ mod tests {
             .parse()?;
 
         assert!(data_obtained1.is_normal());
-        assert!(data_obtained2.is_positive());
+        assert!(data_obtained2 >= 0);
         assert!(data_obtained3.is_normal());
 
         Ok(())

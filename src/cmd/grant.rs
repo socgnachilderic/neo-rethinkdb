@@ -43,7 +43,7 @@ pub struct GrantOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down};
     use crate::types::{ConfigChange, GrantChangeValue, GrantResponse};
     use crate::Result;
 
@@ -51,7 +51,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_grant_permission() -> Result<()> {
-        let (conn, table) = set_up(TABLE_NAMES[0], false).await?;
+        let (conn, table, table_name) = set_up(false).await?;
         let expected = GrantResponse {
             granted: 1,
             permissions_changes: vec![ConfigChange {
@@ -75,6 +75,6 @@ mod tests {
 
         assert!(response == expected);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

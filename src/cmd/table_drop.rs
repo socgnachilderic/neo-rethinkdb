@@ -10,19 +10,21 @@ pub(crate) fn new(table_name: &str) -> Command {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use crate::prelude::*;
     use crate::types::DbResponse;
     use crate::{r, Result};
 
     #[tokio::test]
     async fn test_drop_table() -> Result<()> {
-        let table_name: &str = "malik";
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
 
-        r.table_create(table_name).run(&conn).await?;
+        r.table_create(table_name.as_str()).run(&conn).await?;
 
         let table_dropped: DbResponse = r
-            .table_drop(table_name)
+            .table_drop(table_name.as_str())
             .run(&conn)
             .await?
             .unwrap()

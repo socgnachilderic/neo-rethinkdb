@@ -14,7 +14,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post};
     use crate::types::AnyParam;
     use crate::Result;
 
@@ -33,7 +33,7 @@ mod tests {
                 title: post.title,
             })
             .collect();
-        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let mut data_obtained: Vec<InnerPost> = table
             .with_fields(AnyParam::new(["id", "title"]))
             .run(&conn)
@@ -45,6 +45,6 @@ mod tests {
 
         assert!(data_obtained == data);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

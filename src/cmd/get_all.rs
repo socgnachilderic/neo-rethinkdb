@@ -51,7 +51,7 @@ pub struct GetAllOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::*;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post};
     use crate::Result;
 
     use super::GetAllOption;
@@ -59,7 +59,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_all() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(TABLE_NAMES[1], true).await?;
+        let (conn, table, table_name) = set_up( true).await?;
 
         table.clone().sync().run(&conn).await?;
 
@@ -74,6 +74,6 @@ mod tests {
         assert!(data_get.first() == data.get(3));
         assert!(data_get.last() == data.last());
 
-        tear_down(conn, TABLE_NAMES[1]).await
+        tear_down(conn, &table_name).await
     }
 }

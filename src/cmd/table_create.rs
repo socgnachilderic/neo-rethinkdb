@@ -98,6 +98,8 @@ impl Serialize for TableCreateOption {
 
 #[cfg(test)]
 mod tests {
+    use uuid::Uuid;
+
     use crate::cmd::table_create::TableCreateOption;
     use crate::types::DbResponse;
     use crate::{prelude::*, Session};
@@ -105,32 +107,32 @@ mod tests {
 
     #[tokio::test]
     async fn test_create_table() -> Result<()> {
-        let table_name: &str = "malik1";
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
         let table_created: DbResponse = r
-            .table_create(table_name)
+            .table_create(table_name.as_str())
             .run(&conn)
             .await?
             .unwrap()
             .parse()?;
 
-        drop_table(table_name, table_created, &conn).await
+        drop_table(&table_name, table_created, &conn).await
     }
 
     #[tokio::test]
     async fn test_create_table_with_options() -> Result<()> {
-        let table_name: &str = "malik2";
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
         let table_options = TableCreateOption::default().primary_key("id");
         let table_created = r
             .db("test")
-            .table_create((table_name, table_options))
+            .table_create((table_name.as_str(), table_options))
             .run(&conn)
             .await?
             .unwrap()
             .parse()?;
 
-        drop_table(table_name, table_created, &conn).await
+        drop_table(&table_name, table_created, &conn).await
     }
 
     async fn drop_table(table_name: &str, table_created: DbResponse, conn: &Session) -> Result<()> {

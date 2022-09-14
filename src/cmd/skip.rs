@@ -11,13 +11,13 @@ pub(crate) fn new(step: usize) -> Command {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post,};
     use crate::Result;
 
     #[tokio::test]
     async fn test_skip_data() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let (conn, table, table_name) = set_up( true).await?;
         let data_obtained: Vec<Post> = table
             .skip(data.len() - 1)
             .run(&conn)
@@ -27,6 +27,6 @@ mod tests {
 
         assert!(data_obtained.first() == data.first());
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

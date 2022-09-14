@@ -14,7 +14,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::prelude::Converter;
-    use crate::spec::{set_up, tear_down, Post, TABLE_NAMES};
+    use crate::spec::{set_up, tear_down, Post};
     use crate::Result;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -30,7 +30,7 @@ mod tests {
             id: data.id,
             title: data.title,
         };
-        let (conn, table) = set_up(TABLE_NAMES[0], true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: InnerPost = table
             .get(1)
             .pluck(["id", "title"])
@@ -41,6 +41,6 @@ mod tests {
 
         assert!(data_obtained == data);
 
-        tear_down(conn, TABLE_NAMES[0]).await
+        tear_down(conn, &table_name).await
     }
 }

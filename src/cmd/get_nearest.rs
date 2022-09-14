@@ -54,11 +54,11 @@ pub struct GetNearestOption {
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
+    use uuid::Uuid;
 
     use crate::cmd::index_create::IndexCreateOption;
     use crate::cmd::point::Point;
     use crate::prelude::Converter;
-    use crate::spec::TABLE_NAMES;
     use crate::types::{AnyParam, ClosestDocumentResponse};
     use crate::{r, Result};
 
@@ -82,9 +82,10 @@ mod tests {
             Park::new(3, r.point(-122.422876, 37.777128)),
             Park::new(4, r.point(-122.423246, 37.779388)),
         ];
+        let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
-        let table = r.table(TABLE_NAMES[0]);
-        r.table_create(TABLE_NAMES[0]).run(&conn).await?;
+        let table = r.table(table_name.as_str());
+        r.table_create(table_name.as_str()).run(&conn).await?;
         table
             .clone()
             .index_create(("area", IndexCreateOption::default().geo(true)))
@@ -107,7 +108,7 @@ mod tests {
 
         assert!(response.len() > 0);
 
-        r.table_drop(TABLE_NAMES[0]).run(&conn).await?;
+        r.table_drop(table_name.as_str()).run(&conn).await?;
         Ok(())
     }
 }
