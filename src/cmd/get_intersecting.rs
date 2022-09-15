@@ -28,7 +28,6 @@ mod tests {
     use crate::cmd::point::Point;
     use crate::cmd::polygon::Polygon;
     use crate::prelude::Converter;
-    use crate::types::AnyParam;
     use crate::{r, Result};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -67,11 +66,7 @@ mod tests {
             .run(&conn)
             .await?;
         table.clone().index_wait(()).run(&conn).await?;
-        table
-            .clone()
-            .insert(AnyParam::new(&data))
-            .run(&conn)
-            .await?;
+        table.clone().insert(&data).run(&conn).await?;
 
         let response: Vec<Park> = table
             .get_intersecting(circle, "area")

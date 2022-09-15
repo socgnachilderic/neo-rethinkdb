@@ -89,7 +89,9 @@ mod tests {
         let table_name = Uuid::new_v4().to_string();
         let conn = r.connection().connect().await?;
         let index_option = IndexCreateOption::default().multi(true);
-        let index_created = r.table(table_name.as_str()).index_create(("author", index_option));
+        let index_created = r
+            .table(table_name.as_str())
+            .index_create(("author", index_option));
 
         setup(&table_name, index_created, &conn).await
     }

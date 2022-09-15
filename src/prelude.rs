@@ -36,3 +36,9 @@ pub trait Geometry: Into<Command> {
         self.into()
     }
 }
+
+// fn foo() {
+//     let var = args!(1, String::from("2"), GeoSystem::WGS84);
+// }
+
+// print!()

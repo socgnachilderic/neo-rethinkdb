@@ -1,9 +1,9 @@
+use func::Func;
+use proc_macro::TokenStream;
+
 mod geometry;
 mod func;
 mod options;
-
-use func::Func;
-use proc_macro::TokenStream;
 
 #[proc_macro]
 pub fn func(input: TokenStream) -> TokenStream {

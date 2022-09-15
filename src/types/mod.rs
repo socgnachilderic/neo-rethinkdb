@@ -1,8 +1,9 @@
-use std::{borrow::Cow, collections::HashMap};
+use std::borrow::Cow;
 
-use serde::{Deserialize, Serialize, Serializer};
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::arguments::{Durability, ReadMode};
 pub use crate::cmd::line::Line;
 pub use crate::cmd::point::Point;
 pub use crate::cmd::polygon::Polygon;
@@ -13,7 +14,7 @@ pub use time_::Time;
 
 pub(crate) use datetime::timezone_to_string;
 
-use crate::Command;
+pub use crate::Command;
 
 mod binary;
 mod datetime;
@@ -243,66 +244,6 @@ impl<T: Serialize + Clone> GeoJson<T> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-#[non_exhaustive]
-pub enum Replicas {
-    Int(u8),
-    Map {
-        replicas: HashMap<Cow<'static, str>, u8>,
-        primary_replica_tag: Cow<'static, str>,
-    },
-}
-
-#[derive(Debug, Clone, Copy, Deserialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub enum ReturnChanges {
-    Bool(bool),
-    Always,
-}
-
-impl Serialize for ReturnChanges {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        match self {
-            Self::Bool(boolean) => boolean.serialize(serializer),
-            Self::Always => "always".serialize(serializer),
-        }
-    }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-#[serde(rename_all = "lowercase")]
-pub enum IdentifierFormat {
-    Name,
-    Uuid,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum Durability {
-    Hard,
-    Soft,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum ReadMode {
-    Single,
-    Majority,
-    Outdated,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum Conflict {
-    Error,
-    Replace,
-    Update,
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[serde(rename_all = "snake_case")]
 pub enum WaitFor {
@@ -317,17 +258,7 @@ pub enum WaitFor {
 #[non_exhaustive]
 #[serde(untagged)]
 pub enum Squash {
-    /// `true`: When multiple changes to the same document occur before a
-    /// batch of notifications is sent, the changes are "squashed" into one
-    /// change. The client receives a notification that will bring it fully
-    /// up to date with the server.
-    /// `false`: All changes will be sent to the client verbatim. This is
-    /// the default.
     Bool(bool),
-    /// `n`: A numeric value (floating point). Similar to `true`, but the
-    /// server will wait `n` seconds to respond in order to squash as many
-    /// changes together as possible, reducing network traffic. The first
-    /// batch will always be returned immediately.
     Float(f32),
 }
 
@@ -345,13 +276,6 @@ pub enum Interleave {
 pub enum Status {
     Open,
     Closed,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "snake_case")]
-pub enum EmergencyRepair {
-    UnsafeRollback,
-    UnsafeRollbackOrErase,
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -407,19 +331,4 @@ pub enum TypeOf {
     String,
     TableSlice,
     Table,
-}
-
-#[derive(Debug, Clone)]
-pub struct AnyParam(Command);
-
-impl AnyParam {
-    pub fn new(arg: impl Serialize) -> Self {
-        Self(Command::from_json(arg))
-    }
-}
-
-impl From<AnyParam> for Command {
-    fn from(param: AnyParam) -> Self {
-        param.0
-    }
 }

@@ -1,7 +1,7 @@
 use ql2::term::TermType;
 
+use crate::arguments::AnyParam;
 use crate::prelude::Func;
-use crate::types::AnyParam;
 use crate::Command;
 
 pub(crate) fn new(args: impl DefaultArg) -> Command {

@@ -9,9 +9,6 @@ pub(crate) fn new(values: Vec<impl Serialize>) -> Command {
     Command::new(TermType::Args).with_arg(args)
 }
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub(crate) struct Args<T>(pub(crate) T);
-
 #[cfg(test)]
 mod tests {
     use crate::{prelude::Converter, r, Result};

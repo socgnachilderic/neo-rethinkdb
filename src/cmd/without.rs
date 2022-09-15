@@ -30,7 +30,7 @@ mod tests {
             id: data.id,
             title: data.title,
         };
-        let (conn, table, table_name) = set_up( true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: InnerPost = table
             .get(1)
             .without(["content", "view"])

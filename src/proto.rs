@@ -6,7 +6,7 @@ use ql2::term::TermType;
 use serde::ser::{self, Serialize, Serializer};
 use serde_json::value::{Number, Value};
 
-use crate::cmd::run::{Db, Options};
+use crate::cmd::run::{Db, RunOption};
 // use crate::prelude::ReqlOps;
 use crate::{err, r};
 
@@ -209,7 +209,7 @@ fn to_query_result(args: &VecDeque<super::Result<Command>>) -> super::Result<Vec
 pub(crate) struct Payload<'a>(
     pub(crate) QueryType,
     pub(crate) Option<Query<'a>>,
-    pub(crate) Options,
+    pub(crate) RunOption,
 );
 
 impl Serialize for Payload<'_> {

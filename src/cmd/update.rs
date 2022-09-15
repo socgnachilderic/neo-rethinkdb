@@ -2,7 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::{AnyParam, Durability, ReturnChanges};
+use crate::arguments::{AnyParam, Durability, ReturnChanges};
 use crate::Command;
 
 use super::CmdOpts;

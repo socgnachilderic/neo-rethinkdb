@@ -1,6 +1,6 @@
 use ql2::term::TermType;
 
-use crate::types::AnyParam;
+use crate::arguments::AnyParam;
 use crate::Command;
 
 pub(crate) fn new(fields: AnyParam) -> Command {
@@ -13,9 +13,9 @@ pub(crate) fn new(fields: AnyParam) -> Command {
 mod tests {
     use serde::{Deserialize, Serialize};
 
+    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::types::AnyParam;
     use crate::Result;
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord)]

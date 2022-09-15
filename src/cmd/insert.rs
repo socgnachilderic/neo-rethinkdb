@@ -2,7 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::{AnyParam, Conflict, Durability, ReturnChanges};
+use crate::arguments::{Args, Conflict, Durability, ReturnChanges};
 use crate::Command;
 
 use super::CmdOpts;
@@ -18,15 +18,24 @@ pub trait InsertArg {
     fn into_insert_opts(self) -> (CmdOpts, InsertOption);
 }
 
-impl InsertArg for AnyParam {
+impl<T> InsertArg for T
+where
+    T: Serialize,
+{
     fn into_insert_opts(self) -> (CmdOpts, InsertOption) {
-        (CmdOpts::Single(self.into()), Default::default())
+        (
+            CmdOpts::Single(Command::from_json(self)),
+            Default::default(),
+        )
     }
 }
 
-impl InsertArg for (AnyParam, InsertOption) {
+impl<T> InsertArg for Args<(T, InsertOption)>
+where
+    T: Serialize,
+{
     fn into_insert_opts(self) -> (CmdOpts, InsertOption) {
-        (CmdOpts::Single(self.0.into()), self.1)
+        (CmdOpts::Single(Command::from_json(self.0 .0)), self.0 .1)
     }
 }
 
@@ -36,9 +45,9 @@ impl InsertArg for Command {
     }
 }
 
-impl InsertArg for (Command, InsertOption) {
+impl InsertArg for Args<(Command, InsertOption)> {
     fn into_insert_opts(self) -> (CmdOpts, InsertOption) {
-        (CmdOpts::Single(self.0), self.1)
+        (CmdOpts::Single(self.0 .0), self.0 .1)
     }
 }
 
@@ -62,10 +71,11 @@ pub struct InsertOption {
 mod tests {
     use uuid::Uuid;
 
+    use crate::arguments::ReturnChanges;
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::types::{AnyParam, ReturnChanges, WritingResponse};
-    use crate::{r, Result};
+    use crate::types::WritingResponse;
+    use crate::{args, r, Result};
 
     use super::InsertOption;
 
@@ -75,7 +85,7 @@ mod tests {
         let (conn, table, table_name) = set_up(false).await?;
         let data_inserted: WritingResponse<Post> = table
             .clone()
-            .insert(AnyParam::new(&data))
+            .insert(&data)
             .run(&conn)
             .await?
             .unwrap()
@@ -92,7 +102,7 @@ mod tests {
         let (conn, table, table_name) = set_up(false).await?;
         let data_inserted: WritingResponse<Post> = table
             .clone()
-            .insert(AnyParam::new(&data))
+            .insert(&data)
             .run(&conn)
             .await?
             .unwrap()
@@ -110,11 +120,7 @@ mod tests {
         let (conn, table, table_name) = set_up(false).await?;
 
         r.table_create(table_name2.as_str()).run(&conn).await?;
-        table
-            .clone()
-            .insert(AnyParam::new(&data))
-            .run(&conn)
-            .await?;
+        table.clone().insert(&data).run(&conn).await?;
 
         let data_inserted: WritingResponse<Post> = r
             .table(table_name2.as_str())
@@ -137,7 +143,7 @@ mod tests {
         let insert_options = InsertOption::default().return_changes(ReturnChanges::Bool(true));
         let data_inserted: WritingResponse<Post> = table
             .clone()
-            .insert((AnyParam::new(&data), insert_options))
+            .insert(args!(&data, insert_options))
             .run(&conn)
             .await?
             .unwrap()

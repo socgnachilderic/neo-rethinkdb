@@ -81,7 +81,7 @@ mod tests {
     #[tokio::test]
     async fn test_min_data() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table, table_name) = set_up( true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: Post = table.min("view").run(&conn).await?.unwrap().parse()?;
 
         assert!(Some(&data_obtained) == data.last());

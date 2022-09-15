@@ -173,8 +173,8 @@ use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
+use crate::arguments::AnyParam;
 use crate::prelude::{Func, Geometry};
-use crate::types::AnyParam;
 use crate::Command;
 use crate::Result;
 
@@ -710,11 +710,232 @@ impl<'a> Command {
         wait::new(args).with_parent(self)
     }
 
-    pub async fn run(self, arg: impl run::Arg) -> Result<Option<Value>> {
+    /// Run a query on a connection,
+    /// returning either a single JSON result or a cursor,
+    /// depending on the query.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.run(&session) → stream
+    /// query.run(connection) → stream
+    /// query.run(args!(&session, options)) → stream
+    /// query.run(args!(connection, options)) → stream
+    /// query.run(&mut session) → stream
+    /// query.run(args!(&mut session, options)) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - session: [Session](crate::connection::Session)
+    /// - connection: [Connection](crate::connection::Connection)
+    /// - options: [RunOption](crate::cmd::run::RunOption)
+    /// - stream: [impl Stream<Item = Result<Value>>](futures::stream::Stream)
+    ///
+    /// ## Examples
+    ///
+    /// If you are OK with potentially out of date data
+    /// from all the tables involved in this query and
+    /// want potentially faster reads,
+    /// pass a flag allowing out of date data in an options object.
+    /// Settings for individual tables will supercede this global
+    /// setting for all tables in the query.
+    ///
+    /// ```
+    /// use reql_rust::arguments::ReadMode;
+    /// use reql_rust::cmd::run::RunOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let opts = RunOption::default().read_mode(ReadMode::Outdated);
+    ///
+    ///     r.table("simbad").run(args!(&conn, opts)).await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// If you want to specify whether to wait for a write to be written
+    /// to disk (overriding the table’s default settings),
+    /// you can set `durability` to `Durability::Hard`
+    /// or `Durability::Soft` in the options.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Durability;
+    /// use reql_rust::cmd::run::RunOption;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let opts = RunOption::default().durability(Durability::Hard);
+    ///     let data = json!({
+    ///         "name": "Pumba",
+    ///         "live": 5
+    ///     });
+    ///
+    ///     r.table("simbad").insert(data).run(args!(&conn, opts)).await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// If you do not want a time object to be converted to a native date object,
+    /// you can pass a time_format flag to prevent it
+    /// (valid flags are `Format::Raw` and `Format::Native`).
+    /// This query returns an object with two fields (epoch_time and $reql_type$)
+    /// instead of a native date object.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Format;
+    /// use reql_rust::cmd::run::RunOption;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let opts = RunOption::default().time_format(Format::Raw);
+    ///
+    ///     r.now().cmd().run(args!(&conn, opts)).await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Specify the database to use for the query.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Format;
+    /// use reql_rust::cmd::run::RunOption;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let opts = RunOption::default().db("jikoni");
+    ///
+    ///     r.table("simbad").run(args!(&conn, opts)).await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Change the batching parameters for this query.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Format;
+    /// use reql_rust::cmd::run::RunOption;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let opts = RunOption::default()
+    ///         .max_batch_rows(16)
+    ///         .max_batch_bytes(2048);
+    ///
+    ///     r.table("simbad").run(args!(&conn, opts)).await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [connection](crate::r::connection)
+    pub async fn run(self, arg: impl run::RunArg) -> Result<Option<Value>> {
         self.make_query(arg).try_next().await
     }
 
-    pub fn make_query(self, arg: impl run::Arg) -> impl Stream<Item = Result<Value>> {
+    /// Prepare query for execution
+    ///
+    /// This method has the same parameters as `run`.
+    /// The main difference between `make_query` and `run` is that
+    /// `make_query` can be used to execute multiple requests
+    ///
+    /// See [run](self::run) for more information.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.make_query(&session) → stream
+    /// query.make_query(connection) → stream
+    /// query.make_query(args!(&session, options)) → stream
+    /// query.make_query(args!(connection, options)) → stream
+    /// query.make_query(&mut session) → stream
+    /// query.make_query(args!(&mut session, options)) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - session: [Session](crate::connection::Session)
+    /// - connection: [Connection](crate::connection::Connection)
+    /// - options: [RunOption](crate::cmd::run::RunOption)
+    /// - stream: [impl Stream<Item = Result<Value>>](futures::stream::Stream)
+    ///
+    /// ## Examples
+    ///
+    /// You can use `query.make_query` to get the same result than `query.run`
+    ///
+    /// ```
+    /// use futures::TryStreamExt;
+    /// use reql_rust::r;
+    ///
+    /// async fn example() -> reql_rust::Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     r.table("simbad").make_query(&conn).try_next().await?;
+    ///     // is same than
+    ///     r.table("simbad").run(&conn).await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Run many queries
+    ///
+    /// ```
+    /// use futures::stream::{select_all, TryStreamExt};
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::r;
+    ///
+    /// async fn example() -> reql_rust::Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let mut streams = Vec::new();
+    ///     let expected_messages: Vec<String> = (0..10_000)
+    ///         .into_iter()
+    ///         .map(|i| format!("message {}", i))
+    ///         .collect();
+    ///
+    ///     for msg in expected_messages.iter() {
+    ///         streams.push(r.expr(msg).make_query(&conn));
+    ///     }
+    ///
+    ///     let mut list = select_all(streams);
+    ///     let mut response = Vec::new();
+    ///
+    ///     while let Some(msg) = list.try_next().await? {
+    ///         let msg: String = msg.parse()?;
+    ///         response.push(msg);
+    ///     }
+    ///
+    ///     assert!(response == expected_messages);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [run](self::run)
+    pub fn make_query(self, arg: impl run::RunArg) -> impl Stream<Item = Result<Value>> {
         Box::pin(run::new(self, arg))
     }
 }

@@ -59,7 +59,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_all() -> Result<()> {
         let data = Post::get_many_data();
-        let (conn, table, table_name) = set_up( true).await?;
+        let (conn, table, table_name) = set_up(true).await?;
 
         table.clone().sync().run(&conn).await?;
 

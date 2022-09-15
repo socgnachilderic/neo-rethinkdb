@@ -4,8 +4,9 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::AnyParam;
 use crate::prelude::Func;
-use crate::{types::AnyParam, Command};
+use crate::Command;
 
 pub(crate) fn new(args: impl EqJoinArg) -> Command {
     let (arg, right_table, opts) = args.into_eq_join_opts();

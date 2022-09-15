@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::{Serialize, Serializer};
 
-use crate::types::{Durability, Replicas};
+use crate::arguments::{Durability, Replicas};
 use crate::Command;
 
 use super::CmdOpts;

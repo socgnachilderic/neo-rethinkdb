@@ -10,7 +10,7 @@ mod tests {
 
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
-    use crate::types::{AnyParam, Binary};
+    use crate::types::Binary;
     use crate::{r, Result};
 
     #[derive(Debug, Serialize, Deserialize)]
@@ -30,11 +30,7 @@ mod tests {
         };
 
         let (conn, table, table_name) = set_up(false).await?;
-        table
-            .clone()
-            .insert(AnyParam::new(&user))
-            .run(&conn)
-            .await?;
+        table.clone().insert(&user).run(&conn).await?;
         let response: User = table.get(1).run(&conn).await?.unwrap().parse()?;
 
         assert!(response.id == user.id);

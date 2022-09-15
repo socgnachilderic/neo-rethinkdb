@@ -14,10 +14,9 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::trace;
 
-use super::args::Args;
+use crate::arguments::{Args, Durability, Format, ReadMode};
 use crate::constants::{DATA_SIZE, DEFAULT_RETHINKDB_DBNAME, HEADER_SIZE, TOKEN_SIZE};
 use crate::proto::{Payload, Query};
-use crate::types::{Durability, ReadMode};
 use crate::{err, Command, Connection, Result, Session};
 
 #[derive(Deserialize, Debug)]
@@ -44,40 +43,92 @@ impl Response {
     }
 }
 
-#[derive(
-    Debug, Clone, CommandOptions, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash,
-)]
-#[non_exhaustive]
-pub struct Options {
+#[derive(Debug, Clone, CommandOptions, Serialize, Default, PartialEq, PartialOrd)]
+pub struct RunOption {
+    /// One of three possible values affecting
+    /// the consistency guarantee for the query (default: `ReadMode::Single`).
+    /// - `ReadMode::Single` (the default) returns values that are in memory
+    /// (but not necessarily written to disk) on the primary replica.
+    /// - `ReadMode::Majority` will only return values that are safely
+    /// committed on disk on a majority of replicas.
+    /// This requires sending a message to every replica on each read,
+    /// so it is the slowest but most consistent.
+    /// - `ReadMode::Outdated` will return values that are in memory
+    /// on an arbitrarily-selected replica.
+    /// This is the fastest but least consistent.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub read_mode: Option<ReadMode>,
+    /// what format to return times in (default: `Format::Native`).
+    /// Set this to `Format::Raw`
+    /// if you want times returned as JSON objects for exporting.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub time_format: Option<Format>,
+    /// whether or not to return a profile
+    /// of the query’s execution (default: `false`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub profile: Option<bool>,
+    /// possible values are `Durability::Hard` and `Durability::Soft`.
+    /// In soft durability mode RethinkDB will acknowledge
+    /// the write immediately after receiving it,
+    /// but before the write has been committed to disk.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub durability: Option<Durability>,
+    /// what format to return `grouped_data` and
+    /// `grouped_streams` in (default: `Format::Native`).
+    /// Set this to `Format::Raw` if you want the raw pseudotype.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub group_format: Option<Format>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub noreply: Option<bool>,
+    /// the database to run this query against as a string.
+    /// The default is the database specified in
+    /// the `db` [connection](crate::connection::Connection)
+    /// method (which defaults to `test`).
+    /// The database may also be specified with the db command.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub db: Option<Db>,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
-#[serde(rename_all = "lowercase")]
-pub enum Format {
-    Native,
-    Raw,
+    /// the maximum numbers of array elements
+    /// that can be returned by a query (default: 100,000).
+    /// This affects all ReQL commands that return arrays.
+    /// Note that it has no effect on the size of arrays
+    /// being **written** to the database;
+    /// those always have an upper limit of 100,000 elements.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub array_limit: Option<usize>,
+    /// what format to return binary data in (default: `Format::Native`).
+    /// Set this to `Format::Raw` if you want the raw pseudotype.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub binary_format: Option<Format>,
+    /// minimum number of rows to wait for before batching
+    /// a result set (default: 8). This is an usize.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub min_batch_rows: Option<usize>,
+    /// maximum number of rows to wait for before batching
+    /// a result set (default: unlimited). This is an usize.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_batch_rows: Option<usize>,
+    /// maximum number of bytes to wait for before batching
+    /// a result set (default: 1MB). This is an usize.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_batch_bytes: Option<usize>,
+    /// maximum number of seconds to wait before batching
+    /// a result set (default: 0.5).
+    /// This is a f64 and may be specified to the microsecond.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub max_batch_seconds: Option<f64>,
+    /// factor to scale the other parameters down by on the first batch (default: 4).
+    /// For example, with this set to 8 and `max_batch_rows` set to 80,
+    /// on the first batch `max_batch_rows` will be adjusted to 10 (80 / 8).
+    /// This allows the first batch to return faster.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub first_batch_scaledown_factor: Option<usize>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Db(pub Cow<'static, str>);
 
-impl Options {
-    async fn default_db(self, session: &Session) -> Options {
+impl RunOption {
+    async fn default_db(self, session: &Session) -> RunOption {
         let session_db = session.inner.db.lock().await;
         if self.db.is_none() && *session_db != DEFAULT_RETHINKDB_DBNAME {
             return self.db(&*session_db);
@@ -86,46 +137,46 @@ impl Options {
     }
 }
 
-pub trait Arg {
-    fn into_run_opts(self) -> Result<(Connection, Options)>;
+pub trait RunArg {
+    fn into_run_opts(self) -> Result<(Connection, RunOption)>;
 }
 
-impl Arg for &Session {
-    fn into_run_opts(self) -> Result<(Connection, Options)> {
+impl RunArg for &Session {
+    fn into_run_opts(self) -> Result<(Connection, RunOption)> {
         let conn = self.connection()?;
         Ok((conn, Default::default()))
     }
 }
 
-impl Arg for Connection {
-    fn into_run_opts(self) -> Result<(Connection, Options)> {
+impl RunArg for Connection {
+    fn into_run_opts(self) -> Result<(Connection, RunOption)> {
         Ok((self, Default::default()))
     }
 }
 
-impl Arg for Args<(&Session, Options)> {
-    fn into_run_opts(self) -> Result<(Connection, Options)> {
+impl RunArg for Args<(&Session, RunOption)> {
+    fn into_run_opts(self) -> Result<(Connection, RunOption)> {
         let Args((session, options)) = self;
         let conn = session.connection()?;
         Ok((conn, options))
     }
 }
 
-impl Arg for Args<(Connection, Options)> {
-    fn into_run_opts(self) -> Result<(Connection, Options)> {
+impl RunArg for Args<(Connection, RunOption)> {
+    fn into_run_opts(self) -> Result<(Connection, RunOption)> {
         let Args(arg) = self;
         Ok(arg)
     }
 }
 
-impl Arg for &mut Session {
-    fn into_run_opts(self) -> Result<(Connection, Options)> {
+impl RunArg for &mut Session {
+    fn into_run_opts(self) -> Result<(Connection, RunOption)> {
         self.connection()?.into_run_opts()
     }
 }
 
-impl Arg for Args<(&mut Session, Options)> {
-    fn into_run_opts(self) -> Result<(Connection, Options)> {
+impl RunArg for Args<(&mut Session, RunOption)> {
+    fn into_run_opts(self) -> Result<(Connection, RunOption)> {
         let Args((session, options)) = self;
         let conn = session.connection()?;
 
@@ -135,7 +186,7 @@ impl Arg for Args<(&mut Session, Options)> {
 
 pub(crate) fn new<A, T>(query: Command, arg: A) -> impl Stream<Item = Result<T>>
 where
-    A: Arg,
+    A: RunArg,
     T: Unpin + DeserializeOwned,
 {
     try_stream! {

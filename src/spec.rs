@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
+use crate::arguments::Durability;
 use crate::cmd::insert::InsertOption;
-use crate::types::{AnyParam, Durability};
-use crate::{r, Command, Result, Session};
+use crate::{args, r, Command, Result, Session};
 
 pub async fn set_up(with_data: bool) -> Result<(Session, Command, String)> {
     let table_name = Uuid::new_v4().to_string();
@@ -22,7 +22,7 @@ pub async fn set_up(with_data: bool) -> Result<(Session, Command, String)> {
         table.clone().index_wait(()).run(&conn).await?;
         table
             .clone()
-            .insert((AnyParam::new(data), insert_option))
+            .insert(args!((data, insert_option)))
             .run(&conn)
             .await?;
     }

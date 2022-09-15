@@ -5,7 +5,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::{Serialize, Serializer};
 
-use crate::types::{EmergencyRepair, Replicas};
+use crate::arguments::{EmergencyRepair, Replicas};
 use crate::Command;
 
 pub(crate) fn new(opts: ReconfigureOption) -> Command {
@@ -73,9 +73,10 @@ impl Serialize for ReconfigureOption {
 
 #[cfg(test)]
 mod tests {
+    use crate::arguments::Replicas;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
-    use crate::types::{ReconfigureResponse, Replicas};
+    use crate::types::ReconfigureResponse;
     use crate::Result;
 
     use super::ReconfigureOption;

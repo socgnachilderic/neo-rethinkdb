@@ -1,3 +1,5 @@
+#![allow(clippy::unused_io_amount)]
+
 //! Create a new connection to the database server
 
 use std::borrow::Cow;

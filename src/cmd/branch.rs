@@ -1,6 +1,7 @@
 use ql2::term::TermType;
 
-use crate::{types::AnyParam, Command};
+use crate::arguments::AnyParam;
+use crate::Command;
 
 use super::CmdOpts;
 
@@ -121,8 +122,8 @@ impl BranchArg for (AnyParam, Vec<Command>, Command) {
 
 #[cfg(test)]
 mod tests {
+    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
-    use crate::types::AnyParam;
     use crate::{r, Result};
 
     #[tokio::test]

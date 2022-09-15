@@ -4,8 +4,9 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::AnyParam;
 use crate::prelude::Func;
-use crate::{types::AnyParam, Command};
+use crate::Command;
 
 use super::CmdOpts;
 
@@ -77,9 +78,9 @@ pub struct OrderByOption {
 
 #[cfg(test)]
 mod tests {
+    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::types::AnyParam;
     use crate::Result;
 
     use super::OrderByOption;

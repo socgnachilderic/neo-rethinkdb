@@ -2,7 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::{Durability, ReturnChanges};
+use crate::arguments::{Durability, ReturnChanges};
 use crate::Command;
 
 pub(crate) fn new(args: impl DeleteArg) -> Command {

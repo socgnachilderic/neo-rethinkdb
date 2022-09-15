@@ -2,7 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::{IdentifierFormat, ReadMode};
+use crate::arguments::{IdentifierFormat, ReadMode};
 use crate::Command;
 
 use super::CmdOpts;
@@ -48,9 +48,9 @@ pub struct TableOption {
 mod tests {
     use serde_json::Value;
 
+    use crate::arguments::ReadMode;
     use crate::cmd::table::TableOption;
     use crate::prelude::*;
-    use crate::types::ReadMode;
     use crate::{r, Result};
 
     #[tokio::test]

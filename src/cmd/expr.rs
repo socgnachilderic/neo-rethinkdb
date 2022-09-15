@@ -11,8 +11,8 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use serde_json::json;
 
+    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
-    use crate::types::AnyParam;
     use crate::{r, Result};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]

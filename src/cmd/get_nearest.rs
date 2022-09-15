@@ -59,7 +59,7 @@ mod tests {
     use crate::cmd::index_create::IndexCreateOption;
     use crate::cmd::point::Point;
     use crate::prelude::Converter;
-    use crate::types::{AnyParam, ClosestDocumentResponse};
+    use crate::types::ClosestDocumentResponse;
     use crate::{r, Result};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -92,11 +92,7 @@ mod tests {
             .run(&conn)
             .await?;
         table.clone().index_wait(()).run(&conn).await?;
-        table
-            .clone()
-            .insert(AnyParam::new(&data))
-            .run(&conn)
-            .await?;
+        table.clone().insert(&data).run(&conn).await?;
 
         let secret_base = r.point(-122.422876, 37.777128);
         let response: Vec<ClosestDocumentResponse<Park>> = table

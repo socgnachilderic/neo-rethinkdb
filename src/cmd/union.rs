@@ -2,7 +2,8 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::{AnyParam, Interleave};
+use crate::arguments::AnyParam;
+use crate::types::Interleave;
 use crate::Command;
 
 use super::CmdOpts;
@@ -68,7 +69,6 @@ mod tests {
 
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down};
-    use crate::types::AnyParam;
     use crate::{r, Result};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
@@ -93,7 +93,7 @@ mod tests {
 
         r.table_create(table_name2.as_str()).run(&conn).await?;
         r.table(table_name2.as_str())
-            .insert(AnyParam::new(authors_data))
+            .insert(authors_data)
             .run(&conn)
             .await?;
 

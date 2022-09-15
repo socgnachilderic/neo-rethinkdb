@@ -1,7 +1,8 @@
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::{types::AnyParam, Command};
+use crate::arguments::AnyParam;
+use crate::Command;
 
 use super::CmdOpts;
 
@@ -29,9 +30,9 @@ impl<T: Serialize> NeArg for Vec<T> {
 
 #[cfg(test)]
 mod tests {
+    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
-    use crate::types::AnyParam;
     use crate::{r, Result};
 
     #[tokio::test]

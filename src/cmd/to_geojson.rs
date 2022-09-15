@@ -13,7 +13,7 @@ mod tests {
     use crate::cmd::point::Point;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
-    use crate::types::{AnyParam, GeoJson, GeoType};
+    use crate::types::{GeoJson, GeoType};
     use crate::{r, Result};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -35,11 +35,7 @@ mod tests {
             coordinates: [-122.423246, 37.779388],
         };
         let (conn, table, table_name) = set_up(false).await?;
-        table
-            .clone()
-            .insert(AnyParam::new(&user))
-            .run(&conn)
-            .await?;
+        table.clone().insert(&user).run(&conn).await?;
         let location: GeoJson<[f64; 2]> = table
             .get(1)
             .g("location")

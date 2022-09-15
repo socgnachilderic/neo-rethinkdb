@@ -1,27 +1,29 @@
-#![allow(clippy::wrong_self_convention)]
-
-pub mod cmd;
-pub mod connection;
-mod constants;
-mod err;
-
-pub mod prelude;
-mod proto;
-#[cfg(test)]
-mod spec;
-pub mod types;
-
-use futures::Future;
 use serde::Serialize;
 
 pub use connection::*;
 pub use err::*;
-// pub use prelude::Func;
 pub use proto::Command;
 use time::{Date, Time, UtcOffset};
 use types::{Binary, DateTime, GeoJson};
 
 pub type Result<T> = std::result::Result<T, ReqlError>;
+
+mod constants;
+mod err;
+mod proto;
+#[cfg(test)]
+mod spec;
+
+pub mod arguments;
+pub mod cmd;
+pub mod connection;
+pub mod prelude;
+pub mod types;
+
+#[macro_export]
+macro_rules! args {
+    ( $($a:expr),* ) => {{ $crate::arguments::Args(($($a),*)) }};
+}
 
 // TODO Put Clone Copy in all derive macro as possible
 
@@ -291,9 +293,10 @@ impl r {
 
 // Helper for making writing examples less verbose
 #[doc(hidden)]
-pub async fn example<Q, F>(query: impl FnOnce(r, Session) -> F) -> Result<()>
+pub fn example<'a, Q, F, S>(_query: Q)
 where
-    F: Future<Output = Result<()>>,
+    Q: FnOnce(r, &'a mut Session) -> async_stream::AsyncStream<(), F>,
+    F: futures::Future<Output = S>,
+    S: futures::Stream<Item = Result<serde_json::Value>>,
 {
-    query(r, r.connection().connect().await?).await
 }
