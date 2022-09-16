@@ -650,6 +650,48 @@ impl<'a> Command {
         coerce_to::new(value).with_parent(self)
     }
 
+    /// Gets the type of a ReQL query’s return value.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// any.type_of() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: [TypeOf](crate::types::TypeOf)
+    ///
+    /// # Description
+    /// 
+    /// Read the article on [ReQL data types](https://rethinkdb.com/docs/data-types/) 
+    /// for a more detailed discussion. 
+    /// Note that some possible return values from `type_of` are internal values, 
+    /// such as `TypeOf::MAXVAL`, and unlikely to be returned from queries in standard practice.
+    /// 
+    /// ## Examples
+    ///
+    /// Get the type of a TypeOf.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::TypeOf;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: TypeOf = r.expr("foo")
+    ///         .type_of()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == TypeOf::String);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn type_of(self) -> Self {
         type_of::new().with_parent(self)
     }
