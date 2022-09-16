@@ -654,6 +654,42 @@ impl<'a> Command {
         type_of::new().with_parent(self)
     }
 
+    /// Get information about a ReQL value.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// any.info() → response
+    /// r.info(any) → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: [InfoResponse](crate::types::InfoResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Get information about a table such as primary key, or cache size.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::{InfoResponse, TypeOf};
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: InfoResponse = r.table("simbad")
+    ///         .info()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.typ == TypeOf::Table);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn info(self) -> Self {
         info::new().with_parent(self)
     }
@@ -711,7 +747,7 @@ impl<'a> Command {
     /// [r.line(...)](crate::r::line) |
     /// [r.polygon(...)](crate::r::polygon)
     /// command
-    /// - options: DistanceOption
+    /// - options: [DistanceOption](crate::cmd::distance::DistanceOption)
     ///
     /// # Description
     ///
@@ -771,7 +807,7 @@ impl<'a> Command {
     /// [r.line(...)](crate::r::line) |
     /// [r.polygon(...)](crate::r::polygon)
     /// command
-    /// - response: GeoJson<T>
+    /// - response: [GeoJson<T>](crate::types::GeoJson)
     ///
     /// ## Examples
     ///
@@ -821,6 +857,7 @@ impl<'a> Command {
     /// [r.polygon(...)](crate::r::polygon)
     /// command
     /// - sequence: command
+    /// - options: [GetIntersectingOption](crate::cmd::get_intersecting::GetIntersectingOption)
     ///
     /// # Description
     ///
@@ -874,8 +911,8 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// geometry.includes(geometry) → bool
-    /// sequence.includes(geometry) → sequence
+    /// table.get_nearest(args!(geometry, &str)) → array
+    /// table.get_nearest(args!(geometry, &str, options)) → array
     /// ```
     ///
     /// Where:
@@ -884,6 +921,7 @@ impl<'a> Command {
     /// [r.polygon(...)](crate::r::polygon) |
     /// command
     /// - sequence: command
+    /// - options: [GetNearestOption](crate::cmd::get_nearest::GetNearestOption)
     ///
     /// # Description
     ///
@@ -900,7 +938,6 @@ impl<'a> Command {
     ///
     /// ```
     /// use reql_rust::cmd::get_nearest::GetNearestOption;
-    /// use reql_rust::prelude::Converter;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -908,14 +945,12 @@ impl<'a> Command {
     ///     let secret_base = r.point(-122.422876, 37.777128);
     ///     let opts = GetNearestOption::default().max_results(25);
     ///
-    ///     let response: bool = r.table("simbad")
+    ///     let response = r.table("simbad")
     ///         .get_nearest(args!(secret_base, "location"))
     ///         .run(&conn)
-    ///         .await?
-    ///         .unwrap()
-    ///         .parse()?;
+    ///         .await?;
     ///
-    ///     assert!(response);
+    ///     assert!(response.is_some());
     ///     
     ///     Ok(())
     /// }
