@@ -682,7 +682,84 @@ impl<'a> Command {
         includes::new(args).with_parent(self)
     }
 
-    pub fn intersects(self, geometry: impl Geometry) -> Self {
+    /// Tests whether two geometry objects intersect with one another.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// geometry.intersects(geometry) → bool
+    /// geometry.intersects(command) → bool
+    /// r.intersects(geometry, geometry) → bool
+    /// r.intersects(command, command) → bool
+    /// sequence.intersects(geometry) → sequence_response
+    /// sequence.intersects(command) → sequence_response
+    /// r.intersects(args!(vec![geometry]), geometry) → sequence_response
+    /// r.intersects(args!(vec![command]), command) → sequence_response
+    /// ```
+    ///
+    /// Where:
+    /// - geometry: [r.point(...)](crate::r::point) |
+    /// [r.line(...)](crate::r::line) |
+    /// [r.polygon(...)](crate::r::polygon)
+    /// - sequence: [r.db(...)](crate::r::db)
+    /// - sequence_response: [GrantResponse](crate::types::GrantResponse)
+    ///
+    /// # Description
+    ///
+    /// When applied to a sequence of geometry objects, `intersects` acts as a
+    /// [filter](Self::filter), returning a sequence of objects from
+    /// the sequence that intersect with the argument.
+    ///
+    /// ## Examples
+    ///
+    /// Is `point2` within a 2000-meter circle around `point1`?
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point1 = r.point(-117.220406, 32.719464);
+    ///     let point2 = r.point(-117.206201, 32.725186);
+    ///
+    ///     let response: bool = r.circle(args!(point1, 2000.))
+    ///         .intersects(point2)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Which of the locations in a list of parks intersect `circle1`?
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point = r.point(-117.220406, 32.719464);
+    ///     let circle = r.circle(args!(point, 10f64));
+    ///
+    ///     let response = r.table("parks")
+    ///         .g("area")
+    ///         .intersects(circle)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn intersects(self, geometry: impl intersects::IntersectsArg) -> Self {
         intersects::new(geometry).with_parent(self)
     }
 

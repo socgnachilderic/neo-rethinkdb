@@ -20,7 +20,7 @@ pub struct Permission {
     /// allows modifying data, including inserting, replacing/updating, and deleting.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub write: Option<bool>,
-    /// allows a user to open HTTP connections via the [http](crate::Command::http)
+    /// allows a user to open HTTP connections via the [http](crate::r::http)
     /// command. This permission can only be granted in global scope.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub connect: Option<bool>,

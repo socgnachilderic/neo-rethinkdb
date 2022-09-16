@@ -1,6 +1,6 @@
 use ql2::term::TermType;
 
-use crate::{prelude::Geometry, Command};
+use crate::{arguments::Args, prelude::Geometry, Command};
 
 use super::CmdOpts;
 
@@ -19,29 +19,61 @@ pub trait IntersectsArg {
     fn into_intersects_opts(self) -> (Option<CmdOpts>, Command);
 }
 
-impl<T: Geometry> IntersectsArg for T {
+impl IntersectsArg for Command {
+    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
+        (None, self)
+    }
+}
+
+impl<T> IntersectsArg for T
+where
+    T: Geometry,
+{
     fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
         (None, self.into())
     }
 }
 
-impl<T: Geometry, R: Geometry> IntersectsArg for (T, R) {
+impl IntersectsArg for Args<(Command, Command)> {
     fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
-        (Some(CmdOpts::Single(self.0.into())), self.1.into())
+        (Some(CmdOpts::Single(self.0 .0)), self.0 .1)
     }
 }
 
-impl<T: Geometry, R: Geometry> IntersectsArg for (Vec<T>, R) {
+impl<T, R> IntersectsArg for Args<(T, R)>
+where
+    T: Geometry,
+    R: Geometry,
+{
     fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
-        let seq = CmdOpts::Many(self.0.into_iter().map(|geo| geo.get_command()).collect());
+        (Some(CmdOpts::Single(self.0 .0.into())), self.0 .1.into())
+    }
+}
 
-        (Some(seq), self.1.into())
+impl<T, R> IntersectsArg for Args<(Vec<T>, R)>
+where
+    T: Geometry,
+    R: Geometry,
+{
+    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
+        let seq = CmdOpts::Many(self.0 .0.into_iter().map(|geo| geo.get_command()).collect());
+
+        (Some(seq), self.0 .1.into())
+    }
+}
+
+impl IntersectsArg for Args<(Vec<Command>, Command)> {
+    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
+        let seq = CmdOpts::Many(self.0 .0);
+
+        (Some(seq), self.0 .1)
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{prelude::Converter, r, Result};
+    use crate::prelude::Converter;
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_intersects_geo() -> Result<()> {
@@ -50,7 +82,7 @@ mod tests {
         let point2 = r.point(-117.206201, 32.725186);
 
         let response: bool = r
-            .circle((point1, 2000.))
+            .circle(args!(point1, 2000.))
             .intersects(point2)
             .run(&conn)
             .await?

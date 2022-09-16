@@ -2,6 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::types::{GeoSystem, Point, Unit};
 use crate::Command;
 
@@ -18,19 +19,35 @@ pub trait CircleArg {
     fn into_circle_opts(self) -> (Command, Command, CircleOption);
 }
 
-impl CircleArg for (Point, f64) {
+impl CircleArg for Args<(Point, f64)> {
     fn into_circle_opts(self) -> (Command, Command, CircleOption) {
         (
-            Command::from_json(self.0),
-            Command::from_json(self.1),
+            Command::from_json(self.0 .0),
+            Command::from_json(self.0 .1),
             Default::default(),
         )
     }
 }
 
-impl CircleArg for (Command, f64) {
+impl CircleArg for Args<(Command, f64)> {
     fn into_circle_opts(self) -> (Command, Command, CircleOption) {
-        (self.0, Command::from_json(self.1), Default::default())
+        (self.0 .0, Command::from_json(self.0 .1), Default::default())
+    }
+}
+
+impl CircleArg for Args<(Point, f64, CircleOption)> {
+    fn into_circle_opts(self) -> (Command, Command, CircleOption) {
+        (
+            Command::from_json(self.0 .0),
+            Command::from_json(self.0 .1),
+            self.0 .2,
+        )
+    }
+}
+
+impl CircleArg for Args<(Command, f64, CircleOption)> {
+    fn into_circle_opts(self) -> (Command, Command, CircleOption) {
+        (self.0 .0, Command::from_json(self.0 .1), self.0 .2)
     }
 }
 

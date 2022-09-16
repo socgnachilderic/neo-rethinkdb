@@ -31,7 +31,7 @@ pub enum ReqlType {
     Time,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub enum GeoType {
     LineString,
     Point,
