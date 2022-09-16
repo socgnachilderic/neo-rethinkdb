@@ -666,6 +666,50 @@ impl<'a> Command {
         distance::new(args).with_parent(self)
     }
 
+    /// Convert a ReQL geometry object to a [GeoJSON](https://geojson.org/) object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// geometry.to_geojson() → response
+    /// ```
+    ///
+    /// Where:
+    /// - geometry: [r.point(...)](crate::r::point) |
+    /// [r.line(...)](crate::r::line) |
+    /// [r.polygon(...)](crate::r::polygon)
+    /// command
+    /// - response: GeoJson<T>
+    ///
+    /// ## Examples
+    ///
+    /// Convert a ReQL geometry object to a GeoJSON object.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::{GeoJson, GeoType};
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: GeoJson<[f64; 2]> = r.table("simbad")
+    ///         .get("sfo")
+    ///         .g("location")
+    ///         .to_geojson()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.typ == GeoType::Point);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// # Related commands
+    /// - [geojson](Self::geojson)
     pub fn to_geojson(self) -> Self {
         to_geojson::new().with_parent(self)
     }
@@ -701,7 +745,6 @@ impl<'a> Command {
     /// ```
     /// use reql_rust::arguments::Unit;
     /// use reql_rust::cmd::circle::CircleOption;
-    /// use reql_rust::prelude::Converter;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
