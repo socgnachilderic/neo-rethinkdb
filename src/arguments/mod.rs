@@ -1,5 +1,6 @@
 use std::{borrow::Cow, collections::HashMap};
 
+use reql_macros::CommandOptions;
 use serde::{Deserialize, Serialize};
 
 pub use any_param::AnyParam;
@@ -10,6 +11,27 @@ mod return_changes;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct Args<T>(pub T);
+
+#[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
+pub struct Permission {
+    /// allows reading the data in tables.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub read: Option<bool>,
+    /// allows modifying data, including inserting, replacing/updating, and deleting.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub write: Option<bool>,
+    /// allows a user to open HTTP connections via the [http](crate::Command::http)
+    /// command. This permission can only be granted in global scope.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub connect: Option<bool>,
+    /// allows users to create/drop
+    /// [secondary indexes](https://rethinkdb.com/docs/secondary-indexes/python/)
+    /// on a table and changing the cluster configuration;
+    /// to create and drop tables, if granted on a database;
+    /// and to create and drop databases, if granted globally.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub config: Option<bool>,
+}
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[serde(rename_all = "lowercase")]

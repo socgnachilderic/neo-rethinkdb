@@ -173,7 +173,7 @@ use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::arguments::AnyParam;
+use crate::arguments::{AnyParam, Permission};
 use crate::prelude::{Func, Geometry};
 use crate::Command;
 use crate::Result;
@@ -686,30 +686,178 @@ impl<'a> Command {
         intersects::new(geometry).with_parent(self)
     }
 
-    pub fn grant(self, args: impl grant::GrantArg) -> Self {
-        grant::new(args).with_parent(self)
+    /// Grant or deny access permissions for a user account,
+    /// globally or on a per-database or per-table basis.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.grant(username, permission) → response
+    /// table.grant(username, permission) → response
+    /// db.grant(username, permission) → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - db: [r.db(...)](crate::r::db)
+    /// - response: [GrantResponse](crate::types::GrantResponse)
+    ///
+    /// # Description
+    ///
+    /// Permissions that are not defined on a local scope will
+    /// be inherited from the next largest scope.
+    /// For example, a write operation on a table will first
+    /// check if `write` permissions are explicitly set to `true` or `false`
+    /// for that table and account combination; if they are not,
+    /// the `write` permissions for the database will be used
+    /// if those are explicitly set; and if neither table nor database
+    /// permissions are set for that account, the global `write`
+    /// permissions for that account will be used.
+    ///
+    /// ## Note
+    ///
+    /// For all accounts other than the special, system-defined `admin` account,
+    /// permissions that are not explicitly set in any scope will effectively be `false`.
+    /// When you create a new user account by inserting a record into the
+    /// [system table](https://rethinkdb.com/docs/system-tables/#users),
+    /// that account will have **no** permissions until they are explicitly granted.
+    ///
+    /// For a full description of permissions, read
+    /// [Permissions and user accounts](https://rethinkdb.com/docs/permissions-and-accounts/).
+    ///
+    /// ## Examples
+    ///
+    /// Grant the `alima` user account read and write permissions on the `users` database.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Permission;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::GrantResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let permission = Permission::default().read(true).write(true);
+    ///
+    ///     let response: GrantResponse = r.db("users")
+    ///         .grant("alima", permission)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.granted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Deny write permissions from the `alima` account for the `simbad` table.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Permission;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::GrantResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let permission = Permission::default().write(false);
+    ///
+    ///     let response: GrantResponse = r.db("users")
+    ///         .table("simbad")
+    ///         .grant("alima", permission)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.granted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Grant `alima` the ability to use HTTP connections.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Permission;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::GrantResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let permission = Permission::default().connect(true);
+    ///
+    ///     let response: GrantResponse = r.grant("alima", permission)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.granted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Grant a `monitor` account read-only access to all databases.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Permission;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::GrantResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let permission = Permission::default().read(true);
+    ///
+    ///     let response: GrantResponse = r.grant("monitor", permission)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.granted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn grant(self, username: &str, permission: Permission) -> Self {
+        grant::new(username, permission).with_parent(self)
     }
 
     /// Query (read and/or update) the configurations for individual tables or databases.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.config() → response
+    /// db.config() → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - db: [r.db(...)](crate::r::db)
+    /// - response: [ConfigResponse](crate::types::ConfigResponse)
+    ///
+    /// # Description
     ///
     /// The config command is a shorthand way to access the `table_config` or `db_config`
     /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables).
     /// It will return the single row from the system that corresponds to the database
     /// or table configuration, as if [get](Self::get) had been called on the system
     /// table with the UUID of the database or table in question.
-    ///
-    /// # Command syntax
-    ///
-    /// ```text
-    /// table.config() → response
-    /// database.config() → response
-    /// ```
-    ///
-    /// Where:
-    /// - table: [r.table(...)](crate::r::table) |
-    /// [query.table(...)](Self::table)
-    /// - database: [r.db(...)](crate::r::db)
-    /// - response: [ConfigResponse](crate::types::ConfigResponse)
     ///
     /// ## Examples
     ///
@@ -742,6 +890,21 @@ impl<'a> Command {
     /// Rebalances the shards of a table. When called on a database,
     /// all the tables in that database will be rebalanced.
     ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.rebalance() → response
+    /// db.rebalance() → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - db: [r.db(...)](crate::r::db)
+    /// - response: [RebalanceResponse](crate::types::RebalanceResponse)
+    ///
+    /// # Description
+    ///
     /// The `rebalance` command operates by measuring the distribution of
     /// primary keys within a table and picking split points that will
     /// give each shard approximately the same number of documents.
@@ -767,19 +930,6 @@ impl<'a> Command {
     ///
     /// See the [status](Self::status) command for an explanation of
     /// the objects returned in the `old_val` and `new_val` fields.
-    ///
-    /// # Command syntax
-    ///
-    /// ```text
-    /// table.rebalance() → response
-    /// database.rebalance() → response
-    /// ```
-    ///
-    /// Where:
-    /// - table: [r.table(...)](crate::r::table) |
-    /// [query.table(...)](Self::table)
-    /// - database: [r.db(...)](crate::r::db)
-    /// - response: [RebalanceResponse](crate::types::RebalanceResponse)
     ///
     /// ## Examples
     ///
@@ -815,15 +965,17 @@ impl<'a> Command {
     ///
     /// ```text
     /// table.reconfigure(options) → response
-    /// database.reconfigure(options) → response
+    /// db.reconfigure(options) → response
     /// ```
     ///
     /// Where:
     /// - table: [r.table(...)](crate::r::table) |
     /// [query.table(...)](Self::table)
-    /// - database: [r.db(...)](crate::r::db)
+    /// - db: [r.db(...)](crate::r::db)
     /// - options: [ReconfigureOption](crate::cmd::reconfigure::ReconfigureOption)
     /// - response: [ReconfigureResponse](crate::types::ReconfigureResponse)
+    ///
+    /// # Description
     ///
     /// A table will lose availability temporarily after `reconfigure` is called;
     /// use the [wait](Self::wait) command to wait for the table to become available again,
@@ -994,20 +1146,16 @@ impl<'a> Command {
     }
 
     /// Wait for a table or all the tables in a database to be ready.
-    /// A table may be temporarily unavailable after creation,
-    /// rebalancing or reconfiguring.
-    /// The `wait` command blocks until the given
-    /// table (or database) is fully up to date.
     ///
     /// # Command syntax
     ///
     /// ```text
     /// table.wait(()) → response
-    /// database.wait(()) → response
+    /// db.wait(()) → response
     /// r.wait(table) → response
     /// r.wait(database) → response
     /// table.wait(options) → response
-    /// database.wait(options) → response
+    /// db.wait(options) → response
     /// r.wait(args!(table, options)) → response
     /// r.wait(args!(database, options)) → response
     /// ```
@@ -1015,9 +1163,16 @@ impl<'a> Command {
     /// Where:
     /// - table: [r.table(...)](crate::r::table) |
     /// [query.table(...)](Self::table)
-    /// - database: [r.db(...)](crate::r::db)
+    /// - db: [r.db(...)](crate::r::db)
     /// - options: [WaitOption](crate::cmd::wait::WaitOption)
     /// - response: [WaitResponse](crate::types::WaitResponse)
+    ///
+    /// # Description
+    ///
+    /// A table may be temporarily unavailable after creation,
+    /// rebalancing or reconfiguring.
+    /// The `wait` command blocks until the given
+    /// table (or database) is fully up to date.
     ///
     /// ## Examples
     ///
@@ -1223,10 +1378,6 @@ impl<'a> Command {
 
     /// Prepare query for execution
     ///
-    /// This method has the same parameters as `run`.
-    /// The main difference between `make_query` and `run` is that
-    /// `make_query` can be used to execute multiple requests
-    ///
     /// See [run](self::run) for more information.
     ///
     /// # Command syntax
@@ -1244,6 +1395,12 @@ impl<'a> Command {
     /// - session: [Session](crate::connection::Session)
     /// - connection: [Connection](crate::connection::Connection)
     /// - options: [RunOption](crate::cmd::run::RunOption)
+    ///
+    /// # Description
+    ///
+    /// This method has the same parameters as `run`.
+    /// The main difference between `make_query` and `run` is that
+    /// `make_query` can be used to execute multiple requests
     ///
     /// ## Examples
     ///

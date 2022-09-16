@@ -1,53 +1,21 @@
 use ql2::term::TermType;
-use reql_macros::CommandOptions;
-use serde::Serialize;
 
+use crate::arguments::Permission;
 use crate::Command;
 
-pub(crate) fn new(args: impl GrantArg) -> Command {
-    let (arg, opts) = args.into_grant_opts();
-
+pub(crate) fn new(username: &str, permission: Permission) -> Command {
     Command::new(TermType::Grant)
-        .with_arg(arg)
-        .with_arg(Command::from_json(opts))
-}
-
-pub trait GrantArg {
-    fn into_grant_opts(self) -> (Command, GrantOption);
-}
-
-impl GrantArg for &str {
-    fn into_grant_opts(self) -> (Command, GrantOption) {
-        (Command::from_json(self), Default::default())
-    }
-}
-
-impl GrantArg for (&str, GrantOption) {
-    fn into_grant_opts(self) -> (Command, GrantOption) {
-        (Command::from_json(self.0), self.1)
-    }
-}
-
-#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
-pub struct GrantOption {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub read: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub write: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub connect: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub config: Option<bool>,
+        .with_arg(Command::from_json(username))
+        .with_arg(Command::from_json(permission))
 }
 
 #[cfg(test)]
 mod tests {
+    use crate::arguments::Permission;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
     use crate::types::{ConfigChange, GrantChangeValue, GrantResponse};
     use crate::Result;
-
-    use super::GrantOption;
 
     #[tokio::test]
     async fn test_grant_permission() -> Result<()> {
@@ -64,10 +32,10 @@ mod tests {
                 }),
             }],
         };
-        let permissions = GrantOption::default().read(true).write(true);
+        let permissions = Permission::default().read(true).write(true);
         // TODO Replace current user when test user should be created
         let response: GrantResponse = table
-            .grant(("bob", permissions))
+            .grant("bob", permissions)
             .run(&conn)
             .await?
             .unwrap()

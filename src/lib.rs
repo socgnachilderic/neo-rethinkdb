@@ -1,5 +1,6 @@
 use serde::Serialize;
 
+use arguments::Permission;
 pub use connection::*;
 pub use err::*;
 pub use proto::Command;
@@ -270,8 +271,8 @@ impl r {
         cmd::intersects::new(args)
     }
 
-    pub fn grant(self, args: impl cmd::grant::GrantArg) -> Command {
-        cmd::grant::new(args)
+    pub fn grant(self, username: &str, permission: Permission) -> Command {
+        cmd::grant::new(username, permission)
     }
 
     pub fn wait(self, args: impl cmd::wait::WaitArg) -> Command {

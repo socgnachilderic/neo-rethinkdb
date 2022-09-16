@@ -132,7 +132,10 @@ pub struct JoinResponse<L, R> {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct GrantResponse {
+    /// The granted field will always be 1,
     pub granted: u8,
+    /// list will have one object, describing the new permissions values and
+    /// the old values they were changed from (which may be None).
     pub permissions_changes: Vec<ConfigChange<GrantChangeValue>>,
 }
 
