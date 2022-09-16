@@ -702,6 +702,49 @@ impl<'a> Command {
         reconfigure::new(opts).with_parent(self)
     }
 
+    /// Return the status of a table.
+    /// 
+    /// The return value is an object providing information about 
+    /// the table’s shards, replicas and replica readiness states. 
+    /// For a more complete discussion of the object fields, 
+    /// read about the table_status table in 
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#status-tables).
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.status() → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - response: [StatusResponse](crate::types::StatusResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Get a table’s status.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::StatusResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: StatusResponse = r.table("simbad")
+    ///         .status()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.name.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn status(self) -> Self {
         status::new().with_parent(self)
     }

@@ -179,12 +179,18 @@ pub struct GrantChangeValue {
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct StatusResponse {
-    pub db: Option<Cow<'static, str>>,
+    /// the UUID of the table.
     pub id: Option<Cow<'static, str>>,
+    /// the table’s name.
     pub name: Option<Cow<'static, str>>,
-    pub raft_leader: Option<Cow<'static, str>>,
-    pub shards: Option<Vec<ShardType<ShardReplicasType>>>,
+    /// the database the table is in.
+    pub db: Option<Cow<'static, str>>,
+    /// the subfields in this field indicate whether all shards of 
+    /// the table are ready to accept the given type of query
     pub status: Option<StatusResponseStatus>,
+    /// one entry for each shard in `table_config`
+    pub shards: Option<Vec<ShardType<ShardReplicasType>>>,
+    pub raft_leader: Option<Cow<'static, str>>,
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
