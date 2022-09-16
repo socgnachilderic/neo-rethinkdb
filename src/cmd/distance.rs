@@ -2,8 +2,9 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Unit;
 use crate::prelude::Geometry;
-use crate::types::{GeoSystem, Unit};
+use crate::types::GeoSystem;
 use crate::Command;
 
 pub(crate) fn new(args: impl DistanceArg) -> Command {
@@ -55,8 +56,8 @@ pub struct DistanceOption {
 
 #[cfg(test)]
 mod tests {
+    use crate::arguments::Unit;
     use crate::prelude::Converter;
-    use crate::types::Unit;
     use crate::{r, Result};
 
     use super::DistanceOption;

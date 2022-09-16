@@ -4,11 +4,10 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::{
-    prelude::Geometry,
-    types::{GeoSystem, Unit},
-    Command,
-};
+use crate::arguments::Unit;
+use crate::prelude::Geometry;
+use crate::types::GeoSystem;
+use crate::Command;
 
 pub(crate) fn new(args: impl GetNearestArg) -> Command {
     let (arg, opts) = args.into_get_nearest_opts();

@@ -2,8 +2,8 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::Args;
-use crate::types::{GeoSystem, Point, Unit};
+use crate::arguments::{Args, Unit};
+use crate::types::{GeoSystem, Point};
 use crate::Command;
 
 pub(crate) fn new(args: impl CircleArg) -> Command {

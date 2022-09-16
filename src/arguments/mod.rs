@@ -101,3 +101,17 @@ pub enum WaitFor {
     ReadyForWrites,
     AllReplicasReady,
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum Unit {
+    #[serde(rename = "m")]
+    Meter,
+    #[serde(rename = "km")]
+    Kilometer,
+    #[serde(rename = "mi")]
+    InternationalMile,
+    #[serde(rename = "nm")]
+    NauticalMile,
+    #[serde(rename = "ft")]
+    InternationalFoot,
+}

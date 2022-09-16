@@ -20,15 +20,28 @@ impl<T: Geometry> IncludesArg for T {
     }
 }
 
+impl IncludesArg for Command {
+    fn into_includes_opts(self) -> CmdOpts {
+        CmdOpts::Single(self)
+    }
+}
+
 impl<T: Geometry> IncludesArg for Vec<T> {
     fn into_includes_opts(self) -> CmdOpts {
         CmdOpts::Many(self.into_iter().map(|geo| geo.get_command()).collect())
     }
 }
 
+impl IncludesArg for Vec<Command> {
+    fn into_includes_opts(self) -> CmdOpts {
+        CmdOpts::Many(self)
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::{prelude::Converter, r, Result};
+    use crate::prelude::Converter;
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_includes_geo() -> Result<()> {
@@ -37,7 +50,7 @@ mod tests {
         let point2 = r.point(-117.206201, 32.725186);
 
         let response: bool = r
-            .circle((point1, 2000.))
+            .circle(args!(point1, 2000.))
             .includes(point2)
             .run(&conn)
             .await?

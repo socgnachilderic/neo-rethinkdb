@@ -4,14 +4,34 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::{prelude::Geometry, Command};
+use crate::prelude::Geometry;
+use crate::Command;
 
-pub(crate) fn new(geometry: impl Geometry, index: &'static str) -> Command {
+pub(crate) fn new(args: impl GetIntersectingArg, index: &'static str) -> Command {
     let opts = GetIntersectingOption::default().index(index);
 
     Command::new(TermType::GetIntersecting)
-        .with_arg(geometry.get_command())
+        .with_arg(args.into_get_intersecting_opts())
         .with_opts(opts)
+}
+
+pub trait GetIntersectingArg {
+    fn into_get_intersecting_opts(self) -> Command;
+}
+
+impl GetIntersectingArg for Command {
+    fn into_get_intersecting_opts(self) -> Command {
+        self
+    }
+}
+
+impl<T> GetIntersectingArg for T
+where
+    T: Geometry,
+{
+    fn into_get_intersecting_opts(self) -> Command {
+        self.get_command()
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Default, CommandOptions)]
@@ -28,7 +48,7 @@ mod tests {
     use crate::cmd::point::Point;
     use crate::cmd::polygon::Polygon;
     use crate::prelude::Converter;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Park {
@@ -54,7 +74,7 @@ mod tests {
         let conn = r.connection().connect().await?;
         let table = r.table(table_name.as_str());
         let circle: Polygon = r
-            .circle((r.point(-117.220406, 32.719464), 10.))
+            .circle(args!(r.point(-117.220406, 32.719464), 10.))
             .run(&conn)
             .await?
             .unwrap()

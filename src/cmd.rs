@@ -174,7 +174,7 @@ use serde::Serialize;
 use serde_json::Value;
 
 use crate::arguments::{AnyParam, Permission};
-use crate::prelude::{Func, Geometry};
+use crate::prelude::Func;
 use crate::Command;
 use crate::Result;
 
@@ -670,7 +670,11 @@ impl<'a> Command {
         to_geojson::new().with_parent(self)
     }
 
-    pub fn get_intersecting(self, geometry: impl Geometry, index: &'static str) -> Self {
+    pub fn get_intersecting(
+        self,
+        geometry: impl get_intersecting::GetIntersectingArg,
+        index: &'static str,
+    ) -> Self {
         get_intersecting::new(geometry, index).with_parent(self)
     }
 
@@ -678,6 +682,114 @@ impl<'a> Command {
         get_nearest::new(args).with_parent(self)
     }
 
+    /// Tests whether a geometry object is completely contained within another.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// geometry.includes(geometry) → bool
+    /// geometry.includes(command) → bool
+    /// sequence.includes(geometry) → sequence
+    /// sequence.includes(command) → sequence
+    /// ```
+    ///
+    /// Where:
+    /// - geometry: [r.point(...)](crate::r::point) |
+    /// [r.line(...)](crate::r::line) |
+    /// [r.polygon(...)](crate::r::polygon)
+    /// command
+    /// - sequence: command
+    ///
+    /// # Description
+    ///
+    /// When applied to a sequence of geometry objects,
+    /// `includes` acts as a [filter](Self::filter),
+    /// returning a sequence of objects from the sequence
+    /// that include the argument.
+    ///
+    /// ## Examples
+    ///
+    /// Is `point2` included within a 2000-meter circle around `point1`?
+    ///
+    /// ```
+    /// use reql_rust::arguments::Unit;
+    /// use reql_rust::cmd::circle::CircleOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point1 = r.point(-117.220406, 32.719464);
+    ///     let point2 = r.point(-117.206201, 32.725186);
+    ///
+    ///     let response: bool = r.circle(args!(point1, 2000.))
+    ///         .includes(point2)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Which of the locations in a list of parks include `circle`?
+    ///
+    /// ```
+    /// use reql_rust::arguments::Unit;
+    /// use reql_rust::cmd::circle::CircleOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point = r.point(-117.220406, 32.719464);
+    ///     let circle_opts = CircleOption::default().unit(Unit::InternationalMile);
+    ///     let circle = r.circle(args!(point, 10f64, circle_opts));
+    ///
+    ///     let response = r.table("parks")
+    ///         .g("area")
+    ///         .includes(circle)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Rewrite the previous example with `get_intersecting`.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Unit;
+    /// use reql_rust::cmd::circle::CircleOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point = r.point(-117.220406, 32.719464);
+    ///     let circle_opts = CircleOption::default()
+    ///         .unit(Unit::InternationalMile);
+    ///     let circle = r.circle(args!(point, 10f64, circle_opts));
+    ///
+    ///     let response = r.table("parks")
+    ///         .get_intersecting(circle.clone(), "area")
+    ///         .g("area")
+    ///         .includes(circle)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn includes(self, args: impl includes::IncludesArg) -> Self {
         includes::new(args).with_parent(self)
     }
@@ -701,8 +813,6 @@ impl<'a> Command {
     /// - geometry: [r.point(...)](crate::r::point) |
     /// [r.line(...)](crate::r::line) |
     /// [r.polygon(...)](crate::r::polygon)
-    /// - sequence: [r.db(...)](crate::r::db)
-    /// - sequence_response: [GrantResponse](crate::types::GrantResponse)
     ///
     /// # Description
     ///
@@ -738,15 +848,18 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Which of the locations in a list of parks intersect `circle1`?
+    /// Which of the locations in a list of parks intersect `circle`?
     ///
     /// ```
+    /// use reql_rust::arguments::Unit;
+    /// use reql_rust::cmd::circle::CircleOption;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let point = r.point(-117.220406, 32.719464);
-    ///     let circle = r.circle(args!(point, 10f64));
+    ///     let circle_opts = CircleOption::default().unit(Unit::InternationalMile);
+    ///     let circle = r.circle(args!(point, 10., circle_opts));
     ///
     ///     let response = r.table("parks")
     ///         .g("area")
