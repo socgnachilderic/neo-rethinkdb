@@ -68,8 +68,8 @@ impl Serialize for TableCreateOption {
         #[derive(Serialize)]
         #[serde(untagged)]
         enum InnerReplicas<'a> {
-            Int(u8),
-            Map(&'a HashMap<Cow<'static, str>, u8>),
+            Int(usize),
+            Map(&'a HashMap<Cow<'static, str>, usize>),
         }
 
         let (replicas, primary_replica_tag) = match &self.replicas {

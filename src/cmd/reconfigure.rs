@@ -15,9 +15,22 @@ pub(crate) fn new(opts: ReconfigureOption) -> Command {
 #[derive(Debug, Clone, Default, PartialEq, CommandOptions)]
 #[non_exhaustive]
 pub struct ReconfigureOption {
-    pub dry_run: Option<bool>,
+    /// the number of shards, an integer from 1-64. Required.
     pub shards: Option<u8>,
+    /// either an usize or a mapping struct. Required.
+    /// - If `replicas` is an usize, it specifies the number of replicas per shard. 
+    /// Specifying more replicas than there are servers will return an error.
+    /// - If `replicas` is an struct, it specifies key-value pairs of server tags 
+    /// and the number of replicas to assign to those servers: 
+    /// `{"tag1": 2, "tag2": 4, "tag3": 2, ...}`. 
+    /// For more information about server tags, read 
+    /// [Administration tools](https://rethinkdb.com/docs/administration-tools/).
     pub replicas: Option<Replicas>,
+    /// the generated configuration will not be applied to the table, only returned.
+    pub dry_run: Option<bool>,
+    /// Used for the Emergency Repair mode. 
+    /// See <https://rethinkdb.com/api/python/reconfigure#emergency-repair-mode>
+    /// for more information.
     pub emergency_repair: Option<EmergencyRepair>,
 }
 
@@ -36,6 +49,9 @@ impl Serialize for ReconfigureOption {
             shards: Option<u8>,
             #[serde(skip_serializing_if = "Option::is_none")]
             replicas: Option<InnerReplicas<'a>>,
+            /// the primary server specified by its server tag. 
+            /// Required if `replicas` is an object; the tag must be in the object. 
+            /// This must not be specified if `replicas` is an usize.
             #[serde(skip_serializing_if = "Option::is_none")]
             primary_replica_tag: Option<&'a Cow<'static, str>>,
         }
@@ -43,8 +59,8 @@ impl Serialize for ReconfigureOption {
         #[derive(Serialize)]
         #[serde(untagged)]
         enum InnerReplicas<'a> {
-            Int(u8),
-            Map(&'a HashMap<Cow<'static, str>, u8>),
+            Int(usize),
+            Map(&'a HashMap<Cow<'static, str>, usize>),
         }
 
         let (replicas, primary_replica_tag) = match &self.replicas {

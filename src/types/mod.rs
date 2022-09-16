@@ -144,8 +144,20 @@ pub struct RebalanceResponse {
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct ReconfigureResponse {
+    /// the number of tables reconfigured. 
+    /// This will be `0` if `dry_run` is `true`.
     pub reconfigured: u8,
+    /// a list of new and old table configuration values. 
+    /// Each element of the list will be an object with two fields
+    /// - `old_val`: The table’s [config](crate::Command::config)
+    /// value before reconfigure was executed.
+    /// - `new_val`: The table’s `config` value after `reconfigure` was executed.
     pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
+    /// a list of new and old table status values. 
+    /// Each element of the list will be an object with two fields
+    /// - `old_val`: The table’s [status](crate::Command::status) 
+    /// value before reconfigure was executed.
+    /// - `new_val`: The table’s `config` value after `reconfigure` was executed.
     pub status_changes: Vec<ConfigChange<StatusResponse>>,
 }
 

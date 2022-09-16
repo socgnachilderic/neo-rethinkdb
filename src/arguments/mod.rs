@@ -49,9 +49,9 @@ pub enum Conflict {
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[non_exhaustive]
 pub enum Replicas {
-    Int(u8),
+    Int(usize),
     Map {
-        replicas: HashMap<Cow<'static, str>, u8>,
+        replicas: HashMap<Cow<'static, str>, usize>,
         primary_replica_tag: Cow<'static, str>,
     },
 }

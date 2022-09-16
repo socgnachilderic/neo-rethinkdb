@@ -698,18 +698,151 @@ impl<'a> Command {
         rebalance::new().with_parent(self)
     }
 
+    /// Reconfigure a table’s sharding and replication.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.reconfigure(options) → response
+    /// database.reconfigure(options) → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - database: [r.db(...)](crate::r::db)
+    /// - options: [ReconfigureOption](crate::cmd::reconfigure::ReconfigureOption)
+    /// - response: [ReconfigureResponse](crate::types::ReconfigureResponse)
+    ///
+    /// A table will lose availability temporarily after `reconfigure` is called;
+    /// use the [wait](Self::wait) command to wait for the table to become available again,
+    /// or [status](Self::wait) to check if the table is available for writing.
+    ///
+    /// ## Note
+    ///
+    /// Whenever you call `reconfigure`, the write durability will be set to
+    /// `Durability::Hard` and the write
+    /// acknowledgments will be set to `ReadMode::Majority`;
+    /// these can be changed by using the `config` command on the table.
+    ///
+    ///
+    /// If `reconfigure` is called on a database,
+    /// all the tables in the database will have their configurations affected.
+    /// The return value will be an array of the objects described above, one per table.
+    ///
+    /// Read [Sharding and replication](https://rethinkdb.com/docs/sharding-and-replication/)
+    /// for a complete discussion of the subject, including advanced topics.
+    ///
+    /// ## Examples
+    ///
+    /// Reconfigure a table.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Replicas;
+    /// use reql_rust::cmd::reconfigure::ReconfigureOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::ReconfigureResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let opts = ReconfigureOption::default()
+    ///         .shards(1)
+    ///         .replicas(Replicas::Int(1));
+    ///
+    ///     let response: ReconfigureResponse = r.table("simbad")
+    ///         .reconfigure(opts)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.reconfigured == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Reconfigure a table, specifying replicas by server tags.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::arguments::Replicas;
+    /// use reql_rust::cmd::reconfigure::ReconfigureOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::ReconfigureResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let mut replicas = HashMap::new();
+    ///
+    ///     replicas.insert("malika".static_string(), 1);
+    ///     replicas.insert("malika".static_string(), 1);
+    ///
+    ///     let opts = ReconfigureOption::default()
+    ///         .shards(2)
+    ///         .replicas(Replicas::Map {
+    ///             replicas,
+    ///             primary_replica_tag: "malika".static_string()
+    ///         });
+    ///
+    ///     let response: ReconfigureResponse = r.table("simbad")
+    ///         .reconfigure(opts)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.reconfigured == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Perform an emergency repair on a table.
+    ///
+    /// ```
+    /// use reql_rust::arguments::EmergencyRepair;
+    /// use reql_rust::cmd::reconfigure::ReconfigureOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::ReconfigureResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let opts = ReconfigureOption::default()
+    ///         .emergency_repair(EmergencyRepair::UnsafeRollback);
+    ///
+    ///     let response: ReconfigureResponse = r.table("simbad")
+    ///         .reconfigure(opts)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.reconfigured == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn reconfigure(self, opts: reconfigure::ReconfigureOption) -> Self {
         reconfigure::new(opts).with_parent(self)
     }
 
     /// Return the status of a table.
-    /// 
-    /// The return value is an object providing information about 
-    /// the table’s shards, replicas and replica readiness states. 
-    /// For a more complete discussion of the object fields, 
-    /// read about the table_status table in 
+    ///
+    /// The return value is an object providing information about
+    /// the table’s shards, replicas and replica readiness states.
+    /// For a more complete discussion of the object fields,
+    /// read about the table_status table in
     /// [System tables](https://rethinkdb.com/docs/system-tables/#status-tables).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
