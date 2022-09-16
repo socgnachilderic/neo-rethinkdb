@@ -670,6 +670,60 @@ impl<'a> Command {
         to_geojson::new().with_parent(self)
     }
 
+    /// Get all documents where the given geometry object intersects
+    /// the geometry object of the requested geospatial index.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.get_intersecting(geometry, options) → selection<stream>
+    /// ```
+    ///
+    /// Where:
+    /// - geometry: [r.point(...)](crate::r::point) |
+    /// [r.line(...)](crate::r::line) |
+    /// [r.polygon(...)](crate::r::polygon)
+    /// command
+    /// - sequence: command
+    ///
+    /// # Description
+    ///
+    /// The `index` argument is mandatory. This command returns the same
+    ///  results as `|row| row.g(index).intersects(geometry)`.
+    /// The total number of results is limited to the array size limit
+    /// which defaults to 100,000, but can be changed with the `array_limit`
+    /// option to [run](Self::run).
+    ///
+    /// ## Examples
+    ///
+    /// Which of the locations in a list of parks intersect `circle`?
+    ///
+    /// ```
+    /// use reql_rust::arguments::Unit;
+    /// use reql_rust::cmd::circle::CircleOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point = r.point(-117.220406, 32.719464);
+    ///     let circle_opts = CircleOption::default()
+    ///         .unit(Unit::InternationalMile);
+    ///     let circle = r.circle(args!(point, 10., circle_opts));
+    ///
+    ///     let response = r.table("simbad")
+    ///         .get_intersecting(circle, "area")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get_nearest](Self::get_nearest)
     pub fn get_intersecting(
         self,
         geometry: impl get_intersecting::GetIntersectingArg,
@@ -678,6 +732,62 @@ impl<'a> Command {
         get_intersecting::new(geometry, index).with_parent(self)
     }
 
+    /// Return a list of documents closest to a
+    /// specified point based on a geospatial index,
+    /// sorted in order of increasing distance.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// geometry.includes(geometry) → bool
+    /// sequence.includes(geometry) → sequence
+    /// ```
+    ///
+    /// Where:
+    /// - geometry: [r.point(...)](crate::r::point) |
+    /// [r.line(...)](crate::r::line) |
+    /// [r.polygon(...)](crate::r::polygon) |
+    /// command
+    /// - sequence: command
+    ///
+    /// # Description
+    ///
+    /// The return value will be an array of two-item objects
+    /// with the keys `dist` and `doc`, set to the distance
+    /// between the specified point and the document
+    /// (in the units specified with `unit`, defaulting to meters)
+    /// and the document itself, respectively.
+    /// The array will be sorted by the values of `dist`.
+    ///
+    /// ## Examples
+    ///
+    /// Return a list of the closest 25 enemy hideouts to the secret base.
+    ///
+    /// ```
+    /// use reql_rust::cmd::get_nearest::GetNearestOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let secret_base = r.point(-122.422876, 37.777128);
+    ///     let opts = GetNearestOption::default().max_results(25);
+    ///
+    ///     let response: bool = r.table("simbad")
+    ///         .get_nearest(args!(secret_base, "location"))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get_intersecting](Self::get_intersecting)
     pub fn get_nearest(self, args: impl get_nearest::GetNearestArg) -> Self {
         get_nearest::new(args).with_parent(self)
     }
@@ -688,15 +798,13 @@ impl<'a> Command {
     ///
     /// ```text
     /// geometry.includes(geometry) → bool
-    /// geometry.includes(command) → bool
     /// sequence.includes(geometry) → sequence
-    /// sequence.includes(command) → sequence
     /// ```
     ///
     /// Where:
     /// - geometry: [r.point(...)](crate::r::point) |
     /// [r.line(...)](crate::r::line) |
-    /// [r.polygon(...)](crate::r::polygon)
+    /// [r.polygon(...)](crate::r::polygon) |
     /// command
     /// - sequence: command
     ///
@@ -712,8 +820,6 @@ impl<'a> Command {
     /// Is `point2` included within a 2000-meter circle around `point1`?
     ///
     /// ```
-    /// use reql_rust::arguments::Unit;
-    /// use reql_rust::cmd::circle::CircleOption;
     /// use reql_rust::prelude::Converter;
     /// use reql_rust::{args, r, Result};
     ///
@@ -748,7 +854,7 @@ impl<'a> Command {
     ///     let conn = r.connection().connect().await?;
     ///     let point = r.point(-117.220406, 32.719464);
     ///     let circle_opts = CircleOption::default().unit(Unit::InternationalMile);
-    ///     let circle = r.circle(args!(point, 10f64, circle_opts));
+    ///     let circle = r.circle(args!(point, 10., circle_opts));
     ///
     ///     let response = r.table("parks")
     ///         .g("area")
@@ -776,7 +882,7 @@ impl<'a> Command {
     ///     let point = r.point(-117.220406, 32.719464);
     ///     let circle_opts = CircleOption::default()
     ///         .unit(Unit::InternationalMile);
-    ///     let circle = r.circle(args!(point, 10f64, circle_opts));
+    ///     let circle = r.circle(args!(point, 10., circle_opts));
     ///
     ///     let response = r.table("parks")
     ///         .get_intersecting(circle.clone(), "area")
@@ -790,6 +896,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
+    ///
+    /// # Related commands
+    /// - [intersects](Self::intersects)
     pub fn includes(self, args: impl includes::IncludesArg) -> Self {
         includes::new(args).with_parent(self)
     }
@@ -800,19 +909,17 @@ impl<'a> Command {
     ///
     /// ```text
     /// geometry.intersects(geometry) → bool
-    /// geometry.intersects(command) → bool
     /// r.intersects(geometry, geometry) → bool
-    /// r.intersects(command, command) → bool
     /// sequence.intersects(geometry) → sequence_response
-    /// sequence.intersects(command) → sequence_response
     /// r.intersects(args!(vec![geometry]), geometry) → sequence_response
-    /// r.intersects(args!(vec![command]), command) → sequence_response
     /// ```
     ///
     /// Where:
     /// - geometry: [r.point(...)](crate::r::point) |
     /// [r.line(...)](crate::r::line) |
-    /// [r.polygon(...)](crate::r::polygon)
+    /// [r.polygon(...)](crate::r::polygon) |
+    /// command
+    /// - sequence: command
     ///
     /// # Description
     ///
@@ -872,6 +979,10 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
+    ///
+    /// # Related commands
+    /// - [includes](Self::includes)
+    /// - [get_intersecting](Self::get_intersecting)
     pub fn intersects(self, geometry: impl intersects::IntersectsArg) -> Self {
         intersects::new(geometry).with_parent(self)
     }

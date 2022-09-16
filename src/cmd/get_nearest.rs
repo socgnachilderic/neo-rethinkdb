@@ -4,7 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::Unit;
+use crate::arguments::{Args, Unit};
 use crate::prelude::Geometry;
 use crate::types::GeoSystem;
 use crate::Command;
@@ -21,33 +21,56 @@ pub trait GetNearestArg {
     fn into_get_nearest_opts(self) -> (Command, GetNearestOption);
 }
 
-impl<T: Geometry> GetNearestArg for (T, &str) {
+impl<T: Geometry> GetNearestArg for Args<(T, &str)> {
     fn into_get_nearest_opts(self) -> (Command, GetNearestOption) {
-        let index_name = GetNearestOption::default().index(self.1.to_owned());
+        let index_name = GetNearestOption::default().index(self.0 .1.to_owned());
 
-        (self.0.into(), index_name)
+        (self.0 .0.into(), index_name)
     }
 }
 
-impl<T: Geometry> GetNearestArg for (T, &str, GetNearestOption) {
+impl GetNearestArg for Args<(Command, &str)> {
     fn into_get_nearest_opts(self) -> (Command, GetNearestOption) {
-        let index_name = self.2.index(self.1.to_owned());
+        let index_name = GetNearestOption::default().index(self.0 .1.to_owned());
 
-        (self.0.into(), index_name)
+        (self.0 .0, index_name)
+    }
+}
+
+impl<T: Geometry> GetNearestArg for Args<(T, &str, GetNearestOption)> {
+    fn into_get_nearest_opts(self) -> (Command, GetNearestOption) {
+        let index_name = self.0 .2.index(self.0 .1.to_owned());
+
+        (self.0 .0.into(), index_name)
+    }
+}
+
+impl GetNearestArg for Args<(Command, &str, GetNearestOption)> {
+    fn into_get_nearest_opts(self) -> (Command, GetNearestOption) {
+        let index_name = self.0 .2.index(self.0 .1.to_owned());
+
+        (self.0 .0, index_name)
     }
 }
 
 #[derive(Debug, Clone, Serialize, Default, CommandOptions)]
 pub struct GetNearestOption {
     pub index: Cow<'static, str>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub geo_system: Option<GeoSystem>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unit: Option<Unit>,
+    /// the maximum number of results to return (default 100).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_results: Option<usize>,
+    /// Unit for the distance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unit: Option<Unit>,
+    /// distance from an object to the specified point (default 100 km).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub max_dist: Option<usize>,
+    /// the reference ellipsoid to use for geographic coordinates.
+    /// Possible values are `GeoSystem::WGS84` (the default),
+    /// a common standard for Earth’s geometry, or `GeoSystem::UnitSphere`,
+    /// a perfect sphere of 1 meter radius.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub geo_system: Option<GeoSystem>,
 }
 
 #[cfg(test)]
@@ -59,7 +82,7 @@ mod tests {
     use crate::cmd::point::Point;
     use crate::prelude::Converter;
     use crate::types::ClosestDocumentResponse;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[derive(Debug, Serialize, Deserialize, PartialEq)]
     struct Park {
@@ -95,7 +118,7 @@ mod tests {
 
         let secret_base = r.point(-122.422876, 37.777128);
         let response: Vec<ClosestDocumentResponse<Park>> = table
-            .get_nearest((secret_base, "area"))
+            .get_nearest(args!(secret_base, "area"))
             .run(&conn)
             .await?
             .unwrap()
