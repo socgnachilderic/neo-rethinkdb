@@ -694,6 +694,72 @@ impl<'a> Command {
         config::new().with_parent(self)
     }
 
+    /// Rebalances the shards of a table. When called on a database,
+    /// all the tables in that database will be rebalanced.
+    ///
+    /// The `rebalance` command operates by measuring the distribution of
+    /// primary keys within a table and picking split points that will
+    /// give each shard approximately the same number of documents.
+    /// It won’t change the number of shards within a table,
+    /// or change any other configuration aspect for the table or the database.
+    ///
+    /// A table will lose availability temporarily after `rebalance` is called;
+    /// use the [wait](Self::wait) command to wait for the table to become available again,
+    /// or [status](Self::status) to check if the table is available for writing.
+    ///
+    /// RethinkDB automatically rebalances tables when the number of shards are increased,
+    /// and as long as your documents have evenly distributed primary keys—such as
+    /// the default UUIDs—it is rarely necessary to call `rebalance` manually.
+    /// Cases where `rebalance` may need to be called include:
+    /// - Tables with unevenly distributed primary keys, such as incrementing integers
+    /// - Changing a table’s primary key type
+    /// - Increasing the number of shards on an empty table,
+    /// then using non-UUID primary keys in that table
+    ///
+    /// The [web UI](https://rethinkdb.com/docs/administration-tools/)
+    /// (and the [info](Self::info) command)
+    /// can be used to tell you when a table’s shards need to be rebalanced.
+    ///
+    /// See the [status](Self::status) command for an explanation of
+    /// the objects returned in the `old_val` and `new_val` fields.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.rebalance() → response
+    /// database.rebalance() → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - database: [r.db(...)](crate::r::db)
+    /// - response: [RebalanceResponse](crate::types::RebalanceResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Rebalance a table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::RebalanceResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: RebalanceResponse = r.table("simbad")
+    ///         .rebalance()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.rebalanced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn rebalance(self) -> Self {
         rebalance::new().with_parent(self)
     }
