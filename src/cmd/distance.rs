@@ -46,7 +46,9 @@ impl<T: Geometry, G: Geometry> DistanceArg for Args<(T, G, DistanceOption)> {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, Eq, PartialOrd, Ord, CommandOptions)]
+#[derive(
+    Debug, Clone, Copy, Serialize, Default, PartialEq, Eq, PartialOrd, Ord, CommandOptions,
+)]
 pub struct DistanceOption {
     /// the reference ellipsoid to use for geographic coordinates.
     /// Possible values are `GeoSystem::WGS84` (the default),

@@ -658,6 +658,38 @@ impl<'a> Command {
         info::new().with_parent(self)
     }
 
+    /// Convert a ReQL value or object to a JSON string.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// value.to_json() → String
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get a ReQL document as a JSON string.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.table("simbad")
+    ///         .get(1)
+    ///         .to_json()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(!response.is_empty());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn to_json(self) -> Self {
         to_json::new().with_parent(self)
     }
@@ -699,7 +731,6 @@ impl<'a> Command {
     /// use reql_rust::arguments::Unit;
     /// use reql_rust::cmd::distance::DistanceOption;
     /// use reql_rust::prelude::Converter;
-    /// use reql_rust::types::{GeoJson, GeoType};
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
