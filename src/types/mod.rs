@@ -116,9 +116,12 @@ pub struct SyncResponse {
     pub synced: u8,
 }
 
-#[derive(Debug, Clone, Deserialize, Serialize)]
+#[derive(Debug, Clone, Copy, Deserialize, Serialize)]
 pub struct WaitResponse {
-    pub ready: usize,
+    /// The value is an integer indicating the number of tables waited for.
+    /// It will always be `1` when `wait` is called on a table,
+    /// and the total number of tables when called on a database.
+    pub ready: u8,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -242,15 +245,6 @@ impl<T: Serialize + Clone> GeoJson<T> {
     pub fn new(typ: GeoType, coordinates: T) -> Self {
         Self { typ, coordinates }
     }
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "snake_case")]
-pub enum WaitFor {
-    ReadyForOutdatedReads,
-    ReadyForReads,
-    ReadyForWrites,
-    AllReplicasReady,
 }
 
 /// Controls how change notifications are batched

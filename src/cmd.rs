@@ -706,6 +706,86 @@ impl<'a> Command {
         status::new().with_parent(self)
     }
 
+    /// Wait for a table or all the tables in a database to be ready.
+    /// A table may be temporarily unavailable after creation,
+    /// rebalancing or reconfiguring.
+    /// The `wait` command blocks until the given
+    /// table (or database) is fully up to date.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.wait(()) → response
+    /// database.wait(()) → response
+    /// r.wait(table) → response
+    /// r.wait(database) → response
+    /// table.wait(options) → response
+    /// database.wait(options) → response
+    /// r.wait(args!(table, options)) → response
+    /// r.wait(args!(database, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - database: [r.db(...)](crate::r::db)
+    /// - options: [WaitOption](crate::cmd::wait::WaitOption)
+    /// - response: [WaitResponse](crate::types::WaitResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Wait on a table to be ready.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::WaitResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: WaitResponse = r.table("simbad")
+    ///         .wait(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.ready == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Wait on a table with timeout to be ready for reads.
+    ///
+    /// ```
+    /// use reql_rust::arguments::WaitFor;
+    /// use reql_rust::cmd::wait::WaitOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::WaitResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let table_command = r.db("anim").table("simbad");
+    ///     let opts = WaitOption::default()
+    ///         .wait_for(WaitFor::ReadyForReads)
+    ///         .timeout(8000f64);
+    ///
+    ///     let response: WaitResponse =  r.wait(args!(table_command, opts))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.ready == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn wait(self, args: impl wait::WaitArg) -> Self {
         wait::new(args).with_parent(self)
     }
@@ -717,12 +797,12 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// query.run(&session) → stream
-    /// query.run(connection) → stream
-    /// query.run(args!(&session, options)) → stream
-    /// query.run(args!(connection, options)) → stream
-    /// query.run(&mut session) → stream
-    /// query.run(args!(&mut session, options)) → stream
+    /// query.run(&session) → value
+    /// query.run(connection) → value
+    /// query.run(args!(&session, options)) → value
+    /// query.run(args!(connection, options)) → value
+    /// query.run(&mut session) → value
+    /// query.run(args!(&mut session, options)) → value
     /// ```
     ///
     /// Where:
@@ -877,7 +957,6 @@ impl<'a> Command {
     /// - session: [Session](crate::connection::Session)
     /// - connection: [Connection](crate::connection::Connection)
     /// - options: [RunOption](crate::cmd::run::RunOption)
-    /// - stream: [impl Stream<Item = Result<Value>>](futures::stream::Stream)
     ///
     /// ## Examples
     ///

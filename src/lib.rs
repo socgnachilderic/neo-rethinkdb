@@ -274,6 +274,10 @@ impl r {
         cmd::grant::new(args)
     }
 
+    pub fn wait(self, args: impl cmd::wait::WaitArg) -> Command {
+        cmd::wait::new(args)
+    }
+
     pub fn asc(self, args: impl cmd::asc::AscArg) -> Command {
         cmd::asc::new(args)
     }

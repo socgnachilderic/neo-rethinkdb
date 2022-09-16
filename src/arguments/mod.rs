@@ -70,3 +70,12 @@ pub enum IdentifierFormat {
     Name,
     Uuid,
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "snake_case")]
+pub enum WaitFor {
+    ReadyForOutdatedReads,
+    ReadyForReads,
+    ReadyForWrites,
+    AllReplicasReady,
+}
