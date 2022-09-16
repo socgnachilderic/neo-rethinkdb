@@ -2,7 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::Unit;
+use crate::arguments::{Args, Unit};
 use crate::prelude::Geometry;
 use crate::types::GeoSystem;
 use crate::Command;
@@ -28,28 +28,33 @@ impl<T: Geometry> DistanceArg for T {
     }
 }
 
-impl<T: Geometry, G: Geometry> DistanceArg for (T, G) {
+impl<T: Geometry, G: Geometry> DistanceArg for Args<(T, G)> {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
-        (self.0.into(), Some(self.1.into()), Default::default())
+        (self.0 .0.into(), Some(self.0 .1.into()), Default::default())
     }
 }
 
-impl<T: Geometry> DistanceArg for (T, DistanceOption) {
+impl<T: Geometry> DistanceArg for Args<(T, DistanceOption)> {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
-        (self.0.into(), None, self.1)
+        (self.0 .0.into(), None, self.0 .1)
     }
 }
 
-impl<T: Geometry, G: Geometry> DistanceArg for (T, G, DistanceOption) {
+impl<T: Geometry, G: Geometry> DistanceArg for Args<(T, G, DistanceOption)> {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
-        (self.0.into(), Some(self.1.into()), self.2)
+        (self.0 .0.into(), Some(self.0 .1.into()), self.0 .2)
     }
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, Eq, PartialOrd, Ord, CommandOptions)]
 pub struct DistanceOption {
+    /// the reference ellipsoid to use for geographic coordinates.
+    /// Possible values are `GeoSystem::WGS84` (the default),
+    /// a common standard for Earth’s geometry, or `GeoSystem::UnitSphere`,
+    /// a perfect sphere of 1 meter radius.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub geo_system: Option<GeoSystem>,
+    /// Unit to return the distance in.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub unit: Option<Unit>,
 }
@@ -58,7 +63,7 @@ pub struct DistanceOption {
 mod tests {
     use crate::arguments::Unit;
     use crate::prelude::Converter;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     use super::DistanceOption;
 
@@ -70,7 +75,7 @@ mod tests {
         let distance_option = DistanceOption::default().unit(Unit::Kilometer);
 
         let response: f64 = r
-            .distance((point1, point2, distance_option))
+            .distance(args!(point1, point2, distance_option))
             .run(&conn)
             .await?
             .unwrap()

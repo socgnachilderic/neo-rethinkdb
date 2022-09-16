@@ -662,6 +662,67 @@ impl<'a> Command {
         to_json::new().with_parent(self)
     }
 
+    /// Compute the distance between a point and another geometry object.
+    /// At least one of the geometry objects specified must be a point.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// geometry.distance(geometry) → f64
+    /// geometry.distance(geometry, options) → f64
+    /// r.distance(geometry, geometry) → f64
+    /// r.distance(geometry, geometry, options) → f64
+    /// ```
+    ///
+    /// Where:
+    /// - geometry: [r.point(...)](crate::r::point) |
+    /// [r.line(...)](crate::r::line) |
+    /// [r.polygon(...)](crate::r::polygon)
+    /// command
+    /// - options: DistanceOption
+    ///
+    /// # Description
+    ///
+    /// If one of the objects is a polygon or a line, the point will be projected
+    /// into the line or polygon assuming a perfect sphere model before the distance
+    /// is computed (using the model specified with `geo_system`).
+    /// As a consequence, if the polygon or line is extremely large compared
+    /// to Earth’s radius and the distance is being computed with the default
+    ///  WGS84 model, the results of `distance` should be considered approximate
+    /// due to the deviation between the ellipsoid and spherical models.
+    ///
+    /// ## Examples
+    ///
+    /// Compute the distance between two points on the Earth in kilometers.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Unit;
+    /// use reql_rust::cmd::distance::DistanceOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::{GeoJson, GeoType};
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point1 = r.point(-122.423246, 37.779388);
+    ///     let point2 = r.point(-117.220406, 32.719464);
+    ///     let distance_option = DistanceOption::default().unit(Unit::Kilometer);
+    ///
+    ///     let response: f64 = r.distance(args!(point1, point2))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 734.125249602186);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [polygon](crate::r::polygon)
+    /// - [line](crate::r::line)
     pub fn distance(self, args: impl distance::DistanceArg) -> Self {
         distance::new(args).with_parent(self)
     }
@@ -707,9 +768,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// # Related commands
-    /// - [geojson](Self::geojson)
+    /// - [geojson](crate::r::geojson)
     pub fn to_geojson(self) -> Self {
         to_geojson::new().with_parent(self)
     }
