@@ -50,7 +50,7 @@ pub struct ServerInfo {
 #[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
 #[non_exhaustive]
 pub struct DbResponse {
-    pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
+    pub config_changes: Vec<ConfigChange<ConfigResponse>>,
     pub dbs_created: Option<usize>,
     pub dbs_dropped: Option<usize>,
     pub tables_created: Option<usize>,
@@ -159,7 +159,7 @@ pub struct ReconfigureResponse {
     /// - `old_val`: The table’s [config](crate::Command::config)
     /// value before reconfigure was executed.
     /// - `new_val`: The table’s `config` value after `reconfigure` was executed.
-    pub config_changes: Vec<ConfigChange<ConfigChangeValue>>,
+    pub config_changes: Vec<ConfigChange<ConfigResponse>>,
     /// a list of new and old table status values.
     /// Each element of the list will be an object with two fields
     /// - `old_val`: The table’s [status](crate::Command::status)
@@ -175,7 +175,7 @@ pub struct ConfigChange<T> {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct ConfigChangeValue {
+pub struct ConfigResponse {
     pub id: Cow<'static, str>,
     pub name: Cow<'static, str>,
 

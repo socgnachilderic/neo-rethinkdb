@@ -690,6 +690,51 @@ impl<'a> Command {
         grant::new(args).with_parent(self)
     }
 
+    /// Query (read and/or update) the configurations for individual tables or databases.
+    ///
+    /// The config command is a shorthand way to access the `table_config` or `db_config`
+    /// [System tables](https://rethinkdb.com/docs/system-tables/#configuration-tables).
+    /// It will return the single row from the system that corresponds to the database
+    /// or table configuration, as if [get](Self::get) had been called on the system
+    /// table with the UUID of the database or table in question.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.config() → response
+    /// database.config() → response
+    /// ```
+    ///
+    /// Where:
+    /// - table: [r.table(...)](crate::r::table) |
+    /// [query.table(...)](Self::table)
+    /// - database: [r.db(...)](crate::r::db)
+    /// - response: [ConfigResponse](crate::types::ConfigResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Rebalance a table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::ConfigResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: ConfigResponse = r.table("simbad")
+    ///         .config()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.name == "simbad");
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn config(self) -> Self {
         config::new().with_parent(self)
     }
