@@ -646,12 +646,82 @@ impl<'a> Command {
         default::new(args).with_parent(self)
     }
 
+    /// Convert a value of one type into another.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.coerce_to('array') → array
+    /// value.coerce_to('string') → string
+    /// string.coerce_to('number') → number
+    /// array.coerce_to('object') → object
+    /// sequence.coerce_to('object') → object
+    /// object.coerce_to('array') → array
+    /// binary.coerce_to('string') → string
+    /// string.coerce_to('binary') → binary
+    /// ```
+    ///
+    /// # Description
+    ///
+    /// - a sequence, selection or object can be coerced to an array
+    /// - a sequence, selection or an array of key-value pairs can be coerced to an object
+    /// - a string can be coerced to a number
+    /// - any datum (single value) can be coerced to a string
+    /// - a binary object can be coerced to a string and vice-versa
+    ///
+    /// ## Examples
+    ///
+    /// Coerce an array of pairs into an object.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.expr([["name", "Malika"], ["genre", "woman"]])
+    ///         .coerce_to("object")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Coerce a number to a string.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: char = r.expr(1)
+    ///         .coerce_to("string")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == '1');
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [object](crate::r::object)
     pub fn coerce_to(self, value: impl Serialize) -> Self {
         coerce_to::new(value).with_parent(self)
     }
 
     /// Gets the type of a ReQL query’s return value.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -662,12 +732,12 @@ impl<'a> Command {
     /// - response: [TypeOf](crate::types::TypeOf)
     ///
     /// # Description
-    /// 
-    /// Read the article on [ReQL data types](https://rethinkdb.com/docs/data-types/) 
-    /// for a more detailed discussion. 
-    /// Note that some possible return values from `type_of` are internal values, 
+    ///
+    /// Read the article on [ReQL data types](https://rethinkdb.com/docs/data-types/)
+    /// for a more detailed discussion.
+    /// Note that some possible return values from `type_of` are internal values,
     /// such as `TypeOf::MAXVAL`, and unlikely to be returned from queries in standard practice.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Get the type of a TypeOf.
