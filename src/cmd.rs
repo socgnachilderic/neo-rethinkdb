@@ -635,6 +635,132 @@ impl<'a> Command {
         do_::new(args).with_parent(self)
     }
 
+    /// Perform a branching conditional equivalent to `if-then-else`.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.branch(test, args!(true_action, false_action)) → any
+    /// r.branch(test, args!(true_action, [(test2, test2_action), N], false_action)) → any
+    /// query.branch(args!(true_action, false_action)) -> any
+    /// query.branch(args!(true_action, [(test2, test2_action), N], false_action)) → any
+    /// ```
+    ///
+    /// Where:
+    /// - test, true_action, false_action, test2, test2_action: r.var(...)
+    ///
+    /// # Description
+    ///
+    /// The `branch` command takes 2n+1 arguments: pairs of conditional expressions
+    /// and commands to be executed if the conditionals return any value but `false`
+    /// or `None` i.e., “truthy” values), with a final “else” command to be evaluated
+    /// if all of the conditionals are `false` or `None`.
+    ///
+    /// You may call `branch` infix style on the first test.
+    /// (See the second example for an illustration.)
+    ///
+    /// ```text
+    /// r.branch(test1, args!(val1, [(test2, val2)], elseval))
+    /// ```
+    ///
+    /// is the equivalent of the Rust statement
+    ///
+    /// ```text
+    /// if (test1) {
+    ///     val1
+    /// } else if (test2) {
+    ///     val2
+    /// } else {
+    ///     elseval
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Test the value of x.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let x = 10;
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.branch(
+    ///             r.var(x > 5),
+    ///             args!(r.var("big"), r.var("small"))
+    ///         ).run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.eq("big"));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// As above, infix-style.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let x = 10;
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.expr(x > 5)
+    ///         .branch(args!(r.var("big"), r.var("small")))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.eq("big"));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Categorize heroes by victory counts.
+    ///
+    /// ```
+    /// use std::ops::Add;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("pricings")
+    ///         .map(func!(|offer| r.branch(
+    ///             offer.clone().g("price").gt(100),
+    ///             args!(
+    ///                 offer.clone().g("offer").add("premium"),
+    ///                 [(
+    ///                     offer.clone().g("price").gt(10),
+    ///                     offer.clone().g("offer").add("standard")
+    ///                 )],
+    ///                 offer.g("offer").add("freemium")
+    ///         ))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [do_](Self::do_)
     pub fn branch(self, args: impl branch::BranchArg) -> Self {
         branch::new(args).with_parent(self)
     }

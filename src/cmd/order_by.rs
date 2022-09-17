@@ -94,7 +94,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let order_by_option = OrderByOption::default().index("title");
         let data_obtained: Vec<Post> = table
-            .order_by(args!(r.from_json("id"), order_by_option))
+            .order_by(args!(r.var("id"), order_by_option))
             .run(&conn)
             .await?
             .unwrap()

@@ -216,8 +216,8 @@ impl r {
         cmd::do_::new(args)
     }
 
-    pub fn branch(self, args: impl cmd::branch::BranchArg) -> Command {
-        cmd::branch::new(args)
+    pub fn branch(self, test: Command, args: impl cmd::branch::BranchArg) -> Command {
+        test.branch(args)
     }
 
     pub fn range(self, args: impl cmd::range::RangeArg) -> Command {
@@ -296,7 +296,7 @@ impl r {
         cmd::desc::new(args)
     }
 
-    pub fn from_json(self, value: impl Serialize) -> Command {
+    pub fn var(self, value: impl Serialize) -> Command {
         Command::from_json(value)
     }
 

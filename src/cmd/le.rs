@@ -1,7 +1,7 @@
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::arguments::AnyParam;
+use crate::arguments::Args;
 use crate::Command;
 
 use super::CmdOpts;
@@ -14,15 +14,15 @@ pub trait LeArg {
     fn into_le_opts(self) -> CmdOpts;
 }
 
-impl LeArg for AnyParam {
+impl<T: Serialize> LeArg for T {
     fn into_le_opts(self) -> CmdOpts {
-        CmdOpts::Single(self.into())
+        CmdOpts::Single(Command::from_json(self))
     }
 }
 
-impl<T: Serialize> LeArg for Vec<T> {
+impl<T: Serialize> LeArg for Args<Vec<T>> {
     fn into_le_opts(self) -> CmdOpts {
-        let commands = self.iter().map(Command::from_json).collect();
+        let commands = self.0.iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }
@@ -30,10 +30,9 @@ impl<T: Serialize> LeArg for Vec<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_le_data() -> Result<()> {
@@ -41,7 +40,7 @@ mod tests {
         let data_obtained: bool = table
             .get(1)
             .g("view")
-            .le(AnyParam::new(10))
+            .le(10)
             .run(&conn)
             .await?
             .unwrap()
@@ -55,7 +54,12 @@ mod tests {
     #[tokio::test]
     async fn test_le_data_r() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let data_obtained: bool = r.le(vec![5, 6, 7]).run(&conn).await?.unwrap().parse()?;
+        let data_obtained: bool = r
+            .le(args!(vec![5, 6, 7]))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
         assert!(data_obtained);
 

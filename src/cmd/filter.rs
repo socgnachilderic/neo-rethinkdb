@@ -72,7 +72,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let data_filtered: Vec<Post> = table
             .clone()
-            .filter(r.from_json(json!({"view": 2})))
+            .filter(r.var(json!({"view": 2})))
             .run(&conn)
             .await?
             .unwrap()
