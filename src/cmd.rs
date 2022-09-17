@@ -66,6 +66,7 @@ pub mod grant;
 pub mod group;
 pub mod gt;
 pub mod has_fields;
+pub mod hash_map;
 // pub mod hours;
 pub mod http;
 pub mod in_timezone;
@@ -642,8 +643,153 @@ impl<'a> Command {
         for_each::new(write_function).with_parent(self)
     }
 
-    pub fn default(self, args: impl default::DefaultArg) -> Self {
-        default::new(args).with_parent(self)
+    /// Provide a default value in case of non-existence errors.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// value.default(default_value) → any
+    /// sequence.default(default_value) → any
+    /// ```
+    ///
+    /// # Description
+    ///
+    /// The `default` command evaluates its first argument (the value it’s chained to).
+    /// If that argument returns `None` or a non-existence error is thrown in evaluation,
+    /// then `default` returns its second argument. The second argument is usually a default value,
+    /// but it can be a function that returns a value.
+    ///
+    /// ## Examples
+    ///
+    /// Suppose we want to retrieve the titles and authors of the table posts.
+    /// In the case where the author field is missing or null,
+    /// we want to retrieve the string Anonymous.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Deserialize, Serialize};
+    ///
+    /// #[derive(Debug, Serialize, Deserialize)]
+    /// struct Post {
+    ///     title: String,
+    ///     author: String,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: Vec<Post> = r.table("posts")
+    ///         .map(func!(|doc| {
+    ///             let mut post = HashMap::new();
+    ///             post.insert("title", doc.clone().g("title"));
+    ///             post.insert("author", doc.clone().g("author").default("Anonymous"));
+    ///             r.hash_map(post)
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// The `default` command can also be used to filter documents.
+    /// Suppose we want to retrieve all our users who are not grown-ups or
+    /// whose age is unknown (i.e., the field `age` is missing or equals `None`).
+    /// We can do it with this query:
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("age").lt(18).default(true)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// One more way to write the previous query is
+    /// to set the age to be `-1` when the field is missing.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("age").default(-1).lt(18)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Another way to do the same query is to use hasFields.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.clone().has_fields("age").not_().or(user.g("age").lt(18))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Another way to do the same query is to use hasFields.
+    ///
+    /// ```
+    /// use reql_rust::cmd::filter::FilterOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("users")
+    ///         .filter(args!(
+    ///             func!(|user| user.g("age").lt(18).default(true)),
+    ///             FilterOption::default().default_(true)
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn default(self, default_value: impl Serialize) -> Self {
+        default::new(default_value).with_parent(self)
     }
 
     /// Convert a value of one type into another.

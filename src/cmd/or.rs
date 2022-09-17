@@ -18,11 +18,23 @@ impl OrArg for bool {
     }
 }
 
+impl OrArg for Command {
+    fn into_or_opts(self) -> CmdOpts {
+        CmdOpts::Single(self)
+    }
+}
+
 impl OrArg for Vec<bool> {
     fn into_or_opts(self) -> CmdOpts {
         let commands = self.iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
+    }
+}
+
+impl OrArg for Vec<Command> {
+    fn into_or_opts(self) -> CmdOpts {
+        CmdOpts::Many(self)
     }
 }
 

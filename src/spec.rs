@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use uuid::Uuid;
 
 use crate::arguments::Durability;
@@ -7,12 +8,19 @@ use crate::{args, r, Command, Result, Session};
 
 pub async fn set_up(with_data: bool) -> Result<(Session, Command, String)> {
     let table_name = Uuid::new_v4().to_string();
+    let user_rethinkdb = json!({
+        "id": "malik",
+        "password": "malik"
+    });
     let conn = r.connection().connect().await?;
     let table = r.table(table_name.as_str());
 
     r.table_create(table_name.as_str()).run(&conn).await?;
-    // TODO Create user for tests
-    // r.db("rethinkdb").table("users").insert(args)
+    r.db("rethinkdb")
+        .table("users")
+        .insert(user_rethinkdb)
+        .run(&conn)
+        .await?;
 
     if with_data {
         let data = Post::get_many_data();
@@ -32,6 +40,12 @@ pub async fn set_up(with_data: bool) -> Result<(Session, Command, String)> {
 
 pub async fn tear_down(conn: Session, table_name: &str) -> Result<()> {
     r.table_drop(table_name).run(&conn).await?;
+    r.db("rethinkdb")
+        .table("users")
+        .get("malik")
+        .delete(())
+        .run(&conn)
+        .await?;
     Ok(())
 }
 

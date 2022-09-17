@@ -1,8 +1,7 @@
 use ql2::term::TermType;
-use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::AnyParam;
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
@@ -19,12 +18,6 @@ pub trait FilterArg {
     fn into_filter_opts(self) -> (CmdOpts, FilterOption);
 }
 
-impl FilterArg for AnyParam {
-    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
-        (CmdOpts::Single(self.into()), Default::default())
-    }
-}
-
 impl FilterArg for Func {
     fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
         (CmdOpts::Single(self.0), Default::default())
@@ -37,33 +30,31 @@ impl FilterArg for Command {
     }
 }
 
-impl FilterArg for (AnyParam, FilterOption) {
+impl FilterArg for Args<(Func, FilterOption)> {
     fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
-        (CmdOpts::Single(self.0.into()), self.1)
+        let Func(func) = self.0 .0;
+
+        (CmdOpts::Single(func), self.0 .1)
     }
 }
 
-impl FilterArg for (Func, FilterOption) {
+impl FilterArg for Args<(Command, FilterOption)> {
     fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
-        let Func(func) = self.0;
-
-        (CmdOpts::Single(func), self.1)
+        (CmdOpts::Single(self.0 .0), self.0 .1)
     }
 }
 
-impl FilterArg for (Command, FilterOption) {
-    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
-        (CmdOpts::Single(self.0), self.1)
-    }
-}
-
-#[derive(
-    Debug, Clone, Copy, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash, CommandOptions,
-)]
-#[non_exhaustive]
+#[derive(Debug, Clone, Copy, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct FilterOption {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default: Option<bool>,
+}
+
+impl FilterOption {
+    pub fn default_(mut self, default: bool) -> Self {
+        self.default = Some(default);
+        self
+    }
 }
 
 #[cfg(test)]
@@ -73,7 +64,7 @@ mod tests {
     use crate::arguments::AnyParam;
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::Result;
+    use crate::{r, Result};
 
     #[tokio::test]
     async fn test_filter_data() -> Result<()> {
@@ -81,7 +72,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let data_filtered: Vec<Post> = table
             .clone()
-            .filter(AnyParam::new(json!({"view": 2})))
+            .filter(r.from_json(json!({"view": 2})))
             .run(&conn)
             .await?
             .unwrap()

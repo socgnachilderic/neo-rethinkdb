@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::Serialize;
 
 use arguments::Permission;
@@ -195,6 +197,13 @@ impl r {
 
     // TODO Review Date and Times Commands
 
+    pub fn hash_map<T>(self, value: HashMap<T, Command>) -> Command
+    where
+        T: Into<String>,
+    {
+        cmd::hash_map::new(value)
+    }
+
     pub fn args(self, values: Vec<impl Serialize>) -> Command {
         cmd::args::new(values)
     }
@@ -285,6 +294,10 @@ impl r {
 
     pub fn desc(self, args: impl cmd::desc::DescArg) -> Command {
         cmd::desc::new(args)
+    }
+
+    pub fn from_json(self, value: impl Serialize) -> Command {
+        Command::from_json(value)
     }
 
     pub fn min_val() -> Command {

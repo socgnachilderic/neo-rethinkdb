@@ -4,7 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::AnyParam;
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
@@ -37,35 +37,23 @@ impl OrderByArg for Func {
     }
 }
 
-impl OrderByArg for AnyParam {
-    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
-        (Some(CmdOpts::Single(self.into())), Default::default())
-    }
-}
-
 impl OrderByArg for Command {
     fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
         (Some(CmdOpts::Single(self)), Default::default())
     }
 }
 
-impl OrderByArg for (Func, OrderByOption) {
+impl OrderByArg for Args<(Func, OrderByOption)> {
     fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
-        let Func(func) = self.0;
+        let Func(func) = self.0 .0;
 
-        (Some(CmdOpts::Single(func)), self.1)
+        (Some(CmdOpts::Single(func)), self.0 .1)
     }
 }
 
-impl OrderByArg for (AnyParam, OrderByOption) {
+impl OrderByArg for Args<(Command, OrderByOption)> {
     fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
-        (Some(CmdOpts::Single(self.0.into())), self.1)
-    }
-}
-
-impl OrderByArg for (Command, OrderByOption) {
-    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
-        (Some(CmdOpts::Single(self.0)), self.1)
+        (Some(CmdOpts::Single(self.0 .0)), self.0 .1)
     }
 }
 
@@ -78,10 +66,9 @@ pub struct OrderByOption {
 
 #[cfg(test)]
 mod tests {
-    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::Result;
+    use crate::{args, r, Result};
 
     use super::OrderByOption;
 
@@ -107,7 +94,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let order_by_option = OrderByOption::default().index("title");
         let data_obtained: Vec<Post> = table
-            .order_by((AnyParam::new("id"), order_by_option))
+            .order_by(args!(r.from_json("id"), order_by_option))
             .run(&conn)
             .await?
             .unwrap()
