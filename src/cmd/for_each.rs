@@ -7,4 +7,26 @@ pub(crate) fn new(arg: Func) -> Command {
     Command::new(TermType::ForEach).with_arg(arg.0)
 }
 
-// TODO write test
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::spec::{set_up, tear_down};
+    use crate::types::WritingResponse;
+    use crate::Result;
+
+    #[tokio::test]
+    async fn test_for_each_opts() -> Result<()> {
+        let (conn, table, table_name) = set_up(true).await?;
+        let response: WritingResponse = table
+            .clone()
+            .for_each(func!(|doc| table.get(doc.g("id")).delete(())))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(response.deleted == 5);
+
+        tear_down(conn, &table_name).await
+    }
+}

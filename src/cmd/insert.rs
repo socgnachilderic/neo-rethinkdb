@@ -83,7 +83,7 @@ mod tests {
     async fn test_insert_data() -> Result<()> {
         let data = Post::get_one_data();
         let (conn, table, table_name) = set_up(false).await?;
-        let data_inserted: WritingResponse<Post> = table
+        let data_inserted: WritingResponse = table
             .clone()
             .insert(&data)
             .run(&conn)
@@ -100,7 +100,7 @@ mod tests {
     async fn test_insert_many_data() -> Result<()> {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(false).await?;
-        let data_inserted: WritingResponse<Post> = table
+        let data_inserted: WritingResponse = table
             .clone()
             .insert(&data)
             .run(&conn)
@@ -122,7 +122,7 @@ mod tests {
         r.table_create(table_name2.as_str()).run(&conn).await?;
         table.clone().insert(&data).run(&conn).await?;
 
-        let data_inserted: WritingResponse<Post> = r
+        let data_inserted: WritingResponse = r
             .table(table_name2.as_str())
             .insert(table.clone())
             .run(&conn)
@@ -141,7 +141,7 @@ mod tests {
         let data = Post::get_one_data();
         let (conn, table, table_name) = set_up(false).await?;
         let insert_options = InsertOption::default().return_changes(ReturnChanges::Bool(true));
-        let data_inserted: WritingResponse<Post> = table
+        let data_inserted: WritingResponse = table
             .clone()
             .insert(args!(&data, insert_options))
             .run(&conn)
@@ -150,14 +150,16 @@ mod tests {
             .parse()?;
 
         assert!((&data_inserted).inserted == 1);
-        let expected_data = data_inserted
+        let expected_data: Post = data_inserted
             .changes
             .unwrap()
             .first()
             .unwrap()
             .clone()
-            .new_val;
-        assert!(expected_data == Some(data));
+            .new_val
+            .unwrap()
+            .parse()?;
+        assert!(expected_data == data);
 
         tear_down(conn, &table_name).await
     }

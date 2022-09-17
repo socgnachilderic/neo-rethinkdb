@@ -283,8 +283,8 @@ impl<'a> Command {
         sync::new().with_parent(self)
     }
 
-    pub fn get(self, primary_key: impl Serialize) -> Self {
-        get::new(primary_key).with_parent(self)
+    pub fn get(self, args: impl get::GetArg) -> Self {
+        get::new(args).with_parent(self)
     }
 
     pub fn get_all(self, values: impl get_all::GetAllArg) -> Self {
@@ -639,6 +639,48 @@ impl<'a> Command {
         branch::new(args).with_parent(self)
     }
 
+    /// Loop over a sequence, evaluating the given write query for each element.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.for_each(write_function) → response
+    /// ```
+    ///
+    /// Where:
+    /// - write_function: func!(...)
+    /// - response: [WritingResponse](crate::types::WritingResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Get information about a table such as primary key, or cache size.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::WritingResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: WritingResponse = r.table("models")
+    ///         .for_each(func!(|model| r.table("cars")
+    ///             .get(model.get("car_model"))
+    ///             .delete(())
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.deleted == 5);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
     pub fn for_each(self, write_function: Func) -> Self {
         for_each::new(write_function).with_parent(self)
     }

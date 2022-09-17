@@ -3,10 +3,27 @@ use serde::Serialize;
 
 use crate::Command;
 
-pub(crate) fn new(primary_key: impl Serialize) -> Command {
-    let arg = Command::from_json(primary_key);
+pub(crate) fn new(args: impl GetArg) -> Command {
+    Command::new(TermType::Get).with_arg(args.into_get_opts())
+}
 
-    Command::new(TermType::Get).with_arg(arg)
+pub trait GetArg {
+    fn into_get_opts(self) -> Command;
+}
+
+impl GetArg for Command {
+    fn into_get_opts(self) -> Command {
+        self
+    }
+}
+
+impl<T> GetArg for T
+where
+    T: Serialize,
+{
+    fn into_get_opts(self) -> Command {
+        Command::from_json(self)
+    }
 }
 
 #[cfg(test)]

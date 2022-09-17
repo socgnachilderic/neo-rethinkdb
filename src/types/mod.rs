@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 use uuid::Uuid;
 
 use crate::arguments::{Durability, ReadMode};
@@ -58,9 +59,9 @@ pub struct DbResponse {
 }
 
 /// Structure of return data in `db` table
-#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
 #[non_exhaustive]
-pub struct WritingResponse<T> {
+pub struct WritingResponse {
     pub inserted: usize,
     pub replaced: usize,
     pub unchanged: usize,
@@ -70,7 +71,7 @@ pub struct WritingResponse<T> {
     pub first_error: Option<String>,
     pub generated_keys: Option<Vec<Uuid>>,
     pub warnings: Option<Vec<String>>,
-    pub changes: Option<Vec<ConfigChange<T>>>,
+    pub changes: Option<Vec<ConfigChange<Value>>>,
 }
 
 /// Structure of return data in `index` table
