@@ -224,7 +224,46 @@ impl r {
         cmd::range::new(args)
     }
 
-    pub fn error(self, message: &str) -> Command {
+    /// Throw a runtime error.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.expr(value) → value
+    /// ```
+    ///
+    /// # Description
+    ///
+    /// If called with no arguments inside the second
+    /// argument to default, re-throw the current error.
+    ///
+    /// ## Examples
+    ///
+    /// Get Error
+    ///
+    /// ```
+    /// use reql_rust::{r, ReqlError, ReqlRuntimeError, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let msg = "Error";
+    ///
+    ///     let err = r.error(msg).run(&conn).await.err().unwrap();
+    ///
+    ///     if let ReqlError::Runtime(err) = err {
+    ///         if let ReqlRuntimeError::User(err) = err {
+    ///             assert!(err == msg);
+    ///     
+    ///             return Ok(());
+    ///         }
+    ///     }
+    ///
+    ///     assert!(false);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn error(self, message: impl Into<String>) -> Command {
         cmd::error::new(message)
     }
 

@@ -2,8 +2,8 @@ use ql2::term::TermType;
 
 use crate::Command;
 
-pub(crate) fn new(message: &str) -> Command {
-    let arg = Command::from_json(message);
+pub(crate) fn new(message: impl Into<String>) -> Command {
+    let arg = Command::from_json(message.into());
 
     Command::new(TermType::Error).with_arg(arg)
 }
