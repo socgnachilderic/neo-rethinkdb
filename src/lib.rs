@@ -272,6 +272,74 @@ impl r {
         cmd::point::Point::new(longitude, latitude)
     }
 
+    /// Construct a geometry object of type Polygon.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.polygon(points) → polygon
+    /// ```
+    ///
+    /// Where:
+    /// - points: &[[Point](crate::cmd::point::Point)]
+    /// - polygon: [Polygon](crate::cmd::polygon::Polygon)
+    ///
+    /// # Description
+    ///
+    /// The Polygon can be specified in one of two ways:
+    /// - Three or more two-item arrays, specifying latitude
+    /// and longitude numbers of the polygon’s vertices;
+    /// - Three or more [Point](crate::cmd::point::Point)
+    /// objects specifying the polygon’s vertices.
+    ///
+    /// Longitude (−180 to 180) and latitude (−90 to 90)
+    /// of vertices are plotted on a perfect sphere.
+    /// See [Geospatial support](https://rethinkdb.com/docs/geo-support/python/)
+    /// for more information on ReQL’s coordinate system.
+    ///
+    /// If the last point does not specify the same coordinates as
+    /// the first point, `polygon` will close the polygon by connecting them.
+    /// You cannot directly construct a polygon with holes in it using `polygon`,
+    /// but you can use [polygon_sub](crate::types::Polygon::polygon_sub)
+    /// to use a second polygon within the interior of the first to define a hole.
+    ///
+    /// ## Examples
+    ///
+    /// Define a polygon.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point1 = r.point(-117.220406, 32.719464);
+    ///     let point2 = r.point(-117.206201, 32.725186);
+    ///
+    ///     let response = r.table("geo")
+    ///         .insert(json!({
+    ///             "id": 101,
+    ///             "rectangle": r.polygon(&[
+    ///                 r.point(-122.423246, 37.779388),
+    ///                 r.point(-122.423246, 37.329898),
+    ///                 r.point(-121.886420, 37.329898),
+    ///                 r.point(-121.886420, 37.779388),
+    ///             ])
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [point](Self::point)
+    /// - [line](Self::line)
+    /// - [circle](Self::circle)
     pub fn polygon(self, points: &[cmd::point::Point]) -> cmd::polygon::Polygon {
         cmd::polygon::Polygon::new(points)
     }
@@ -297,7 +365,7 @@ impl r {
     /// # Description
     ///
     /// When applied to a sequence of geometry objects, `intersects` acts as a
-    /// [filter](crate::r::filter), returning a sequence of objects from
+    /// [filter](crate::Command::filter), returning a sequence of objects from
     /// the sequence that intersect with the argument.
     ///
     /// ## Examples
@@ -352,8 +420,8 @@ impl r {
     /// ```
     ///
     /// # Related commands
-    /// - [includes](crate::r::includes)
-    /// - [get_intersecting](crate::r::get_intersecting)
+    /// - [includes](crate::Command::includes)
+    /// - [get_intersecting](crate::Command::get_intersecting)
     pub fn intersects(
         self,
         geometry: Command,
