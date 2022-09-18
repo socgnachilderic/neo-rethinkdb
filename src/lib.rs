@@ -244,7 +244,134 @@ impl r {
         cmd::json::new(value)
     }
 
-    pub fn http(self, args: impl cmd::http::HttpArg) -> Command {
+    /// Retrieve data from the specified URL over HTTP.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.http(string) → value
+    /// r.http(args!(string, options)) → value
+    /// ```
+    ///
+    /// Where:
+    /// - string: impl Into<String>
+    /// - options: impl Serialize
+    ///
+    /// # Description
+    ///
+    /// The return type depends on the `result_format` option,
+    /// which checks the `Content-Type` of the response by default.
+    ///
+    /// See [External API access](https://rethinkdb.com/docs/external-api-access/)
+    /// for more informations
+    ///
+    /// ## Examples
+    ///
+    /// Perform an HTTP GET and store the result in a table.
+    ///
+    /// ```
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: MutationResponse = r.table("simbad")
+    ///         .insert(r.http("http://httpbin.org/get"))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.inserted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Perform request with parameters.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.http(args!("http://httpbin.org/get", json!({
+    ///             "params": {
+    ///                 "user": 1
+    ///             }
+    ///         })))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Perform a `POST` request with accompanying data.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.http(args!("http://httpbin.org/get", json!({
+    ///             "method": "method",
+    ///             "data": {
+    ///                 "player": "Moussa",
+    ///                 "game": "AURION"
+    ///             }
+    ///         })))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Perform a GitHub search and collect up to 3 pages of results.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.http(args!("https://api.github.com/search/code?q=addClass+user:mozilla", json!({
+    ///             "page": "link-next",
+    ///             "page_limit": 3
+    ///         })))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn http<T>(self, args: impl cmd::http::HttpArg<T>) -> Command
+    where
+        T: Serialize,
+    {
         cmd::http::new(args)
     }
 

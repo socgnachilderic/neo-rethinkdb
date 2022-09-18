@@ -11,13 +11,13 @@ pub(crate) fn new(arg: Func) -> Command {
 mod tests {
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down};
-    use crate::types::WritingResponse;
+    use crate::types::MutationResponse;
     use crate::Result;
 
     #[tokio::test]
     async fn test_for_each_opts() -> Result<()> {
         let (conn, table, table_name) = set_up(true).await?;
-        let response: WritingResponse = table
+        let response: MutationResponse = table
             .clone()
             .for_each(func!(|doc| table.get(doc.g("id")).delete(())))
             .run(&conn)

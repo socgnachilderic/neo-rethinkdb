@@ -62,7 +62,7 @@ pub struct DbResponse {
 /// Structure of return data in `db` table
 #[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq)]
 #[non_exhaustive]
-pub struct WritingResponse {
+pub struct MutationResponse {
     pub inserted: usize,
     pub replaced: usize,
     pub unchanged: usize,

@@ -776,7 +776,7 @@ impl<'a> Command {
     ///
     /// Where:
     /// - write_function: func!(...)
-    /// - response: [WritingResponse](crate::types::WritingResponse)
+    /// - response: [MutationResponse](crate::types::MutationResponse)
     ///
     /// ## Examples
     ///
@@ -784,13 +784,13 @@ impl<'a> Command {
     ///
     /// ```
     /// use reql_rust::prelude::*;
-    /// use reql_rust::types::WritingResponse;
+    /// use reql_rust::types::MutationResponse;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///
-    ///     let response: WritingResponse = r.table("models")
+    ///     let response: MutationResponse = r.table("models")
     ///         .for_each(func!(|model| r.table("cars")
     ///             .get(model.get("car_model"))
     ///             .delete(())

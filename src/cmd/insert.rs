@@ -74,7 +74,7 @@ mod tests {
     use crate::arguments::ReturnChanges;
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::types::WritingResponse;
+    use crate::types::MutationResponse;
     use crate::{args, r, Result};
 
     use super::InsertOption;
@@ -83,7 +83,7 @@ mod tests {
     async fn test_insert_data() -> Result<()> {
         let data = Post::get_one_data();
         let (conn, table, table_name) = set_up(false).await?;
-        let data_inserted: WritingResponse = table
+        let data_inserted: MutationResponse = table
             .clone()
             .insert(&data)
             .run(&conn)
@@ -100,7 +100,7 @@ mod tests {
     async fn test_insert_many_data() -> Result<()> {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(false).await?;
-        let data_inserted: WritingResponse = table
+        let data_inserted: MutationResponse = table
             .clone()
             .insert(&data)
             .run(&conn)
@@ -122,7 +122,7 @@ mod tests {
         r.table_create(table_name2.as_str()).run(&conn).await?;
         table.clone().insert(&data).run(&conn).await?;
 
-        let data_inserted: WritingResponse = r
+        let data_inserted: MutationResponse = r
             .table(table_name2.as_str())
             .insert(table.clone())
             .run(&conn)
@@ -141,7 +141,7 @@ mod tests {
         let data = Post::get_one_data();
         let (conn, table, table_name) = set_up(false).await?;
         let insert_options = InsertOption::default().return_changes(ReturnChanges::Bool(true));
-        let data_inserted: WritingResponse = table
+        let data_inserted: MutationResponse = table
             .clone()
             .insert(args!(&data, insert_options))
             .run(&conn)

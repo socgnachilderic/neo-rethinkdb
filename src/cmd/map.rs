@@ -1,5 +1,6 @@
 use ql2::term::TermType;
 
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
@@ -26,19 +27,19 @@ impl MapArg for Func {
     }
 }
 
-impl MapArg for (Command, Func) {
+impl MapArg for Args<(Command, Func)> {
     fn into_map_opts(self) -> (Option<CmdOpts>, Command) {
-        let Func(func) = self.1;
+        let Func(func) = self.0 .1;
 
-        (Some(CmdOpts::Single(self.0)), func)
+        (Some(CmdOpts::Single(self.0 .0)), func)
     }
 }
 
-impl MapArg for (Vec<Command>, Func) {
+impl MapArg for Args<(Vec<Command>, Func)> {
     fn into_map_opts(self) -> (Option<CmdOpts>, Command) {
-        let Func(func) = self.1;
+        let Func(func) = self.0 .1;
 
-        (Some(CmdOpts::Many(self.0)), func)
+        (Some(CmdOpts::Many(self.0 .0)), func)
     }
 }
 

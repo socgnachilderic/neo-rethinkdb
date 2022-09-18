@@ -1,79 +1,79 @@
 use ql2::term::TermType;
-use reql_macros::CommandOptions;
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::Command;
 
-pub(crate) fn new(args: impl HttpArg) -> Command {
+pub(crate) fn new<T>(args: impl HttpArg<T>) -> Command
+where
+    T: Serialize,
+{
     let (arg, opts) = args.into_http_opts();
+    let mut command = Command::new(TermType::Http).with_arg(arg);
 
-    Command::new(TermType::Http).with_arg(arg).with_opts(opts)
+    if let Some(opts) = opts {
+        command = command.with_opts(opts);
+    }
+
+    command
 }
 
-pub trait HttpArg {
-    fn into_http_opts(self) -> (Command, HttpOption);
+pub trait HttpArg<T: Serialize> {
+    fn into_http_opts(self) -> (Command, Option<T>);
 }
 
-impl HttpArg for &str {
-    fn into_http_opts(self) -> (Command, HttpOption) {
-        (Command::from_json(self), Default::default())
+impl<T> HttpArg<T> for T
+where
+    T: Into<String> + Serialize,
+{
+    fn into_http_opts(self) -> (Command, Option<T>) {
+        (Command::from_json(self.into()), None)
     }
 }
 
-impl HttpArg for (&str, HttpOption) {
-    fn into_http_opts(self) -> (Command, HttpOption) {
-        (Command::from_json(self.0), self.1)
+impl<S, T> HttpArg<T> for Args<(S, T)>
+where
+    S: Into<String>,
+    T: Serialize,
+{
+    fn into_http_opts(self) -> (Command, Option<T>) {
+        (Command::from_json(self.0 .0.into()), Some(self.0 .1))
     }
 }
 
-#[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
-pub struct HttpOption {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub timeout: Option<f64>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub attempts: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub redirects: Option<u8>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub verify: Option<bool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub result_format: Option<HttpResultFormat>,
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
 
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub method: Option<HttpMethod>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub auth: Option<HttpAuth>,
-    // pub params: Option<HttpAuth>,
-    // pub header: Option<HttpAuth>,
-    // pub data: Option<HttpAuth>,
+    use crate::{args, r, Result};
+
+    #[tokio::test]
+    async fn test_http_ops() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response = r.http("http://httpbin.org/get").run(&conn).await?;
+
+        assert!(response.is_some());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_http_ops_with_params() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response = r
+            .http(args!(
+                "http://httpbin.org/get",
+                json!({
+                    "params": {
+                        "user": 1
+                    }
+                })
+            ))
+            .run(&conn)
+            .await?;
+
+        assert!(response.is_some());
+
+        Ok(())
+    }
 }
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-pub enum HttpResultFormat {
-    Text,
-    Json,
-    Jsonp,
-    Binary,
-    Auto,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "UPPERCASE")]
-pub enum HttpMethod {
-    Get,
-    Post,
-    Put,
-    Patch,
-    Delete,
-    Head,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct HttpAuth {
-    typ: String,
-    user: String,
-    pass: String,
-}
-
-// TODO finish this command and write test
