@@ -228,10 +228,111 @@ impl r {
         cmd::error::new(message)
     }
 
+    /// Construct a ReQL JSON object from a native object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.expr(value) → value
+    /// ```
+    ///
+    /// # Description
+    ///
+    /// If the native object is of the `Binary` type,
+    /// then expr will return a binary object.
+    /// See [binary](Self::binary) for more information.
+    ///
+    /// ## Examples
+    ///
+    /// Objects wrapped with `expr` can then be manipulated by ReQL API functions.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let data = [1, 2, 3];
+    ///
+    ///     let response: [u8; 3] = r.expr(data)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn expr(self, value: impl Serialize) -> Command {
         cmd::expr::new(value)
     }
 
+    /// Create a javascript expression.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.uuid(()) → String
+    /// r.uuid(&str) → String
+    /// ```
+    ///
+    /// # Description
+    ///
+    /// ```text
+    /// Whenever possible, you should use native ReQL
+    /// commands rather than r.js for better performance.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Concatenate two strings using JavaScript.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.js("'str1' + 'str2'")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.eq("str1str2"));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// You may also specify a timeout in seconds (defaults to 5).
+    ///
+    /// ```
+    /// use reql_rust::cmd::js::JsOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.js(args!(
+    ///             "while(true) {}",
+    ///             JsOption::default().timeout(1.3)
+    ///             ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn js(self, args: impl cmd::js::JsArg) -> Command {
         cmd::js::new(args)
     }

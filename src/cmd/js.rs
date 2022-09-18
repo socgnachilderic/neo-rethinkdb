@@ -2,6 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::Command;
 
 pub(crate) fn new(args: impl JsArg) -> Command {
@@ -16,20 +17,28 @@ pub trait JsArg {
     fn into_js_opts(self) -> (Command, JsOption);
 }
 
-impl JsArg for &str {
+impl<T> JsArg for T
+where
+    T: Into<String>,
+{
     fn into_js_opts(self) -> (Command, JsOption) {
-        (Command::from_json(self), Default::default())
+        (Command::from_json(self.into()), Default::default())
     }
 }
 
-impl JsArg for (&str, JsOption) {
+impl<T> JsArg for Args<(T, JsOption)>
+where
+    T: Into<String>,
+{
     fn into_js_opts(self) -> (Command, JsOption) {
-        (Command::from_json(self.0), self.1)
+        (Command::from_json(self.0 .0.into()), self.0 .1)
     }
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct JsOption {
+    /// `timeout` is the number of seconds before r.js times out.
+    /// The default value is 5 seconds.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub timeout: Option<f64>,
 }
