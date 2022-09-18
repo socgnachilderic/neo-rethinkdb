@@ -236,11 +236,80 @@ impl r {
         cmd::js::new(args)
     }
 
+    /// Get information about a ReQL value.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// any.info() → response
+    /// r.info(any) → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: [InfoResponse](crate::types::InfoResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Get information about a table such as primary key, or cache size.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::{InfoResponse, TypeOf};
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: InfoResponse = r.table("simbad")
+    ///         .info()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.typ == TypeOf::Table);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn info(self, any: Command) -> Command {
         any.info()
     }
 
-    pub fn json(self, value: &str) -> Command {
+    /// Parse a JSON string on the server.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.json(json_string) → value
+    /// ```
+    ///
+    /// Where:
+    /// - json_string: impl Into<String>
+    ///
+    /// ## Examples
+    ///
+    /// Send an array to the server.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: [u8; 3] = r.json("[1,2,3]")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == [1, 2, 3]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn json(self, value: impl Into<String>) -> Command {
         cmd::json::new(value)
     }
 

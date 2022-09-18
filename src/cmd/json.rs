@@ -2,8 +2,11 @@ use ql2::term::TermType;
 
 use crate::Command;
 
-pub(crate) fn new(value: &str) -> Command {
-    Command::new(TermType::Json).with_arg(Command::from_json(value))
+pub(crate) fn new<T>(value: T) -> Command
+where
+    T: Into<String>,
+{
+    Command::new(TermType::Json).with_arg(Command::from_json(value.into()))
 }
 
 #[cfg(test)]
