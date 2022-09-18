@@ -264,12 +264,70 @@ impl r {
         cmd::geojson::ReqlGeoJson::new(geojson)
     }
 
+    /// Construct a geometry object of type Polygon.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.line(points) → line
+    /// ```
+    ///
+    /// Where:
+    /// - points: &[[Point](crate::types::Point)]
+    /// - line: [Polygon](crate::types::Line)
+    ///
+    /// # Description
+    ///
+    /// The line can be specified in one of two ways:
+    /// - Two or more two-item arrays, specifying latitude
+    /// and longitude numbers of the line’s vertices;
+    /// - Two or more [Point](crate::types::Point)
+    /// objects specifying the line’s vertices.
+    ///
+    /// Longitude (−180 to 180) and latitude (−90 to 90)
+    /// of vertices are plotted on a perfect sphere.
+    /// See [Geospatial support](https://rethinkdb.com/docs/geo-support/python/)
+    /// for more information on ReQL’s coordinate system.
+    ///
+    /// ## Examples
+    ///
+    /// Define a line.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("geo")
+    ///         .insert(json!({
+    ///             "id": 101,
+    ///             "route": r.line(&[
+    ///                 r.point(-122.423246, 37.779388),
+    ///                 r.point(-121.886420, 37.329898),
+    ///             ])
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [point](Self::point)
+    /// - [polygon](Self::polygon)
+    /// - [circle](Self::circle)
     pub fn line(self, points: &[cmd::point::Point]) -> cmd::line::Line {
         cmd::line::Line::new(points)
     }
 
     /// Construct a geometry object of type Point.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -283,7 +341,7 @@ impl r {
     ///
     /// # Description
     ///
-    /// The point is specified by two floating point numbers, the longitude 
+    /// The point is specified by two floating point numbers, the longitude
     /// (−180 to 180) and latitude (−90 to 90) of the point on a perfect sphere.
     /// See [Geospatial support](https://rethinkdb.com/docs/geo-support/python/)
     /// for more information on ReQL’s coordinate system.
