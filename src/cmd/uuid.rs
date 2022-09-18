@@ -22,7 +22,7 @@ impl UuidArg for () {
     }
 }
 
-impl<T> UuidArg for T where T: Into<String> {
+impl UuidArg for &str {
     fn into_uui_opts(self) -> Option<Command> {
         Some(Command::from_json(self))
     }

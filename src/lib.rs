@@ -248,6 +248,77 @@ impl r {
         cmd::http::new(args)
     }
 
+    /// Return a UUID (universally unique identifier),
+    /// a string that can be used as a unique ID.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.uuid(()) → String
+    /// r.uuid(&str) → String
+    /// ```
+    ///
+    /// # Description
+    ///
+    /// If a string is passed to uuid as an argument,
+    /// the UUID will be deterministic,
+    /// derived from the string’s SHA-1 hash.
+    ///
+    /// RethinkDB’s UUIDs are standards-compliant.
+    /// Without the optional argument,
+    /// a version 4 random UUID will be generated;
+    /// with that argument, a version 5 UUID will be generated,
+    /// using a fixed namespace UUID of `91461c99-f89d-49d2-af96-d8e2e14e9b58`.
+    /// For more information, read
+    /// [Wikipedia’s UUID article](https://en.wikipedia.org/wiki/Universally_unique_identifier).
+    ///
+    /// ## Examples
+    ///
+    /// Generate a UUID.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.uuid(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.eq("27961a0e-f4e8-4eb3-bf95-c5203e1d87b9"));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Generate a UUID based on a String.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.uuid("malik@example.com")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.eq("3461d115-2c05-5af4-9906-9f6882c58a15"));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn uuid(self, args: impl cmd::uuid::UuidArg) -> Command {
         cmd::uuid::new(args)
     }
