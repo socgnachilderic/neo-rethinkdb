@@ -268,6 +268,57 @@ impl r {
         cmd::line::Line::new(points)
     }
 
+    /// Construct a geometry object of type Point.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.point(longitude, latitude) → point
+    /// ```
+    ///
+    /// Where:
+    /// - latitude: f64,
+    /// - longitude: f64,
+    /// - points: &[[Point](crate::cmd::point::Point)]
+    ///
+    /// # Description
+    ///
+    /// The point is specified by two floating point numbers, the longitude 
+    /// (−180 to 180) and latitude (−90 to 90) of the point on a perfect sphere.
+    /// See [Geospatial support](https://rethinkdb.com/docs/geo-support/python/)
+    /// for more information on ReQL’s coordinate system.
+    ///
+    /// ## Examples
+    ///
+    /// Define a point.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("geo")
+    ///         .insert(json!({
+    ///             "id": 1,
+    ///             "name": "Yaoundé",
+    ///             "location": r.point(-122.423246, 37.779388)
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [line](Self::line)
+    /// - [polygon](Self::polygon)
+    /// - [circle](Self::circle)
     pub fn point(self, longitude: f64, latitude: f64) -> cmd::point::Point {
         cmd::point::Point::new(longitude, latitude)
     }
