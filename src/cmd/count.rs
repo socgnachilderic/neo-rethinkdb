@@ -1,6 +1,6 @@
 use ql2::term::TermType;
 
-use crate::arguments::AnyParam;
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
@@ -29,12 +29,6 @@ impl CountArg for () {
     }
 }
 
-impl CountArg for AnyParam {
-    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
-        (Some(self.into()), None)
-    }
-}
-
 impl CountArg for Command {
     fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
         (Some(self), None)
@@ -47,19 +41,11 @@ impl CountArg for Func {
     }
 }
 
-impl CountArg for (AnyParam, Func) {
+impl CountArg for Args<(Command, Func)> {
     fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
-        let Func(func) = self.1;
+        let Func(func) = self.0 .1;
 
-        (Some(self.0.into()), Some(func))
-    }
-}
-
-impl CountArg for (Command, Func) {
-    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
-        let Func(func) = self.1;
-
-        (Some(self.0), Some(func))
+        (Some(self.0 .0), Some(func))
     }
 }
 

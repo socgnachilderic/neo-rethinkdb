@@ -197,6 +197,7 @@ impl r {
 
     // TODO Review Date and Times Commands
 
+    /// Convert `HashMap` to `Command`
     pub fn hash_map<T>(self, value: HashMap<T, Command>) -> Command
     where
         T: Into<String>,
@@ -204,10 +205,133 @@ impl r {
         cmd::hash_map::new(value)
     }
 
-    pub fn args(self, values: Vec<impl Serialize>) -> Command {
+    /// `r.args` is a special term that’s used to splice
+    /// an array of arguments into another term.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.args(array) → special
+    /// ```
+    /// Where:
+    /// - array: [Type; usize], Vec<Type>, &\[Type]
+    ///
+    /// # Description
+    ///
+    /// This is useful when you want to call a variadic term such as
+    /// [get_all](crate::Command::get_all)
+    /// with a set of arguments produced at runtime.
+    ///
+    /// Note that `args` evaluates all its arguments before passing them
+    /// into the parent term, even if the parent term otherwise allows lazy evaluation.
+    ///
+    /// ## Examples
+    ///
+    /// Unpack array
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let data = vec![1, 2, 3];
+    ///
+    ///     let response: Vec<u8> = r.args(&data)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn args<T, S>(self, values: T) -> Command
+    where
+        S: Serialize,
+        T: AsRef<[S]> + Serialize,
+    {
         cmd::args::new(values)
     }
 
+    /// Encapsulate binary data within a query.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.binary(data) → binary
+    /// ```
+    ///
+    /// Where:
+    /// - data: &[u8]
+    /// - binary: [Binary](crate::types::Binary)
+    ///
+    /// # Description
+    ///
+    /// Binary struct returned to the client in Rust.
+    /// This can be changed with the `binary_format` option
+    /// provided to [run](crate::Command::run) to return “raw” objects.
+    ///
+    /// Only a limited subset of ReQL commands may be chained after `binary`:
+    /// - [coerce_to](crate::Command::coerce_to) can coerce binary objects to string types
+    /// - [count](Self::count) will return the number of bytes in the object
+    /// - [slice](crate::Command::slice) will treat bytes like array indexes
+    /// (i.e., slice(args!(10,20)) will return bytes 10–19)
+    /// - [type_of](crate::Command::type_of) returns `TypeOf::PtypeBinary`
+    /// - [info](Self::info) will return information on a binary struct.
+    ///
+    /// ## Examples
+    ///
+    /// Save an avatar image to a existing user record.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let avatar_img = std::fs::read("default_avatar.png")?;
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("images")
+    ///         .insert(r.binary(&avatar_img))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get the size of an existing avatar image.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: usize = r.table("images")
+    ///         .get(100)
+    ///         .g("avatar")
+    ///         .count(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 14156);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Read more details about RethinkDB’s binary object support:
+    /// [Storing binary objects]("https://rethinkdb.com/docs/storing-binary/python/").
     pub fn binary(self, data: &[u8]) -> Binary {
         cmd::binary::new(data)
     }
@@ -365,7 +489,7 @@ impl r {
     /// `range` takes 0, 1 or 2 arguments:
     /// - With no arguments, `range` returns an “infinite” stream
     /// from 0 up to and including the maximum integer value;
-    ///- With one argument, `range` returns a stream from
+    /// - With one argument, `range` returns a stream from
     /// 0 up to but not including the end value;
     /// - With two arguments, `range` returns a stream from
     /// the start value up to but not including the end value.

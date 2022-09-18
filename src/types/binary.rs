@@ -2,11 +2,6 @@ use serde::{Deserialize, Serialize};
 
 use super::ReqlType;
 
-// #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-// enum ReqlType {
-//     BINARY,
-// }
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Binary {
     #[serde(rename = "$reql_type$")]
