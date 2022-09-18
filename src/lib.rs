@@ -260,6 +260,65 @@ impl r {
         cmd::distance::new(args)
     }
 
+    /// Convert a [GeoJSON](https://geojson.org/) object to a ReQL geometry object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.geojson(geojson) → geometry
+    /// ```
+    ///
+    /// Where:
+    /// - geojson: [GeoJson](crate::types::GeoJson),
+    /// - geometry: [ReqlGeoJson](crate::types::ReqlGeoJson)
+    ///
+    /// # Description
+    ///
+    /// RethinkDB only allows conversion of GeoJSON objects
+    /// which have ReQL equivalents: Point, LineString, and Polygon.
+    ///  MultiPoint, MultiLineString, and MultiPolygon are not supported.
+    /// (You could, however, store multiple points, lines and polygons
+    /// in an array and use a geospatial multi index with them.)
+    ///
+    /// Only longitude/latitude coordinates are supported.
+    /// GeoJSON objects that use Cartesian coordinates,
+    /// specify an altitude, or specify their own coordinate
+    /// reference system will be rejected.
+    ///
+    /// ## Examples
+    ///
+    /// Convert a GeoJSON object to a ReQL geometry object.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::{GeoJson, GeoType};
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let geo_json = GeoJson {
+    ///         typ: GeoType::Point,
+    ///         coordinates: [-122.423246, 37.779388],
+    ///     };
+    ///
+    ///     let response = r.table("geo")
+    ///         .insert(json!({
+    ///             "id": 1,
+    ///             "name": "Yaoundé",
+    ///             "location": r.geojson(geo_json)
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [to_geojson](crate::Command::to_geojson)
     pub fn geojson<T: Serialize>(self, geojson: GeoJson<T>) -> cmd::geojson::ReqlGeoJson<T> {
         cmd::geojson::ReqlGeoJson::new(geojson)
     }

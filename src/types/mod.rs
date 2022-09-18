@@ -5,6 +5,7 @@ use serde_json::Value;
 use uuid::Uuid;
 
 use crate::arguments::{Durability, ReadMode};
+pub use crate::cmd::geojson::ReqlGeoJson;
 pub use crate::cmd::line::Line;
 pub use crate::cmd::point::Point;
 pub use crate::cmd::polygon::Polygon;
