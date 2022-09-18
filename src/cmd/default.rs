@@ -38,7 +38,7 @@ mod tests {
             .collect();
         let (conn, table, table_name) = set_up(true).await?;
         let response: Vec<InnerPost> = table
-            .order_by(r.var("title"))
+            .order_by(r.expr("title"))
             .map(func!(|doc| {
                 let mut post = HashMap::new();
                 post.insert("title", doc.clone().g("title"));

@@ -47,7 +47,7 @@ mod tests {
         let x = 10;
         let conn = r.connection().connect().await?;
         let response: String = r
-            .branch(r.var(x > 5), args!(r.var("big"), r.var("small")))
+            .branch(r.expr(x > 5), args!(r.expr("big"), r.expr("small")))
             .run(&conn)
             .await?
             .unwrap()
@@ -64,7 +64,7 @@ mod tests {
         let conn = r.connection().connect().await?;
         let response: String = r
             .expr(x > 5)
-            .branch(args!(r.var("big"), r.var("small")))
+            .branch(args!(r.expr("big"), r.expr("small")))
             .run(&conn)
             .await?
             .unwrap()

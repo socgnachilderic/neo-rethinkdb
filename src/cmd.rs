@@ -648,7 +648,7 @@ impl<'a> Command {
     /// ```
     ///
     /// Where:
-    /// - test, true_action, false_action, test2, test2_action: r.var(...)
+    /// - test, true_action, false_action, test2, test2_action: r.expr(...)
     ///
     /// # Description
     ///
@@ -689,8 +689,8 @@ impl<'a> Command {
     ///     let conn = r.connection().connect().await?;
     ///
     ///     let response: String = r.branch(
-    ///             r.var(x > 5),
-    ///             args!(r.var("big"), r.var("small"))
+    ///             r.expr(x > 5),
+    ///             args!(r.expr("big"), r.expr("small"))
     ///         ).run(&conn)
     ///         .await?
     ///         .unwrap()
@@ -715,7 +715,7 @@ impl<'a> Command {
     ///     let conn = r.connection().connect().await?;
     ///
     ///     let response: String = r.expr(x > 5)
-    ///         .branch(args!(r.var("big"), r.var("small")))
+    ///         .branch(args!(r.expr("big"), r.expr("small")))
     ///         .run(&conn)
     ///         .await?
     ///         .unwrap()

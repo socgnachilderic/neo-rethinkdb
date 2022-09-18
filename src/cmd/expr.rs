@@ -11,7 +11,6 @@ mod tests {
     use serde::{Deserialize, Serialize};
     use serde_json::json;
 
-    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::{r, Result};
 
@@ -30,7 +29,7 @@ mod tests {
         let conn = r.connection().connect().await?;
         let response: Dummy = r
             .expr(json!({'a':'b'}))
-            .merge(AnyParam::new(json!({'b':[1, 2, 3]})))
+            .merge(r.expr(json!({'b':[1, 2, 3]})))
             .run(&conn)
             .await?
             .unwrap()

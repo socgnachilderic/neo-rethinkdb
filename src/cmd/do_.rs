@@ -74,7 +74,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let response = table
             .get(1)
-            .do_(func!(|post| post.g("view").add(r.var(5))))
+            .do_(func!(|post| post.g("view").add(r.expr(5))))
             .run(&conn)
             .await;
 

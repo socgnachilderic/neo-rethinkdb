@@ -292,12 +292,38 @@ impl r {
         cmd::asc::new(args)
     }
 
+    /// To specify the descending ordering.
+    /// 
+    /// # Command syntax
+    /// ```text
+    /// r.desc(field)
+    /// r.desc(func)
+    /// ```
+    /// 
+    /// Where:
+    ///     - field: String, &str
+    ///     - func: func!(...)
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .order_by(args!(r.expr("id"), r.desc("character")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn desc(self, args: impl cmd::desc::DescArg) -> Command {
         cmd::desc::new(args)
-    }
-
-    pub fn var(self, value: impl Serialize) -> Command {
-        Command::from_json(value)
     }
 
     /// max_val are used with some commands such as `between`
@@ -316,7 +342,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("simbad")
-    ///         .between(args!(r::min_val(), r.var(20)))
+    ///         .between(args!(r::min_val(), r.expr(20)))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -345,7 +371,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("simbad")
-    ///         .between(args!(r.var(10), r::max_val()))
+    ///         .between(args!(r.expr(10), r::max_val()))
     ///         .run(&conn)
     ///         .await?;
     ///

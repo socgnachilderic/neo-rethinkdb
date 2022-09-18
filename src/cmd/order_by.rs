@@ -57,6 +57,25 @@ impl OrderByArg for Args<(Command, OrderByOption)> {
     }
 }
 
+impl OrderByArg for Args<(Command, Command)> {
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        (
+            Some(CmdOpts::Many(vec![self.0 .0, self.0 .1])),
+            Default::default(),
+        )
+    }
+}
+
+impl OrderByArg for Args<(Func, Command)> {
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        let Func(func) = self.0 .0;
+        (
+            Some(CmdOpts::Many(vec![func, self.0 .1])),
+            Default::default(),
+        )
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 #[non_exhaustive]
 pub struct OrderByOption {
@@ -94,7 +113,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let order_by_option = OrderByOption::default().index("title");
         let data_obtained: Vec<Post> = table
-            .order_by(args!(r.var("id"), order_by_option))
+            .order_by(args!(r.expr("id"), order_by_option))
             .run(&conn)
             .await?
             .unwrap()

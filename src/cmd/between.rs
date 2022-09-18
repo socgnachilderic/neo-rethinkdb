@@ -71,7 +71,7 @@ mod tests {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
         let data_get: Vec<Post> = table
-            .between(args!(r.var(2), r.var(4)))
+            .between(args!(r.expr(2), r.expr(4)))
             .run(&conn)
             .await?
             .unwrap()
@@ -89,7 +89,7 @@ mod tests {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
         let data_get: Vec<Post> = table
-            .between(args!(r::min_val(), r.var(4)))
+            .between(args!(r::min_val(), r.expr(4)))
             .run(&conn)
             .await?
             .unwrap()
@@ -107,7 +107,7 @@ mod tests {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
         let data_get: Vec<Post> = table
-            .between(args!(r.var(2), r::max_val()))
+            .between(args!(r.expr(2), r::max_val()))
             .run(&conn)
             .await?
             .unwrap()
@@ -126,7 +126,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let between_option = BetweenOption::default().right_bound(Status::Closed);
         let data_get: Vec<Post> = table
-            .between(args!(r.var(2), r.var(4), between_option))
+            .between(args!(r.expr(2), r.expr(4), between_option))
             .run(&conn)
             .await?
             .unwrap()
