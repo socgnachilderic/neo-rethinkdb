@@ -300,10 +300,60 @@ impl r {
         Command::from_json(value)
     }
 
+    /// max_val are used with some commands such as `between`
+    /// to specify absolute upper bounds.
+    ///
+    /// # Command syntax
+    /// ```text
+    /// r::min_val()
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .between(args!(r::min_val(), r.var(20)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn min_val() -> Command {
         Command::new(ql2::term::TermType::Minval)
     }
 
+    /// max_val are used with some commands such as `between`
+    /// to specify absolute upper bounds.
+    ///
+    /// # Command syntax
+    /// ```text
+    /// r::max_val()
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .between(args!(r.var(10), r::max_val()))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn max_val() -> Command {
         Command::new(ql2::term::TermType::Maxval)
     }

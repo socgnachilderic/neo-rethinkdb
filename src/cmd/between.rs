@@ -4,7 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::AnyParam;
+use crate::arguments::Args;
 use crate::types::Status;
 use crate::Command;
 
@@ -25,79 +25,23 @@ pub trait BetweenArg {
     fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption);
 }
 
-impl BetweenArg for (AnyParam, AnyParam) {
+impl BetweenArg for Args<(Command, Command)> {
     fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
         (
-            CmdOpts::Single(self.0.into()),
-            CmdOpts::Single(self.1.into()),
+            CmdOpts::Single(self.0 .0),
+            CmdOpts::Single(self.0 .1),
             Default::default(),
         )
     }
 }
 
-impl BetweenArg for (Command, AnyParam) {
+impl BetweenArg for Args<(Command, Command, BetweenOption)> {
     fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
         (
-            CmdOpts::Single(self.0),
-            CmdOpts::Single(self.1.into()),
-            Default::default(),
+            CmdOpts::Single(self.0 .0),
+            CmdOpts::Single(self.0 .1),
+            self.0 .2,
         )
-    }
-}
-
-impl BetweenArg for (AnyParam, Command) {
-    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
-        (
-            CmdOpts::Single(self.0.into()),
-            CmdOpts::Single(self.1),
-            Default::default(),
-        )
-    }
-}
-
-impl BetweenArg for (Command, Command) {
-    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
-        (
-            CmdOpts::Single(self.0),
-            CmdOpts::Single(self.1),
-            Default::default(),
-        )
-    }
-}
-
-impl BetweenArg for (AnyParam, AnyParam, BetweenOption) {
-    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
-        (
-            CmdOpts::Single(self.0.into()),
-            CmdOpts::Single(self.1.into()),
-            self.2,
-        )
-    }
-}
-
-impl BetweenArg for (Command, AnyParam, BetweenOption) {
-    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
-        (
-            CmdOpts::Single(self.0),
-            CmdOpts::Single(self.1.into()),
-            self.2,
-        )
-    }
-}
-
-impl BetweenArg for (AnyParam, Command, BetweenOption) {
-    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
-        (
-            CmdOpts::Single(self.0.into()),
-            CmdOpts::Single(self.1),
-            self.2,
-        )
-    }
-}
-
-impl BetweenArg for (Command, Command, BetweenOption) {
-    fn into_between_opts(self) -> (CmdOpts, CmdOpts, BetweenOption) {
-        (CmdOpts::Single(self.0), CmdOpts::Single(self.1), self.2)
     }
 }
 
@@ -115,11 +59,10 @@ pub struct BetweenOption {
 
 #[cfg(test)]
 mod tests {
-    use crate::arguments::AnyParam;
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post};
     use crate::types::Status;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     use super::BetweenOption;
 
@@ -128,7 +71,7 @@ mod tests {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
         let data_get: Vec<Post> = table
-            .between((AnyParam::new(2), AnyParam::new(4)))
+            .between(args!(r.var(2), r.var(4)))
             .run(&conn)
             .await?
             .unwrap()
@@ -146,7 +89,7 @@ mod tests {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
         let data_get: Vec<Post> = table
-            .between((r::min_val(), AnyParam::new(4)))
+            .between(args!(r::min_val(), r.var(4)))
             .run(&conn)
             .await?
             .unwrap()
@@ -164,7 +107,7 @@ mod tests {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
         let data_get: Vec<Post> = table
-            .between((AnyParam::new(2), r::max_val()))
+            .between(args!(r.var(2), r::max_val()))
             .run(&conn)
             .await?
             .unwrap()
@@ -183,7 +126,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let between_option = BetweenOption::default().right_bound(Status::Closed);
         let data_get: Vec<Post> = table
-            .between((AnyParam::new(2), AnyParam::new(4), between_option))
+            .between(args!(r.var(2), r.var(4), between_option))
             .run(&conn)
             .await?
             .unwrap()
@@ -205,7 +148,7 @@ mod tests {
             .left_bound(Status::Closed)
             .index("title");
         let data_get: Vec<Post> = table
-            .between((r::min_val(), r::max_val(), between_option))
+            .between(args!(r::min_val(), r::max_val(), between_option))
             .run(&conn)
             .await?
             .unwrap()

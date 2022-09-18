@@ -631,6 +631,7 @@ impl<'a> Command {
     //     Self::new(TermType::ToEpochTime).with_parent(self)
     // }
 
+    // FIXME Command no work
     pub fn do_(self, args: impl do_::DoArg) -> Self {
         do_::new(args).with_parent(self)
     }
