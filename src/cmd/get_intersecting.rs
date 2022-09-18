@@ -30,7 +30,7 @@ where
     T: Geometry,
 {
     fn into_get_intersecting_opts(self) -> Command {
-        self.get_command()
+        self.cmd()
     }
 }
 

@@ -252,12 +252,137 @@ impl r {
         cmd::uuid::new(args)
     }
 
+    /// Construct a circular line or polygon.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.circle(args!(point, radius)) → polygon
+    /// r.circle(args!(point, radius, options)) → polygon
+    /// ```
+    ///
+    /// Where:
+    /// - radius: f64,
+    /// - point: [Point](crate::cmd::point::Point)
+    /// - polygon: [Polygon](crate::cmd::polygon::Polygon)
+    ///
+    /// # Description
+    ///
+    /// A circle in RethinkDB is a polygon or line **approximating**
+    /// a circle of a given radius around a given center,
+    /// consisting of a specified number of vertices (default 32).
+    ///
+    /// The center may be specified either by two floating point numbers, the longitude
+    /// (−180 to 180) and latitude (−90 to 90) of the point on a perfect sphere
+    /// (See [Geospatial support](https://rethinkdb.com/docs/geo-support/python/)
+    /// for more information on ReQL’s coordinate system), or by a point object.
+    /// The radius is a floating point number whose units are meters by default,
+    /// although that may be changed with the `unit` argument.
+    ///
+    /// ## Examples
+    ///
+    /// Define a point.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::Polygon;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let circle: Polygon = r.circle(args!(r.point(-122.423246, 37.779388), 50.5))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     let response = r.table("geo")
+    ///         .insert(json!({
+    ///             "id": 300,
+    ///             "name": "Douala",
+    ///             "location": circle
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [line](Self::line)
+    /// - [polygon](Self::polygon)
+    /// - [point](Self::point)
+    /// - [distance](crate::Command::distance)
     pub fn circle(self, args: impl cmd::circle::CircleArg) -> Command {
         cmd::circle::new(args)
     }
 
-    pub fn distance(self, args: impl cmd::distance::DistanceArg) -> Command {
-        cmd::distance::new(args)
+    /// Compute the distance between a point and another geometry object.
+    /// At least one of the geometry objects specified must be a point.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// geometry.distance(geometry) → f64
+    /// geometry.distance(args!(geometry, options)) → f64
+    /// r.distance(geometry.cmd(), geometry) → f64
+    /// r.distance(geometry.cmd(), args!(geometry, options)) → f64
+    /// ```
+    ///
+    /// Where:
+    /// - geometry: [r.point(...)](crate::r::point) |
+    /// [r.line(...)](crate::r::line) |
+    /// [r.polygon(...)](crate::r::polygon)
+    /// command
+    /// - options: [DistanceOption](crate::cmd::distance::DistanceOption)
+    ///
+    /// # Description
+    ///
+    /// If one of the objects is a polygon or a line, the point will be projected
+    /// into the line or polygon assuming a perfect sphere model before the distance
+    /// is computed (using the model specified with `geo_system`).
+    /// As a consequence, if the polygon or line is extremely large compared
+    /// to Earth’s radius and the distance is being computed with the default
+    ///  WGS84 model, the results of `distance` should be considered approximate
+    /// due to the deviation between the ellipsoid and spherical models.
+    ///
+    /// ## Examples
+    ///
+    /// Compute the distance between two points on the Earth in kilometers.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Unit;
+    /// use reql_rust::cmd::distance::DistanceOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let point1 = r.point(-122.423246, 37.779388);
+    ///     let point2 = r.point(-117.220406, 32.719464);
+    ///     let distance_option = DistanceOption::default().unit(Unit::Kilometer);
+    ///
+    ///     let response: f64 = r.distance(point1.cmd(), point2)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 734.125249602186);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [polygon](crate::r::polygon)
+    /// - [line](crate::r::line)
+    pub fn distance(self, geometry: Command, args: impl cmd::distance::DistanceArg) -> Command {
+        geometry.distance(args)
     }
 
     /// Convert a [GeoJSON](https://geojson.org/) object to a ReQL geometry object.

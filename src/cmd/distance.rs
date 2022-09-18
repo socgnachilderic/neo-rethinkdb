@@ -28,21 +28,9 @@ impl<T: Geometry> DistanceArg for T {
     }
 }
 
-impl<T: Geometry, G: Geometry> DistanceArg for Args<(T, G)> {
-    fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
-        (self.0 .0.into(), Some(self.0 .1.into()), Default::default())
-    }
-}
-
 impl<T: Geometry> DistanceArg for Args<(T, DistanceOption)> {
     fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
         (self.0 .0.into(), None, self.0 .1)
-    }
-}
-
-impl<T: Geometry, G: Geometry> DistanceArg for Args<(T, G, DistanceOption)> {
-    fn into_distance_opts(self) -> (Command, Option<Command>, DistanceOption) {
-        (self.0 .0.into(), Some(self.0 .1.into()), self.0 .2)
     }
 }
 
@@ -64,7 +52,7 @@ pub struct DistanceOption {
 #[cfg(test)]
 mod tests {
     use crate::arguments::Unit;
-    use crate::prelude::Converter;
+    use crate::prelude::*;
     use crate::{args, r, Result};
 
     use super::DistanceOption;
@@ -77,7 +65,7 @@ mod tests {
         let distance_option = DistanceOption::default().unit(Unit::Kilometer);
 
         let response: f64 = r
-            .distance(args!(point1, point2, distance_option))
+            .distance(point1.cmd(), args!(point2, distance_option))
             .run(&conn)
             .await?
             .unwrap()

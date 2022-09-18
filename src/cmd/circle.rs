@@ -55,12 +55,19 @@ impl CircleArg for Args<(Command, f64, CircleOption)> {
     Debug, Clone, Serialize, Default, PartialEq, Eq, PartialOrd, Ord, Hash, CommandOptions,
 )]
 pub struct CircleOption {
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub geo_system: Option<GeoSystem>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub unit: Option<Unit>,
+    /// the number of vertices in the polygon or line. Defaults to 32.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub num_vertices: Option<usize>,
+    /// the reference ellipsoid to use for geographic coordinates.
+    /// Possible values are `WGS84` (the default), a common standard
+    /// for Earth’s geometry, or `UnitSphere`, a perfect sphere of 1 meter radius.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub geo_system: Option<GeoSystem>,
+    /// Unit for the radius distance.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub unit: Option<Unit>,
+    /// if `true` (the default) the circle is filled, creating a polygon;
+    /// if `false` the circle is unfilled (creating a line).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub fill: Option<bool>,
 }

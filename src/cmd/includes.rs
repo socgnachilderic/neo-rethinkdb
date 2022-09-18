@@ -28,7 +28,7 @@ impl IncludesArg for Command {
 
 impl<T: Geometry> IncludesArg for Vec<T> {
     fn into_includes_opts(self) -> CmdOpts {
-        CmdOpts::Many(self.into_iter().map(|geo| geo.get_command()).collect())
+        CmdOpts::Many(self.into_iter().map(|geo| geo.cmd()).collect())
     }
 }
 

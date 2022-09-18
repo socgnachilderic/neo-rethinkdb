@@ -43,7 +43,7 @@ impl<T: Serialize> From<ReqlGeoJson<T>> for GeoJson<T> {
 }
 
 impl<T: Serialize> Geometry for ReqlGeoJson<T> {
-    fn get_command(self) -> Command {
+    fn cmd(self) -> Command {
         self.into()
     }
 }

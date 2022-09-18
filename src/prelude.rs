@@ -32,7 +32,7 @@ impl Converter for serde_json::Value {
 }
 
 pub trait Geometry: Into<Command> {
-    fn get_command(self) -> Command {
+    fn cmd(self) -> Command {
         self.into()
     }
 }

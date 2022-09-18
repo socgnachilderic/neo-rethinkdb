@@ -1164,16 +1164,15 @@ impl<'a> Command {
     ///
     /// ```text
     /// geometry.distance(geometry) → f64
-    /// geometry.distance(geometry, options) → f64
-    /// r.distance(geometry, geometry) → f64
-    /// r.distance(geometry, geometry, options) → f64
+    /// geometry.distance(args!(geometry, options)) → f64
+    /// r.distance(geometry.cmd(), geometry) → f64
+    /// r.distance(geometry.cmd(), args!(geometry, options)) → f64
     /// ```
     ///
     /// Where:
     /// - geometry: [r.point(...)](crate::r::point) |
     /// [r.line(...)](crate::r::line) |
     /// [r.polygon(...)](crate::r::polygon)
-    /// command
     /// - options: [DistanceOption](crate::cmd::distance::DistanceOption)
     ///
     /// # Description
@@ -1193,7 +1192,7 @@ impl<'a> Command {
     /// ```
     /// use reql_rust::arguments::Unit;
     /// use reql_rust::cmd::distance::DistanceOption;
-    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -1202,7 +1201,8 @@ impl<'a> Command {
     ///     let point2 = r.point(-117.220406, 32.719464);
     ///     let distance_option = DistanceOption::default().unit(Unit::Kilometer);
     ///
-    ///     let response: f64 = r.distance(args!(point1, point2))
+    ///     let response: f64 = point1.cmd()
+    ///         .distance(point2)
     ///         .run(&conn)
     ///         .await?
     ///         .unwrap()
