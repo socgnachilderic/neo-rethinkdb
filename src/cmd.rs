@@ -1506,9 +1506,9 @@ impl<'a> Command {
     ///
     /// ```text
     /// geometry.intersects(geometry) → bool
-    /// r.intersects(geometry, geometry) → bool
+    /// r.intersects(geometry_command, geometry) → bool
     /// sequence.intersects(geometry) → sequence_response
-    /// r.intersects(args!(vec![geometry]), geometry) → sequence_response
+    /// r.intersects(sequence, geometry) → sequence_response
     /// ```
     ///
     /// Where:
@@ -1516,7 +1516,7 @@ impl<'a> Command {
     /// [r.line(...)](crate::r::line) |
     /// [r.polygon(...)](crate::r::polygon) |
     /// command
-    /// - sequence: command
+    /// - sequence, geometry_command: [Command](crate::Command)
     ///
     /// # Description
     ///

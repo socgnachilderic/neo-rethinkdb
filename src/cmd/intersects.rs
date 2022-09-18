@@ -1,6 +1,7 @@
 use ql2::term::TermType;
 
-use crate::{arguments::Args, prelude::Geometry, Command};
+use crate::prelude::Geometry;
+use crate::Command;
 
 use super::CmdOpts;
 
@@ -31,42 +32,6 @@ where
 {
     fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
         (None, self.into())
-    }
-}
-
-impl IntersectsArg for Args<(Command, Command)> {
-    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
-        (Some(CmdOpts::Single(self.0 .0)), self.0 .1)
-    }
-}
-
-impl<T, R> IntersectsArg for Args<(T, R)>
-where
-    T: Geometry,
-    R: Geometry,
-{
-    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
-        (Some(CmdOpts::Single(self.0 .0.into())), self.0 .1.into())
-    }
-}
-
-impl<T, R> IntersectsArg for Args<(Vec<T>, R)>
-where
-    T: Geometry,
-    R: Geometry,
-{
-    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
-        let seq = CmdOpts::Many(self.0 .0.into_iter().map(|geo| geo.get_command()).collect());
-
-        (Some(seq), self.0 .1.into())
-    }
-}
-
-impl IntersectsArg for Args<(Vec<Command>, Command)> {
-    fn into_intersects_opts(self) -> (Option<CmdOpts>, Command) {
-        let seq = CmdOpts::Many(self.0 .0);
-
-        (Some(seq), self.0 .1)
     }
 }
 
