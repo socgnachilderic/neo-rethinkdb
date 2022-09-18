@@ -1,6 +1,6 @@
 use ql2::term::TermType;
 
-use crate::Command;
+use crate::{arguments::Args, Command};
 
 pub(crate) fn new(args: impl RangeArg) -> Command {
     let (arg1, arg2) = args.into_range_opts();
@@ -33,11 +33,11 @@ impl RangeArg for isize {
     }
 }
 
-impl RangeArg for (isize, isize) {
+impl RangeArg for Args<(isize, isize)> {
     fn into_range_opts(self) -> (Option<Command>, Option<Command>) {
         (
-            Some(Command::from_json(self.0)),
-            Some(Command::from_json(self.1)),
+            Some(Command::from_json(self.0 .0)),
+            Some(Command::from_json(self.0 .1)),
         )
     }
 }
@@ -45,7 +45,7 @@ impl RangeArg for (isize, isize) {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_range_data() -> Result<()> {
@@ -54,7 +54,7 @@ mod tests {
         let conn = r.connection().connect().await?;
         let response: [isize; 4] = r.range(4).run(&conn).await?.unwrap().parse()?;
         let response2: [isize; 4] = r.range(()).limit(4).run(&conn).await?.unwrap().parse()?;
-        let response3: [isize; 11] = r.range((-5, 6)).run(&conn).await?.unwrap().parse()?;
+        let response3: [isize; 11] = r.range(args!(-5, 6)).run(&conn).await?.unwrap().parse()?;
 
         assert!(response == data);
         assert!(response2 == data);

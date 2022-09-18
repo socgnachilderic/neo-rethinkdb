@@ -212,14 +212,243 @@ impl r {
         cmd::binary::new(data)
     }
 
+    // FIXME Command no work
     pub fn do_(self, args: impl cmd::do_::DoArg) -> Command {
         cmd::do_::new(args)
     }
 
+    /// Perform a branching conditional equivalent to `if-then-else`.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.branch(test, args!(true_action, false_action)) → any
+    /// r.branch(test, args!(true_action, [(test2, test2_action), N], false_action)) → any
+    /// query.branch(args!(true_action, false_action)) -> any
+    /// query.branch(args!(true_action, [(test2, test2_action), N], false_action)) → any
+    /// ```
+    ///
+    /// Where:
+    /// - test, true_action, false_action, test2, test2_action: r.expr(...)
+    ///
+    /// # Description
+    ///
+    /// The `branch` command takes 2n+1 arguments: pairs of conditional expressions
+    /// and commands to be executed if the conditionals return any value but `false`
+    /// or `None` i.e., “truthy” values), with a final “else” command to be evaluated
+    /// if all of the conditionals are `false` or `None`.
+    ///
+    /// You may call `branch` infix style on the first test.
+    /// (See the second example for an illustration.)
+    ///
+    /// ```text
+    /// r.branch(test1, args!(val1, [(test2, val2)], elseval))
+    /// ```
+    ///
+    /// is the equivalent of the Rust statement
+    ///
+    /// ```text
+    /// if (test1) {
+    ///     val1
+    /// } else if (test2) {
+    ///     val2
+    /// } else {
+    ///     elseval
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Test the value of x.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let x = 10;
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.branch(
+    ///             r.expr(x > 5),
+    ///             args!(r.expr("big"), r.expr("small"))
+    ///         ).run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.eq("big"));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// As above, infix-style.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let x = 10;
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: String = r.expr(x > 5)
+    ///         .branch(args!(r.expr("big"), r.expr("small")))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.eq("big"));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Categorize heroes by victory counts.
+    ///
+    /// ```
+    /// use std::ops::Add;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response = r.table("pricings")
+    ///         .map(func!(|offer| r.branch(
+    ///             offer.clone().g("price").gt(100),
+    ///             args!(
+    ///                 offer.clone().g("offer").add("premium"),
+    ///                 [(
+    ///                     offer.clone().g("price").gt(10),
+    ///                     offer.clone().g("offer").add("standard")
+    ///                 )],
+    ///                 offer.g("offer").add("freemium")
+    ///         ))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [do_](Self::do_)
     pub fn branch(self, test: Command, args: impl cmd::branch::BranchArg) -> Command {
         test.branch(args)
     }
 
+    /// Generate a stream of sequential integers in a specified range.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.range(()) → stream
+    /// r.range(end_value) → stream
+    /// r.range(args!(start_value, end_value)) → stream
+    /// ```
+    ///
+    /// Where
+    /// - start_value, end_value: isize
+    ///
+    /// # Description
+    ///
+    /// `range` takes 0, 1 or 2 arguments:
+    /// - With no arguments, `range` returns an “infinite” stream
+    /// from 0 up to and including the maximum integer value;
+    ///- With one argument, `range` returns a stream from
+    /// 0 up to but not including the end value;
+    /// - With two arguments, `range` returns a stream from
+    /// the start value up to but not including the end value.
+    ///
+    /// Note that the left bound (including the implied left
+    /// bound of 0 in the 0- and 1-argument form)
+    /// is always closed and the right bound is always open:
+    /// the start value will always be included in the returned range
+    /// and the end value will **not** be included in the returned range.
+    ///
+    /// Any specified arguments must be integers, or a `ReqlRuntimeError` will be thrown.
+    /// If the start value is equal or to higher than the end value,
+    /// no error will be thrown but a zero-element stream will be returned.
+    ///
+    /// ## Examples
+    ///
+    /// Return a four-element range of `[0, 1, 2, 3]`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: [u8; 4] = r.range(4)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == [0, 1, 2, 3]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// You can also use the [limit](crate::Command::limit)
+    /// command with the no-argument
+    /// variant to achieve the same result in this case:
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: [u8; 4] = r.range(())
+    ///         .limit(4)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == [0, 1, 2, 3]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return a range from -5 through 5.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let response: [i8; 11] = r.range(args!(-5, 6))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == [-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn range(self, args: impl cmd::range::RangeArg) -> Command {
         cmd::range::new(args)
     }
