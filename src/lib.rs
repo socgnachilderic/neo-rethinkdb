@@ -314,8 +314,6 @@ impl r {
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
-    ///     let point1 = r.point(-117.220406, 32.719464);
-    ///     let point2 = r.point(-117.206201, 32.725186);
     ///
     ///     let response = r.table("geo")
     ///         .insert(json!({
