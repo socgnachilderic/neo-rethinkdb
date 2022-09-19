@@ -173,6 +173,7 @@ use futures::TryStreamExt;
 use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
+use ::time::UtcOffset;
 
 use crate::arguments::{AnyParam, Permission};
 use crate::prelude::Func;
@@ -573,6 +574,10 @@ impl<'a> Command {
 
     pub fn bit_sar(self, args: impl bit_sar::BitSarArg) -> Self {
         bit_sar::new(args).with_parent(self)
+    }
+
+    pub fn in_timezone(self, timezone: UtcOffset) -> Self {
+        in_timezone::new(timezone).with_arg(self)
     }
 
     // pub fn timezone(self) -> Self {

@@ -62,7 +62,10 @@ impl DateTime {
     pub fn in_timezone(self, timezone: UtcOffset) -> Self {
         let datetime = self.0.replace_offset(timezone);
 
-        self.create_datetime_command(Some(datetime), Some(cmd::in_timezone::new(timezone)))
+        self.clone().create_datetime_command(
+            Some(datetime),
+            Some(cmd::in_timezone::new(timezone).with_parent(self.cmd())),
+        )
     }
 
     pub fn timezone(self) -> (UtcOffset, Command) {
@@ -313,8 +316,7 @@ pub fn timezone_to_string(timezone: UtcOffset) -> String {
     if timezone.is_utc() {
         String::from("Z")
     } else {
-        let format =
-            format_description::parse(TIMEZONE_FORMAT).unwrap();
+        let format = format_description::parse(TIMEZONE_FORMAT).unwrap();
         timezone.format(&format).unwrap()
     }
 }
