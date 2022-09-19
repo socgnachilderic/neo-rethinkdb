@@ -143,7 +143,7 @@ pub mod table_create;
 pub mod table_drop;
 pub mod table_list;
 pub mod time;
-// pub mod time_of_day;
+pub mod time_of_day;
 pub mod timezone;
 // pub mod to_epoch_time;
 pub mod to_geojson;
@@ -159,7 +159,7 @@ pub mod values;
 pub mod wait;
 pub mod with_fields;
 pub mod without;
-// pub mod year;
+pub mod year;
 pub mod zip;
 
 use std::borrow::Cow;
@@ -592,13 +592,13 @@ impl<'a> Command {
         date::new().with_parent(self)
     }
 
-    // pub fn time_of_day(self) -> Self {
-    //     Self::new(TermType::TimeOfDay).with_parent(self)
-    // }
+    pub fn time_of_day(self) -> Self {
+        time_of_day::new().with_parent(self)
+    }
 
-    // pub fn year(self) -> Self {
-    //     Self::new(TermType::Year).with_parent(self)
-    // }
+    pub fn year(self) -> Self {
+        year::new().with_parent(self)
+    }
 
     // pub fn month(self) -> Self {
     //     Self::new(TermType::Month).with_parent(self)

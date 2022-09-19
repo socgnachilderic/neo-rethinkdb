@@ -15,10 +15,10 @@ mod tests {
     async fn test_timezone_ops() -> Result<()> {
         let conn = r.connection().connect().await?;
 
-        let (timezone, cmd) = r.now().timezone();
-        let timezone2: String = cmd.run(&conn).await?.unwrap().parse()?;
+        let timezone = r.now().timezone();
+        let timezone2: String = timezone.clone().cmd().run(&conn).await?.unwrap().parse()?;
 
-        assert!(timezone.to_string() != timezone2);
+        assert!(timezone.value().to_string() != timezone2);
 
         Ok(())
     }

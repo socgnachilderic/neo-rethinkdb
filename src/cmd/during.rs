@@ -76,10 +76,10 @@ mod tests {
 
         let datetime = r.epoch_time(1661990400)?;
 
-        let (response1, cmd) = datetime
+        let response = datetime
             .clone()
             .during(start_date.clone(), end_date.clone(), None);
-        let response2: bool = cmd.run(&conn).await?.unwrap().parse()?;
+        let response2: bool = response.clone().cmd().run(&conn).await?.unwrap().parse()?;
         let response3: bool = datetime
             .cmd()
             .during(args!(start_date, end_date))
@@ -88,7 +88,7 @@ mod tests {
             .unwrap()
             .parse()?;
 
-        assert!(response1 == response2 && response1 == response3);
+        assert!(response2 == response3 && response2 == response.value());
 
         Ok(())
     }

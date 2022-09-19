@@ -10,6 +10,7 @@ use crate::arguments::Args;
 use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
 use crate::{cmd, Command};
 
+use super::response_with_cmd::ResponseWithCmd;
 use super::Time;
 
 #[derive(Clone)]
@@ -68,8 +69,8 @@ impl DateTime {
         )
     }
 
-    pub fn timezone(self) -> (UtcOffset, Command) {
-        (
+    pub fn timezone(self) -> ResponseWithCmd<UtcOffset> {
+        ResponseWithCmd(
             self.0.offset(),
             cmd::timezone::new().with_parent(self.cmd()),
         )
@@ -80,10 +81,10 @@ impl DateTime {
         start_time: DateTime,
         end_time: DateTime,
         during_option: Option<cmd::during::DuringOption>,
-    ) -> (bool, Command) {
+    ) -> ResponseWithCmd<bool> {
         let is_verified = self.le(&end_time) && self.gt(&start_time);
 
-        (
+        ResponseWithCmd(
             is_verified,
             cmd::during::new(Args((start_time, end_time, during_option))).with_parent(self.cmd()),
         )
@@ -98,14 +99,21 @@ impl DateTime {
         )
     }
 
-    pub fn time_of_day(self) -> u32 {
+    // FIXME not ready
+    pub fn time_of_day(self) -> ResponseWithCmd<u32> {
         let day: u32 = self.0.day().into();
 
-        day * 60 * 60
+        ResponseWithCmd(
+            day * 60 * 60,
+            cmd::time_of_day::new().with_parent(self.cmd()),
+        )
     }
 
-    pub fn year(self) -> i32 {
-        self.0.date().year()
+    pub fn year(self) -> ResponseWithCmd<i32> {
+        ResponseWithCmd(
+            self.0.date().year(),
+            cmd::year::new().with_parent(self.cmd()),
+        )
     }
 
     pub fn month(self) -> time::Month {

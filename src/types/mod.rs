@@ -22,6 +22,7 @@ mod binary;
 mod datetime;
 mod group_stream;
 mod time_;
+mod response_with_cmd;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord)]
 #[non_exhaustive]
