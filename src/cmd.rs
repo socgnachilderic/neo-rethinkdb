@@ -588,6 +588,68 @@ impl<'a> Command {
         during::new(args).with_parent(self)
     }
 
+    /// Return a new time struct only based on the day, 
+    /// month and year (ie. the same day at 00:00).
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.date() → time
+    /// ```
+    /// 
+    /// Where:
+    /// - time: [Time](crate::types::Time)
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all the users whose birthday is today.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("birthdate").date().eq(r.now().cmd().date())))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// Note that the [now](crate::r::now) command always returns UTC time, so the 
+    /// comparison may fail if `user.g("birthdate")` isn’t also in UTC. 
+    /// You can use the [in_timezone](Self::in_timezone) command to adjust for this:
+    /// 
+    /// ```
+    /// use time::macros::offset;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("birthdate").date().eq(
+    ///             r.now().cmd().in_timezone(offset!(-08:00)).date()
+    ///         )))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [in_timezone](Self::in_timezone)
     pub fn date(self) -> Self {
         date::new().with_parent(self)
     }
