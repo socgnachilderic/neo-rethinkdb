@@ -604,6 +604,38 @@ impl<'a> Command {
         month::new().with_parent(self)
     }
 
+    /// Return the day of a time object as a number between 1 and 31.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.day() → u8
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the users born on the 24th of any month.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("birthdate").day().eq(r.expr(24))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn day(self) -> Self {
         day::new().with_parent(self)
     }
@@ -652,7 +684,7 @@ impl<'a> Command {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("users")
-    ///         .filter(func!(|post| post.g("birthdate").day_of_week().eq(r.expr(2))))
+    ///         .filter(func!(|user| user.g("birthdate").day_of_week().eq(r.expr(2))))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -689,7 +721,7 @@ impl<'a> Command {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("users")
-    ///         .filter(func!(|post| post.g("birthdate").day_of_year().eq(r.expr(1))))
+    ///         .filter(func!(|user| user.g("birthdate").day_of_year().eq(r.expr(1))))
     ///         .run(&conn)
     ///         .await?;
     ///
