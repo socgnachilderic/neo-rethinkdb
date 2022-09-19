@@ -592,6 +592,40 @@ impl<'a> Command {
         date::new().with_parent(self)
     }
 
+    /// Return the number of seconds elapsed since the 
+    /// beginning of the day stored in the time object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.time_of_day() → f64
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve posts that were submitted before noon.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .filter(func!(|post| post.g("date").time_of_day().le(12*60*60)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [in_timezone](Self::in_timezone)
     pub fn time_of_day(self) -> Self {
         time_of_day::new().with_parent(self)
     }
