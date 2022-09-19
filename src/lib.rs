@@ -173,6 +173,53 @@ impl r {
         cmd::floor::new(value)
     }
 
+    /// Return a time object representing the current time in UTC.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.now() → time
+    /// ```
+    ///
+    /// Where:
+    /// - time: [Time](crate::types::Time)
+    ///
+    /// # Description
+    ///
+    /// The command now() is computed once when the server receives the query,
+    /// so multiple instances of r.now() will always return the same time inside a query.
+    ///
+    /// ## Examples
+    ///
+    /// Create a time
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::Time;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///
+    ///     let time1: Time = r.now().value();
+    ///     let time2: Time = r.now()
+    ///         .cmd()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(time1.is_valid());
+    ///     assert!(time2.is_valid());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [time](Self::time)
+    /// - [epoch_time](Self::epoch_time)
+    /// - [iso8601](Self::iso8601)
     pub fn now(self) -> DateTime {
         DateTime::now()
     }
