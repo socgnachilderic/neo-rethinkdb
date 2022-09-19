@@ -600,6 +600,38 @@ impl<'a> Command {
         year::new().with_parent(self)
     }
 
+    /// Return the month of a time object as a number between 1 and 12.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.month() → u8
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all the users who were born in November.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("birthdate").month().eq(r.expr(11))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn month(self) -> Self {
         month::new().with_parent(self)
     }
