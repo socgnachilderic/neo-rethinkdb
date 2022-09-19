@@ -42,8 +42,7 @@ mod tests {
             .await?
             .unwrap()
             .parse()?;
-
-        dbg!(&response);
+            
         assert!(response.len() > 1);
 
         tear_down(conn, &table_name).await

@@ -42,7 +42,7 @@ pub mod distinct;
 pub mod div;
 pub mod do_;
 pub mod downcase;
-// pub mod during;
+pub mod during;
 pub mod epoch_time;
 pub mod eq;
 pub mod eq_join;
@@ -584,9 +584,9 @@ impl<'a> Command {
         timezone::new().with_parent(self)
     }
 
-    // pub fn during(self, arg: impl during::Arg) -> Self {
-    //     arg.arg().into_cmd().with_parent(self)
-    // }
+    pub fn during(self, args: impl during::DuringArg) -> Self {
+        during::new(args).with_parent(self)
+    }
 
     // pub fn date(self) -> Self {
     //     Self::new(TermType::Date).with_parent(self)

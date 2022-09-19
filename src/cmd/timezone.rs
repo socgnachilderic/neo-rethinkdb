@@ -17,8 +17,6 @@ mod tests {
 
         let (timezone, cmd) = r.now().timezone();
         let timezone2: String = cmd.run(&conn).await?.unwrap().parse()?;
-
-        dbg!(&timezone2);
         
         assert!(timezone.to_string() != timezone2);
 

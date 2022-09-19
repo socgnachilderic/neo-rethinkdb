@@ -7,6 +7,7 @@ use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use time::macros::time;
 use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
+use crate::arguments::Args;
 use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
 use crate::{cmd, Command};
 
@@ -75,8 +76,18 @@ impl DateTime {
         )
     }
 
-    pub fn during(self, start_time: &DateTime, end_time: &DateTime) -> bool {
-        self.le(start_time) && self.gt(end_time)
+    pub fn during(
+        self,
+        start_time: DateTime,
+        end_time: DateTime,
+        during_option: Option<cmd::during::DuringOption>,
+    ) -> (bool, Command) {
+        let is_verified = self.le(&end_time) && self.gt(&start_time);
+
+        (
+            is_verified,
+            cmd::during::new(Args((start_time, end_time, during_option))).with_parent(self.cmd()),
+        )
     }
 
     pub fn date(self) -> Self {
