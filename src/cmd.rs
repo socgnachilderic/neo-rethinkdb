@@ -624,6 +624,39 @@ impl<'a> Command {
         minutes::new().with_parent(self)
     }
 
+    /// Return the seconds in a time object as a number between 0 and 59.999.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.seconds() → f64
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the post submitted during the first 30 seconds of every minute.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .filter(func!(|post| post.g("date").seconds().lt(30)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [in_timezone](Self::in_timezone)
     pub fn seconds(self) -> Self {
         seconds::new().with_parent(self)
     }
@@ -642,9 +675,7 @@ impl<'a> Command {
     ///
     /// ```
     /// use reql_rust::prelude::Converter;
-    /// use reql_rust::types::Polygon;
-    /// use reql_rust::{args, r, Result};
-    /// use serde_json::json;
+    /// use reql_rust::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
@@ -685,9 +716,7 @@ impl<'a> Command {
     ///
     /// ```
     /// use reql_rust::prelude::Converter;
-    /// use reql_rust::types::Polygon;
-    /// use reql_rust::{args, r, Result};
-    /// use serde_json::json;
+    /// use reql_rust::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
