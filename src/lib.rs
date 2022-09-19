@@ -190,8 +190,6 @@ impl r {
         DateTime::iso8601(args)
     }
 
-    // TODO Review Date and Times Commands
-
     /// Convert `HashMap` to `Command`
     pub fn hash_map<T>(self, value: HashMap<T, Command>) -> Command
     where

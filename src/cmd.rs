@@ -145,7 +145,7 @@ pub mod table_list;
 pub mod time;
 pub mod time_of_day;
 pub mod timezone;
-// pub mod to_epoch_time;
+pub mod to_epoch_time;
 pub mod to_geojson;
 pub mod to_iso8601;
 pub mod to_json;
@@ -632,9 +632,9 @@ impl<'a> Command {
         to_iso8601::new().with_parent(self)
     }
 
-    // pub fn to_epoch_time(self) -> Self {
-    //     Self::new(TermType::ToEpochTime).with_parent(self)
-    // }
+    pub fn to_epoch_time(self) -> Self {
+        to_epoch_time::new().with_parent(self)
+    }
 
     // FIXME Command no work
     pub fn do_(self, args: impl do_::DoArg) -> Self {

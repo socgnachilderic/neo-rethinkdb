@@ -159,26 +159,28 @@ impl DateTime {
     pub fn seconds(self) -> ResponseWithCmd<f64> {
         let time = self.0.time();
         let second: f64 = time.second().into();
-        let millisecond: f64 = time.millisecond().into();
-        let millisecond = millisecond / 1000.;
 
         ResponseWithCmd(
-            second + millisecond,
+            second + get_milliseconds(&time),
             cmd::seconds::new().with_parent(self.cmd()),
         )
     }
 
     pub fn to_iso8601(self) -> ResponseWithCmd<String> {
-        let iso8601 = self
-            .0
-            .format(&Iso8601::DEFAULT)
-            .unwrap();
+        let iso8601 = self.0.format(&Iso8601::DEFAULT).unwrap();
 
         ResponseWithCmd(iso8601, cmd::to_iso8601::new().with_parent(self.cmd()))
     }
 
-    pub fn to_epoch_time(self) -> i64 {
-        self.0.unix_timestamp()
+    pub fn to_epoch_time(self) -> ResponseWithCmd<f64> {
+        let milliseconds = get_milliseconds(&self.0.time());
+        let current_time = self.0.unix_timestamp().to_string();
+        let current_time: f64 = current_time.parse().unwrap_or_default();
+
+        ResponseWithCmd(
+            current_time + milliseconds,
+            cmd::to_epoch_time::new().with_parent(self.cmd()),
+        )
     }
 
     fn create_datetime_command(
@@ -367,4 +369,10 @@ pub fn timezone_to_string(timezone: UtcOffset) -> String {
         let format = format_description::parse(TIMEZONE_FORMAT).unwrap();
         timezone.format(&format).unwrap()
     }
+}
+
+fn get_milliseconds(time: &time::Time) -> f64 {
+    let milliseconds: f64 = time.millisecond().into();
+
+    milliseconds / 1000.
 }
