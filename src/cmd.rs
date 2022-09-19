@@ -98,7 +98,7 @@ pub mod max;
 pub mod merge;
 pub mod min;
 // pub mod minutes;
-// pub mod month;
+pub mod month;
 pub mod mul;
 pub mod ne;
 pub mod not_;
@@ -600,9 +600,9 @@ impl<'a> Command {
         year::new().with_parent(self)
     }
 
-    // pub fn month(self) -> Self {
-    //     Self::new(TermType::Month).with_parent(self)
-    // }
+    pub fn month(self) -> Self {
+        month::new().with_parent(self)
+    }
 
     // pub fn day(self) -> Self {
     //     Self::new(TermType::Day).with_parent(self)

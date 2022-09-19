@@ -116,8 +116,11 @@ impl DateTime {
         )
     }
 
-    pub fn month(self) -> time::Month {
-        self.0.date().month()
+    pub fn month(self) -> ResponseWithCmd<u8> {
+        ResponseWithCmd(
+            self.0.date().month().into(),
+            cmd::month::new().with_parent(self.cmd()),
+        )
     }
 
     pub fn day(self) -> u8 {
