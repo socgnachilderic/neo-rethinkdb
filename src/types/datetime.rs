@@ -2,7 +2,6 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops::Deref;
 
-use ql2::term::TermType;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use time::macros::time;
 use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
@@ -91,10 +90,12 @@ impl DateTime {
     }
 
     pub fn date(self) -> Self {
-        let command = Command::new(TermType::Date);
-        let datetime = self.0.replace_time(time!(12:00));
+        let datetime = self.0.replace_time(time!(00:00));
 
-        self.create_datetime_command(Some(datetime), Some(command))
+        self.clone().create_datetime_command(
+            Some(datetime),
+            Some(cmd::date::new().with_parent(self.cmd())),
+        )
     }
 
     pub fn time_of_day(self) -> u32 {

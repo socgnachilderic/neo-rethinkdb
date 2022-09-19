@@ -24,7 +24,7 @@ pub mod config;
 pub mod connect;
 pub mod contains;
 pub mod count;
-// pub mod date;
+pub mod date;
 // pub mod day;
 // pub mod day_of_week;
 // pub mod day_of_year;
@@ -588,9 +588,9 @@ impl<'a> Command {
         during::new(args).with_parent(self)
     }
 
-    // pub fn date(self) -> Self {
-    //     Self::new(TermType::Date).with_parent(self)
-    // }
+    pub fn date(self) -> Self {
+        date::new().with_parent(self)
+    }
 
     // pub fn time_of_day(self) -> Self {
     //     Self::new(TermType::TimeOfDay).with_parent(self)
