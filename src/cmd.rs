@@ -632,6 +632,42 @@ impl<'a> Command {
         to_iso8601::new().with_parent(self)
     }
 
+    /// Convert a time object to its epoch time.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.to_epoch_time() → f64
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the current time in seconds since 
+    /// the Unix Epoch with millisecond-precision.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::Polygon;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let time = r.now().to_epoch_time();
+    ///     let time1: f64 = time.clone().value();
+    ///     let time2: f64 = time.cmd().run(&conn).await?.unwrap().parse()?;
+    ///
+    ///     assert!(time1.is_normal());
+    ///     assert!(time2.is_normal());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [to_iso8601](Self::to_iso8601)
     pub fn to_epoch_time(self) -> Self {
         to_epoch_time::new().with_parent(self)
     }
