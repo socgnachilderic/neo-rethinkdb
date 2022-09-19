@@ -1,7 +1,6 @@
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::arguments::AnyParam;
 use crate::Command;
 
 use super::CmdOpts;
@@ -14,7 +13,7 @@ pub trait EqArg {
     fn into_eq_opts(self) -> CmdOpts;
 }
 
-impl EqArg for AnyParam {
+impl EqArg for Command {
     fn into_eq_opts(self) -> CmdOpts {
         CmdOpts::Single(self.into())
     }
@@ -30,7 +29,6 @@ impl<T: Serialize> EqArg for Vec<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
     use crate::{r, Result};
@@ -41,7 +39,7 @@ mod tests {
         let data_obtained: bool = table
             .get(1)
             .g("title")
-            .eq(AnyParam::new("title1"))
+            .eq(r.expr("title1"))
             .run(&conn)
             .await?
             .unwrap()

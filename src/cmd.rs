@@ -612,6 +612,39 @@ impl<'a> Command {
         day_of_week::new().with_parent(self)
     }
 
+    /// Return the day of the year of a time object as a number 
+    /// between 1 and 366 (following ISO 8601 standard).
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.day_of_year() → u16
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all the users who were born the first day of a year.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|post| post.g("birthdate").day_of_year().eq(r.expr(1))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn day_of_year(self) -> Self {
         day_of_year::new().with_parent(self)
     }
