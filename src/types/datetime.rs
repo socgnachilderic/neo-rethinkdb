@@ -127,8 +127,11 @@ impl DateTime {
         ResponseWithCmd(self.0.date().day(), cmd::day::new().with_parent(self.cmd()))
     }
 
-    pub fn day_of_week(self) -> time::Weekday {
-        self.0.date().weekday()
+    pub fn day_of_week(self) -> ResponseWithCmd<u8> {
+        ResponseWithCmd(
+            self.0.date().weekday().number_from_monday(),
+            cmd::day_of_week::new().with_parent(self.cmd()),
+        )
     }
 
     pub fn day_of_year(self) -> u16 {
