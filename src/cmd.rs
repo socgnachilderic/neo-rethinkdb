@@ -144,7 +144,7 @@ pub mod table_drop;
 pub mod table_list;
 pub mod time;
 // pub mod time_of_day;
-// pub mod timezone;
+pub mod timezone;
 // pub mod to_epoch_time;
 pub mod to_geojson;
 // pub mod to_iso8601;
@@ -577,12 +577,12 @@ impl<'a> Command {
     }
 
     pub fn in_timezone(self, timezone: UtcOffset) -> Self {
-        in_timezone::new(timezone).with_arg(self)
+        in_timezone::new(timezone).with_parent(self)
     }
 
-    // pub fn timezone(self) -> Self {
-    //     Self::new(TermType::Timezone).with_parent(self)
-    // }
+    pub fn timezone(self) -> Self {
+        timezone::new().with_parent(self)
+    }
 
     // pub fn during(self, arg: impl during::Arg) -> Self {
     //     arg.arg().into_cmd().with_parent(self)

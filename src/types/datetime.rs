@@ -69,9 +69,10 @@ impl DateTime {
     }
 
     pub fn timezone(self) -> (UtcOffset, Command) {
-        let command = Command::new(TermType::Timezone);
-
-        (self.0.offset(), command)
+        (
+            self.0.offset(),
+            cmd::timezone::new().with_parent(self.cmd()),
+        )
     }
 
     pub fn during(self, start_time: &DateTime, end_time: &DateTime) -> bool {
