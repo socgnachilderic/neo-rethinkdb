@@ -25,7 +25,7 @@ pub mod connect;
 pub mod contains;
 pub mod count;
 pub mod date;
-// pub mod day;
+pub mod day;
 // pub mod day_of_week;
 // pub mod day_of_year;
 pub mod db;
@@ -604,9 +604,9 @@ impl<'a> Command {
         month::new().with_parent(self)
     }
 
-    // pub fn day(self) -> Self {
-    //     Self::new(TermType::Day).with_parent(self)
-    // }
+    pub fn day(self) -> Self {
+        day::new().with_parent(self)
+    }
 
     // pub fn day_of_week(self) -> Self {
     //     Self::new(TermType::DayOfWeek).with_parent(self)

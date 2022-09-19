@@ -123,8 +123,8 @@ impl DateTime {
         )
     }
 
-    pub fn day(self) -> u8 {
-        self.0.date().day()
+    pub fn day(self) -> ResponseWithCmd<u8> {
+        ResponseWithCmd(self.0.date().day(), cmd::day::new().with_parent(self.cmd()))
     }
 
     pub fn day_of_week(self) -> time::Weekday {
