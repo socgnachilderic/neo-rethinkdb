@@ -24,4 +24,3 @@ mod tests {
         Ok(())
     }
 }
-

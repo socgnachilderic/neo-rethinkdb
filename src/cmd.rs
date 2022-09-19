@@ -166,6 +166,7 @@ use std::borrow::Cow;
 use std::ops::{BitAnd, BitOr, BitXor};
 use std::str;
 
+use ::time::UtcOffset;
 use async_native_tls::TlsStream;
 use async_net::TcpStream;
 use futures::stream::Stream;
@@ -173,7 +174,6 @@ use futures::TryStreamExt;
 use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
-use ::time::UtcOffset;
 
 use crate::arguments::{AnyParam, Permission};
 use crate::prelude::Func;

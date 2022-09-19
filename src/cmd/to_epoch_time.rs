@@ -18,11 +18,10 @@ mod tests {
         let time = r.now().to_epoch_time();
         let time1 = time.clone().value();
         let time2: f64 = time.cmd().run(&conn).await?.unwrap().parse()?;
-        
+
         assert!(time1.is_normal());
         assert!(time2.is_normal());
 
         Ok(())
     }
 }
-

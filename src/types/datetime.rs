@@ -8,7 +8,7 @@ use time::macros::time;
 use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
 use crate::arguments::Args;
-use crate::constants::{NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
+use crate::constants::{HOUR, MINUTE, NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
 use crate::{cmd, Command};
 
 use super::response_with_cmd::ResponseWithCmd;
@@ -100,12 +100,16 @@ impl DateTime {
         )
     }
 
-    // FIXME not ready
-    pub fn time_of_day(self) -> ResponseWithCmd<u32> {
-        let day: u32 = self.0.day().into();
+    pub fn time_of_day(self) -> ResponseWithCmd<f64> {
+        let time_ = self.0.time();
+        let milliseconds = get_milliseconds(&time_);
+        let hours: f64 = time_.hour().into();
+        let minutes: f64 = time_.minute().into();
+        let seconds: f64 = time_.second().into();
+        let seconds: f64 = hours * HOUR + minutes * MINUTE + seconds;
 
         ResponseWithCmd(
-            day * 60 * 60,
+            seconds + milliseconds,
             cmd::time_of_day::new().with_parent(self.cmd()),
         )
     }

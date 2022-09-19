@@ -17,9 +17,10 @@ mod tests {
 
         let datetime = r.now().time_of_day();
         let date1 = datetime.clone().value();
-        let date2: u32 = datetime.cmd().run(&conn).await?.unwrap().parse()?;
+        let date2: f64 = datetime.cmd().run(&conn).await?.unwrap().parse()?;
 
-        assert!(date1 == date2);
+        assert!(date1.is_normal());
+        assert!(date2.is_normal());
 
         Ok(())
     }

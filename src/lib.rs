@@ -185,7 +185,7 @@ impl r {
     pub fn epoch_time(self, timestamp: i64) -> Result<DateTime> {
         DateTime::epoch_time(timestamp)
     }
-    
+
     pub fn iso8601(self, args: impl cmd::iso8601::Iso8601) -> Result<DateTime> {
         DateTime::iso8601(args)
     }
