@@ -61,7 +61,6 @@ impl FilterOption {
 mod tests {
     use serde_json::json;
 
-    use crate::arguments::AnyParam;
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post};
     use crate::{r, Result};
@@ -91,7 +90,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let data_filtered: Vec<Post> = table
             .clone()
-            .filter(func!(|user| user.g("view").eq(AnyParam::new(2))))
+            .filter(func!(|user| user.g("view").eq(r.expr(2))))
             .run(&conn)
             .await?
             .unwrap()

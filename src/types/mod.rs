@@ -296,14 +296,6 @@ pub enum Interleave {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[serde(rename_all = "lowercase")]
-#[non_exhaustive]
-pub enum Status {
-    Open,
-    Closed,
-}
-
-#[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum GeoSystem {
     #[serde(rename = "unit_sphere")]
     UnitSphere,

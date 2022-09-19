@@ -4,8 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::Args;
-use crate::types::Status;
+use crate::arguments::{Args, Status};
 use crate::Command;
 
 use super::CmdOpts;
@@ -59,9 +58,9 @@ pub struct BetweenOption {
 
 #[cfg(test)]
 mod tests {
+    use crate::arguments::Status;
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::types::Status;
     use crate::{args, r, Result};
 
     use super::BetweenOption;

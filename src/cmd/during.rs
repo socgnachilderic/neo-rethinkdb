@@ -2,8 +2,8 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::Args;
-use crate::types::{DateTime, Status};
+use crate::arguments::{Args, Status};
+use crate::types::DateTime;
 use crate::Command;
 
 pub(crate) fn new(args: impl DuringArg) -> Command {
@@ -53,6 +53,9 @@ impl DuringArg for Args<(Command, Command, DuringOption)> {
     }
 }
 
+/// By default, this is inclusive of the start time and exclusive of the end time.
+/// Set left_bound and right_bound to explicitly include
+/// (closed) or exclude (open) that endpoint of the range.
 #[derive(Debug, Clone, Copy, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct DuringOption {
     #[serde(skip_serializing_if = "Option::is_none")]

@@ -584,6 +584,82 @@ impl<'a> Command {
         timezone::new().with_parent(self)
     }
 
+    /// Return whether a time is between two other times.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.during(args!(start_time, end_time)) -> bool
+    /// time.during(args!(start_time, end_time, options)) -> bool
+    /// ```
+    /// 
+    /// Where:
+    /// - start_time, end_time: [DateTime](crate::types::DateTime), [Command](crate::Command)
+    /// - options: [DuringOption](crate::cmd::during::DuringOption)
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all the posts that were posted between December 1st, 
+    /// 2013 (inclusive) and December 10th, 2013 (exclusive).
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use time::macros::{date, offset};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let start_date = r.time(date!(2013 - 12 - 01), offset!(UTC), None);
+    ///     let end_date = r.time(date!(2013 - 12 - 10), offset!(UTC), None);
+    ///     let response = r.table("posts")
+    ///         .filter(func!(|post| post.g("date").during(args!(start_date, end_date))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all the posts that were posted between December 1st, 
+    /// 2013 (exclusive) and December 10th, 2013 (inclusive).
+    ///
+    /// ```
+    /// use reql_rust::arguments::Status;
+    /// use reql_rust::cmd::during::DuringOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use time::macros::{date, offset};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let start_date = r.time(date!(2013 - 12 - 01), offset!(UTC), None);
+    ///     let end_date = r.time(date!(2013 - 12 - 10), offset!(UTC), None);
+    ///     let during_options = DuringOption::default()
+    ///         .left_bound(Status::Open)
+    ///         .right_bound(Status::Closed);
+    ///     let response = r.table("posts")
+    ///         .filter(func!(|post| post.g("date").during(args!(
+    ///             start_date,
+    ///             end_date,
+    ///             during_options
+    ///         ))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [in_timezone](Self::in_timezone)
     pub fn during(self, args: impl during::DuringArg) -> Self {
         during::new(args).with_parent(self)
     }

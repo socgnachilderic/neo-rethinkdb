@@ -2,8 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::types::Status;
-use crate::Command;
+use crate::{Command, arguments::Status};
 
 pub(crate) fn new(args: impl SliceArg) -> Command {
     let (start_offset, end_offset, opts) = args.into_slice_opts();
