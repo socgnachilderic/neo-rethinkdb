@@ -155,8 +155,16 @@ impl DateTime {
         )
     }
 
-    pub fn seconds(self) -> u8 {
-        self.0.time().second()
+    pub fn seconds(self) -> ResponseWithCmd<f64> {
+        let time = self.0.time();
+        let second: f64 = time.second().into();
+        let millisecond: f64 = time.millisecond().into();
+        let millisecond = millisecond / 1000.;
+        
+        ResponseWithCmd(
+            second + millisecond,
+            cmd::seconds::new().with_parent(self.cmd()),
+        )
     }
 
     pub fn to_iso8601(self) -> String {

@@ -124,7 +124,7 @@ pub mod replace;
 pub mod round;
 pub mod run;
 pub mod sample;
-// pub mod seconds;
+pub mod seconds;
 pub mod set_difference;
 pub mod set_insert;
 pub mod set_intersection;
@@ -624,9 +624,9 @@ impl<'a> Command {
         minutes::new().with_parent(self)
     }
 
-    // pub fn seconds(self) -> Self {
-    //     Self::new(TermType::Seconds).with_parent(self)
-    // }
+    pub fn seconds(self) -> Self {
+        seconds::new().with_parent(self)
+    }
 
     // pub fn to_iso8601(self) -> Self {
     //     Self::new(TermType::ToIso8601).with_parent(self)
