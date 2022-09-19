@@ -596,6 +596,38 @@ impl<'a> Command {
         time_of_day::new().with_parent(self)
     }
 
+    /// Return the year of a time object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.year() → i32
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all the users born in 1986.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("birthdate").year().eq(r.expr(1986))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn year(self) -> Self {
         year::new().with_parent(self)
     }
