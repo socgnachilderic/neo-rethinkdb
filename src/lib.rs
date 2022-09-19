@@ -185,14 +185,9 @@ impl r {
     pub fn epoch_time(self, timestamp: i64) -> Result<DateTime> {
         DateTime::epoch_time(timestamp)
     }
-
-    //
-    pub fn iso8601(
-        self,
-        iso_datetime: &str,
-        default_timezone: Option<UtcOffset>,
-    ) -> crate::Result<DateTime> {
-        DateTime::iso8601(iso_datetime, default_timezone)
+    
+    pub fn iso8601(self, args: impl cmd::iso8601::Iso8601) -> crate::Result<DateTime> {
+        DateTime::iso8601(args)
     }
 
     // TODO Review Date and Times Commands

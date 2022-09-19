@@ -51,20 +51,9 @@ impl DateTime {
         ))
     }
 
-    pub(crate) fn iso8601(
-        iso_datetime: &str,
-        default_timezone: Option<UtcOffset>,
-    ) -> crate::Result<Self> {
-        let command = Command::new(TermType::Iso8601);
-        let mut datetime = iso_datetime.to_string();
-
-        if let Some(timezone) = default_timezone {
-            let timezone_format = format_description::parse(TIMEZONE_FORMAT)?;
-            let timezone = timezone.format(&timezone_format)?;
-
-            datetime = format!("{}{}", datetime, timezone);
-        }
-
+    pub(crate) fn iso8601(args: impl cmd::iso8601::Iso8601) -> crate::Result<Self> {
+        let datetime = args.into_iso8601_opts()?;
+        let command = cmd::iso8601::new(&datetime);
         let datetime = OffsetDateTime::parse(&datetime, &format_description::well_known::Rfc3339)?;
 
         Ok(Self::default().create_datetime_command(Some(datetime), Some(command)))
@@ -325,7 +314,7 @@ pub fn timezone_to_string(timezone: UtcOffset) -> String {
         String::from("Z")
     } else {
         let format =
-            format_description::parse("[offset_hour sign:mandatory ]:[offset_minute]").unwrap();
+            format_description::parse(TIMEZONE_FORMAT).unwrap();
         timezone.format(&format).unwrap()
     }
 }

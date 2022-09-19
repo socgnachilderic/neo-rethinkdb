@@ -83,7 +83,7 @@ pub mod insert;
 pub mod insert_at;
 pub mod intersects;
 pub mod is_empty;
-// pub mod iso8601;
+pub mod iso8601;
 pub mod js;
 pub mod json;
 pub mod keys;
