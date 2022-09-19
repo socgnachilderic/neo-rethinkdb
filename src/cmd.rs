@@ -576,6 +576,55 @@ impl<'a> Command {
         bit_sar::new(args).with_parent(self)
     }
 
+    /// Return a new time object with a different timezone.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.in_timezone(timezone) → time
+    /// ```
+    /// 
+    /// Where:
+    /// - time: [Time](crate::types::Time)
+    /// - timezone: UtcOffset
+    /// 
+    /// # Description
+    /// 
+    /// While the time stays the same, the results returned by methods such 
+    /// as hours() will change since they take the timezone into account. 
+    /// The timezone argument has to be of the ISO 8601 format.
+    ///
+    /// ## Examples
+    ///
+    /// Hour of the day in San Francisco (UTC/GMT -8, without daylight saving time).
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::Time;
+    /// use reql_rust::{r, Result};
+    /// use time::macros::offset;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let date_time = r.now().in_timezone(offset!(-08:00));
+    ///     let time1: Time = date_time.clone().value();
+    ///     let time2: Time = date_time.cmd()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     assert!(time1.is_valid());
+    ///     assert!(time2.is_valid());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [timezone](Self::timezone)
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn in_timezone(self, timezone: UtcOffset) -> Self {
         in_timezone::new(timezone).with_parent(self)
     }

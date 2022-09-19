@@ -24,7 +24,8 @@ mod tests {
         let time1 = date_time.clone().value();
         let time2: Time = date_time.cmd().run(&conn).await?.unwrap().parse()?;
 
-        assert!(time2 != time1);
+        assert!(time1.is_valid());
+        assert!(time2.is_valid());
 
         Ok(())
     }
