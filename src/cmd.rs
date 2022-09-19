@@ -147,7 +147,7 @@ pub mod time_of_day;
 pub mod timezone;
 // pub mod to_epoch_time;
 pub mod to_geojson;
-// pub mod to_iso8601;
+pub mod to_iso8601;
 pub mod to_json;
 pub mod type_of;
 pub mod ungroup;
@@ -628,9 +628,9 @@ impl<'a> Command {
         seconds::new().with_parent(self)
     }
 
-    // pub fn to_iso8601(self) -> Self {
-    //     Self::new(TermType::ToIso8601).with_parent(self)
-    // }
+    pub fn to_iso8601(self) -> Self {
+        to_iso8601::new().with_parent(self)
+    }
 
     // pub fn to_epoch_time(self) -> Self {
     //     Self::new(TermType::ToEpochTime).with_parent(self)

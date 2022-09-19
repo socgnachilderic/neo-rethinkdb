@@ -3,6 +3,7 @@ use std::hash::Hash;
 use std::ops::Deref;
 
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
+use time::format_description::well_known::Iso8601;
 use time::macros::time;
 use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
 
@@ -55,7 +56,7 @@ impl DateTime {
     pub(crate) fn iso8601(args: impl cmd::iso8601::Iso8601) -> crate::Result<Self> {
         let datetime = args.into_iso8601_opts()?;
         let command = cmd::iso8601::new(&datetime);
-        let datetime = OffsetDateTime::parse(&datetime, &format_description::well_known::Rfc3339)?;
+        let datetime = OffsetDateTime::parse(&datetime, &Iso8601::DEFAULT)?;
 
         Ok(Self::default().create_datetime_command(Some(datetime), Some(command)))
     }
@@ -160,17 +161,20 @@ impl DateTime {
         let second: f64 = time.second().into();
         let millisecond: f64 = time.millisecond().into();
         let millisecond = millisecond / 1000.;
-        
+
         ResponseWithCmd(
             second + millisecond,
             cmd::seconds::new().with_parent(self.cmd()),
         )
     }
 
-    pub fn to_iso8601(self) -> String {
-        self.0
-            .format(&format_description::well_known::Rfc3339)
-            .unwrap()
+    pub fn to_iso8601(self) -> ResponseWithCmd<String> {
+        let iso8601 = self
+            .0
+            .format(&Iso8601::DEFAULT)
+            .unwrap();
+
+        ResponseWithCmd(iso8601, cmd::to_iso8601::new().with_parent(self.cmd()))
     }
 
     pub fn to_epoch_time(self) -> i64 {
