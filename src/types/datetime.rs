@@ -134,8 +134,11 @@ impl DateTime {
         )
     }
 
-    pub fn day_of_year(self) -> u16 {
-        self.0.date().ordinal()
+    pub fn day_of_year(self) -> ResponseWithCmd<u16> {
+        ResponseWithCmd(
+            self.0.date().ordinal(),
+            cmd::day_of_year::new().with_parent(self.cmd()),
+        )
     }
 
     pub fn hours(self) -> u8 {

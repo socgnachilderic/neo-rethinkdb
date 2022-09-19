@@ -27,7 +27,7 @@ pub mod count;
 pub mod date;
 pub mod day;
 pub mod day_of_week;
-// pub mod day_of_year;
+pub mod day_of_year;
 pub mod db;
 pub mod db_create;
 pub mod db_drop;
@@ -612,9 +612,9 @@ impl<'a> Command {
         day_of_week::new().with_parent(self)
     }
 
-    // pub fn day_of_year(self) -> Self {
-    //     Self::new(TermType::DayOfYear).with_parent(self)
-    // }
+    pub fn day_of_year(self) -> Self {
+        day_of_year::new().with_parent(self)
+    }
 
     // pub fn hours(self) -> Self {
     //     Self::new(TermType::Hours).with_parent(self)
