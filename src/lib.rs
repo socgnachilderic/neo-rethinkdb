@@ -182,6 +182,46 @@ impl r {
         DateTime::time(date, timezone, time)
     }
 
+    /// Create a time object based on seconds since epoch.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.epoch_time(i64) → time
+    /// ```
+    /// 
+    /// Where:
+    /// - time: [Time](crate::types::Time)
+    ///
+    /// ## Examples
+    ///
+    /// Create a time 
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::Time;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let date_time = r.epoch_time(531360000)?;
+    ///     let time1 = date_time.clone().value();
+    ///     let time2: Time = date_time.cmd()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     assert!(time2 == time1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](Self::now)
+    /// - [time](Self::time)
+    /// - [iso8601](Self::iso8601)
     pub fn epoch_time(self, timestamp: i64) -> Result<DateTime> {
         DateTime::epoch_time(timestamp)
     }
@@ -236,9 +276,9 @@ impl r {
     /// ```
     ///
     /// # Related commands
-    /// - [timezone](Self::timezone)
-    /// - [now](crate::r::now)
-    /// - [time](crate::r::time)
+    /// - [now](Self::now)
+    /// - [time](Self::time)
+    /// - [epoch_time](Self::epoch_time)
     pub fn iso8601(self, args: impl cmd::iso8601::Iso8601) -> Result<DateTime> {
         DateTime::iso8601(args)
     }
