@@ -186,6 +186,59 @@ impl r {
         DateTime::epoch_time(timestamp)
     }
 
+    /// Create a time object based on an ISO 8601 
+    /// date-time string (e.g. ‘2013-01-01T01:01:01+00:00’).
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.iso8601(string) → time
+    /// r.iso8601(args!(string, default_timezone)) → time
+    /// ```
+    /// 
+    /// Where:
+    /// - time: [Time](crate::types::Time)
+    /// - default_timezone: UtcOffset
+    /// 
+    /// # Description
+    /// 
+    /// RethinkDB supports all valid ISO 8601 formats except for week dates. 
+    /// Read more about the ISO 8601 format at 
+    /// [Wikipedia](http://en.wikipedia.org/wiki/ISO_8601).
+    /// 
+    /// If you pass an ISO 8601 string without a time zone, 
+    /// you must specify the time zone with the default_timezone argument.
+    ///
+    /// ## Examples
+    ///
+    /// Create a time 
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::Time;
+    /// use reql_rust::{args, r, Result};
+    /// use time::macros::offset;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let date_time = r.iso8601(args!("1986-11-03T08:30:00", offset!(+01:00)))?;
+    ///     let time1 = date_time.clone().value();
+    ///     let time2: Time = date_time.cmd()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     assert!(time2 == time1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [timezone](Self::timezone)
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn iso8601(self, args: impl cmd::iso8601::Iso8601) -> Result<DateTime> {
         DateTime::iso8601(args)
     }
