@@ -628,6 +628,44 @@ impl<'a> Command {
         seconds::new().with_parent(self)
     }
 
+    /// Convert a time object to a string in ISO 8601 format.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.to_iso8601() → String
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the current ISO 8601 time.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::Polygon;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let iso8601 = r.now().to_iso8601();
+    ///     let iso8601_1 = iso8601.clone().value();
+    ///     let iso8601_2: String = iso8601.cmd()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(!iso8601_1.is_empty());
+    ///     assert!(!iso8601_2.is_empty());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn to_iso8601(self) -> Self {
         to_iso8601::new().with_parent(self)
     }
@@ -655,7 +693,10 @@ impl<'a> Command {
     ///     let conn = r.connection().connect().await?;
     ///     let time = r.now().to_epoch_time();
     ///     let time1: f64 = time.clone().value();
-    ///     let time2: f64 = time.cmd().run(&conn).await?.unwrap().parse()?;
+    ///     let time2: f64 = time.cmd()
+    ///         .run(&conn)
+    ///         .await?.unwrap()
+    ///         .parse()?;
     ///
     ///     assert!(time1.is_normal());
     ///     assert!(time2.is_normal());
