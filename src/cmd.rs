@@ -616,6 +616,39 @@ impl<'a> Command {
         day_of_year::new().with_parent(self)
     }
 
+    /// Return the hour in a time object as a number between 0 and 23.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.hours() → u8
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all the posts submitted after midnight and before 4am.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .filter(func!(|post| post.g("date").hours().lt(4)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [in_timezone](Self::in_timezone)
     pub fn hours(self) -> Self {
         hours::new().with_parent(self)
     }
