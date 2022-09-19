@@ -620,6 +620,39 @@ impl<'a> Command {
         hours::new().with_parent(self)
     }
 
+    /// Return the minute in a time object as a number between 0 and 59.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.minutes() → u8
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all the posts submitted during the first 10 minutes of every hour.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .filter(func!(|post| post.g("date").minutes().lt(10)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [in_timezone](Self::in_timezone)
     pub fn minutes(self) -> Self {
         minutes::new().with_parent(self)
     }
