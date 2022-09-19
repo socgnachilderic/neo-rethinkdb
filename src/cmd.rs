@@ -67,7 +67,7 @@ pub mod group;
 pub mod gt;
 pub mod has_fields;
 pub mod hash_map;
-// pub mod hours;
+pub mod hours;
 pub mod http;
 pub mod in_timezone;
 pub mod includes;
@@ -616,9 +616,9 @@ impl<'a> Command {
         day_of_year::new().with_parent(self)
     }
 
-    // pub fn hours(self) -> Self {
-    //     Self::new(TermType::Hours).with_parent(self)
-    // }
+    pub fn hours(self) -> Self {
+        hours::new().with_parent(self)
+    }
 
     // pub fn minutes(self) -> Self {
     //     Self::new(TermType::Minutes).with_parent(self)
