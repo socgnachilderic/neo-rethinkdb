@@ -5,7 +5,7 @@ use std::ops::Deref;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use time::format_description::well_known::Iso8601;
 use time::macros::time;
-use time::{format_description, Date, OffsetDateTime, PrimitiveDateTime, UtcOffset};
+use time::{format_description, OffsetDateTime, UtcOffset};
 
 use crate::arguments::Args;
 use crate::constants::{HOUR, MINUTE, NANOS_PER_MSEC, NANOS_PER_SEC, TIMEZONE_FORMAT};
@@ -24,22 +24,15 @@ impl DateTime {
         Self::default().create_datetime_command(Some(offset_datetime), Some(cmd::now::new()))
     }
 
-    pub(crate) fn time(date: Date, timezone: UtcOffset, time: Option<time::Time>) -> Self {
-        let mut primetive_datetime = PrimitiveDateTime::new(date, time!(0:00));
-        let timezone_formated = timezone_to_string(timezone);
-
-        if let Some(time) = time {
-            primetive_datetime = primetive_datetime.replace_time(time);
-        }
-
-        let offset_datetime = primetive_datetime.assume_offset(timezone);
+    pub(crate) fn time(args: impl cmd::time::TimeArg) -> Self {
+        let (offset_datetime, timezone_formated, with_time) = args.into_time_opts();
 
         Self::default().create_datetime_command(
             Some(offset_datetime),
             Some(cmd::time::new(
-                date,
+                offset_datetime,
                 timezone_formated,
-                Some(primetive_datetime),
+                with_time,
             )),
         )
     }

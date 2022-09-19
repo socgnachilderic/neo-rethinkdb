@@ -6,7 +6,6 @@ use arguments::Permission;
 pub use connection::*;
 pub use err::*;
 pub use proto::Command;
-use time::{Date, Time, UtcOffset};
 use types::{Binary, DateTime, GeoJson};
 
 pub type Result<T> = std::result::Result<T, ReqlError>;
@@ -178,24 +177,73 @@ impl r {
         DateTime::now()
     }
 
-    pub fn time(self, date: Date, timezone: UtcOffset, time: Option<Time>) -> DateTime {
-        DateTime::time(date, timezone, time)
+    /// Create a time object for a specific time.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.time(args!(date, timezone)) → time
+    /// r.time(args!(date, time_, timezone)) → time
+    /// ```
+    ///
+    /// Where:
+    /// - date: [time::Date](time::Date)
+    /// - time_: [time::Time](time::Time)
+    /// - timezone: [time::UtcOffset](time::UtcOffset)
+    /// - time: [Time](crate::types::Time)
+    ///
+    /// ## Examples
+    ///
+    /// Create a time
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::Time;
+    /// use reql_rust::{args, r, Result};
+    /// use time::macros::{date, offset, time};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let date = date!(1986 - 11 - 3);
+    ///     let time = time!(09:30:40);
+    ///     let timezone = offset!(+01:00);
+    ///
+    ///     let date_time = r.time(args!(date, time, timezone));
+    ///     let time1 = date_time.clone().value();
+    ///     let time2: Time = date_time.cmd()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(time2 == time1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](Self::now)
+    /// - [time](Self::time)
+    /// - [iso8601](Self::iso8601)
+    pub fn time(self, args: impl cmd::time::TimeArg) -> DateTime {
+        DateTime::time(args)
     }
 
     /// Create a time object based on seconds since epoch.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// r.epoch_time(i64) → time
     /// ```
-    /// 
+    ///
     /// Where:
     /// - time: [Time](crate::types::Time)
     ///
     /// ## Examples
     ///
-    /// Create a time 
+    /// Create a time
     ///
     /// ```
     /// use reql_rust::prelude::*;
@@ -211,7 +259,7 @@ impl r {
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     assert!(time2 == time1);
     ///     
     ///     Ok(())
@@ -226,32 +274,32 @@ impl r {
         DateTime::epoch_time(timestamp)
     }
 
-    /// Create a time object based on an ISO 8601 
+    /// Create a time object based on an ISO 8601
     /// date-time string (e.g. ‘2013-01-01T01:01:01+00:00’).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// r.iso8601(string) → time
     /// r.iso8601(args!(string, default_timezone)) → time
     /// ```
-    /// 
+    ///
     /// Where:
     /// - time: [Time](crate::types::Time)
     /// - default_timezone: UtcOffset
-    /// 
+    ///
     /// # Description
-    /// 
-    /// RethinkDB supports all valid ISO 8601 formats except for week dates. 
-    /// Read more about the ISO 8601 format at 
+    ///
+    /// RethinkDB supports all valid ISO 8601 formats except for week dates.
+    /// Read more about the ISO 8601 format at
     /// [Wikipedia](http://en.wikipedia.org/wiki/ISO_8601).
-    /// 
-    /// If you pass an ISO 8601 string without a time zone, 
+    ///
+    /// If you pass an ISO 8601 string without a time zone,
     /// you must specify the time zone with the default_timezone argument.
     ///
     /// ## Examples
     ///
-    /// Create a time 
+    /// Create a time
     ///
     /// ```
     /// use reql_rust::prelude::*;
@@ -268,7 +316,7 @@ impl r {
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     assert!(time2 == time1);
     ///     
     ///     Ok(())

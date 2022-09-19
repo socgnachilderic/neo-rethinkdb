@@ -34,7 +34,7 @@ pub struct Permission {
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[non_exhaustive]
+#[serde(rename_all = "lowercase")]
 pub enum Status {
     Open,
     Closed,

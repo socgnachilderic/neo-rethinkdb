@@ -15,7 +15,7 @@ pub trait EqArg {
 
 impl EqArg for Command {
     fn into_eq_opts(self) -> CmdOpts {
-        CmdOpts::Single(self.into())
+        CmdOpts::Single(self)
     }
 }
 

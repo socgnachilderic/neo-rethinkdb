@@ -74,8 +74,8 @@ mod tests {
     #[tokio::test]
     async fn test_during_ops() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let start_date = r.time(date!(2022 - 08 - 01), offset!(UTC), None);
-        let end_date = r.time(date!(2022 - 12 - 31), offset!(UTC), None);
+        let start_date = r.time(args!(date!(2022 - 08 - 01), offset!(UTC)));
+        let end_date = r.time(args!(date!(2022 - 12 - 31), offset!(UTC)));
 
         let datetime = r.epoch_time(1661990400)?;
 

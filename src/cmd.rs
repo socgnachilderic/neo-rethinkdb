@@ -583,15 +583,15 @@ impl<'a> Command {
     /// ```text
     /// time.in_timezone(timezone) → time
     /// ```
-    /// 
+    ///
     /// Where:
+    /// - timezone: [UtcOffset](UtcOffset)
     /// - time: [Time](crate::types::Time)
-    /// - timezone: UtcOffset
-    /// 
+    ///
     /// # Description
-    /// 
-    /// While the time stays the same, the results returned by methods such 
-    /// as hours() will change since they take the timezone into account. 
+    ///
+    /// While the time stays the same, the results returned by methods such
+    /// as hours() will change since they take the timezone into account.
     /// The timezone argument has to be of the ISO 8601 format.
     ///
     /// ## Examples
@@ -613,7 +613,7 @@ impl<'a> Command {
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     assert!(time1.is_valid());
     ///     assert!(time2.is_valid());
     ///     
@@ -674,14 +674,14 @@ impl<'a> Command {
     /// time.during(args!(start_time, end_time)) -> bool
     /// time.during(args!(start_time, end_time, options)) -> bool
     /// ```
-    /// 
+    ///
     /// Where:
     /// - start_time, end_time: [DateTime](crate::types::DateTime), [Command](crate::Command)
     /// - options: [DuringOption](crate::cmd::during::DuringOption)
     ///
     /// ## Examples
     ///
-    /// Retrieve all the posts that were posted between December 1st, 
+    /// Retrieve all the posts that were posted between December 1st,
     /// 2013 (inclusive) and December 10th, 2013 (exclusive).
     ///
     /// ```
@@ -691,8 +691,8 @@ impl<'a> Command {
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
-    ///     let start_date = r.time(date!(2013 - 12 - 01), offset!(UTC), None);
-    ///     let end_date = r.time(date!(2013 - 12 - 10), offset!(UTC), None);
+    ///     let start_date = r.time(args!(date!(2013 - 12 - 01), offset!(UTC)));
+    ///     let end_date = r.time(args!(date!(2013 - 12 - 10), offset!(UTC)));
     ///     let response = r.table("posts")
     ///         .filter(func!(|post| post.g("date").during(args!(start_date, end_date))))
     ///         .run(&conn)
@@ -706,7 +706,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Retrieve all the posts that were posted between December 1st, 
+    /// Retrieve all the posts that were posted between December 1st,
     /// 2013 (exclusive) and December 10th, 2013 (inclusive).
     ///
     /// ```
@@ -718,8 +718,8 @@ impl<'a> Command {
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
-    ///     let start_date = r.time(date!(2013 - 12 - 01), offset!(UTC), None);
-    ///     let end_date = r.time(date!(2013 - 12 - 10), offset!(UTC), None);
+    ///     let start_date = r.time(args!(date!(2013 - 12 - 01), offset!(UTC)));
+    ///     let end_date = r.time(args!(date!(2013 - 12 - 10), offset!(UTC)));
     ///     let during_options = DuringOption::default()
     ///         .left_bound(Status::Open)
     ///         .right_bound(Status::Closed);
@@ -746,7 +746,7 @@ impl<'a> Command {
         during::new(args).with_parent(self)
     }
 
-    /// Return a new time struct only based on the day, 
+    /// Return a new time struct only based on the day,
     /// month and year (ie. the same day at 00:00).
     ///
     /// # Command syntax
@@ -754,7 +754,7 @@ impl<'a> Command {
     /// ```text
     /// time.date() → time
     /// ```
-    /// 
+    ///
     /// Where:
     /// - time: [Time](crate::types::Time)
     ///
@@ -778,14 +778,14 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
-    /// Note that the [now](crate::r::now) command always returns UTC time, so the 
-    /// comparison may fail if `user.g("birthdate")` isn’t also in UTC. 
+    ///
+    /// Note that the [now](crate::r::now) command always returns UTC time, so the
+    /// comparison may fail if `user.g("birthdate")` isn’t also in UTC.
     /// You can use the [in_timezone](Self::in_timezone) command to adjust for this:
-    /// 
+    ///
     /// ```
     /// use time::macros::offset;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
@@ -812,7 +812,7 @@ impl<'a> Command {
         date::new().with_parent(self)
     }
 
-    /// Return the number of seconds elapsed since the 
+    /// Return the number of seconds elapsed since the
     /// beginning of the day stored in the time object.
     ///
     /// # Command syntax
@@ -958,7 +958,7 @@ impl<'a> Command {
         day::new().with_parent(self)
     }
 
-    /// Return the day of week of a time object as a number 
+    /// Return the day of week of a time object as a number
     /// between 1 and 7 (following ISO 8601 standard).
     ///
     /// # Command syntax
@@ -984,7 +984,7 @@ impl<'a> Command {
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     assert!(day_of_week1 == day_of_week2);
     ///     
     ///     Ok(())
@@ -1019,7 +1019,7 @@ impl<'a> Command {
         day_of_week::new().with_parent(self)
     }
 
-    /// Return the day of the year of a time object as a number 
+    /// Return the day of the year of a time object as a number
     /// between 1 and 366 (following ISO 8601 standard).
     ///
     /// # Command syntax
@@ -1217,7 +1217,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Return the current time in seconds since 
+    /// Return the current time in seconds since
     /// the Unix Epoch with millisecond-precision.
     ///
     /// ```
