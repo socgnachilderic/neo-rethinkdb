@@ -608,6 +608,63 @@ impl<'a> Command {
         day::new().with_parent(self)
     }
 
+    /// Return the day of week of a time object as a number 
+    /// between 1 and 7 (following ISO 8601 standard).
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.day_of_week() → u8
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return today’s day of week.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let day_of_week = r.now().day_of_week();
+    ///     let day_of_week1 = day_of_week.clone().value();
+    ///     let day_of_week2: u8 = day_of_week.cmd()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     assert!(day_of_week1 == day_of_week2);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all the users who were born on a Tuesday.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|post| post.g("birthdate").day_of_week().eq(r.expr(2))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
     pub fn day_of_week(self) -> Self {
         day_of_week::new().with_parent(self)
     }
