@@ -580,6 +580,39 @@ impl<'a> Command {
         in_timezone::new(timezone).with_parent(self)
     }
 
+    /// Return the timezone of the time object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// time.timezone() → String
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all the users in the “-07:00” timezone.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("subscription_date").timezone().lt("-07:00")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [now](crate::r::now)
+    /// - [time](crate::r::time)
+    /// - [in_timezone](Self::in_timezone)
     pub fn timezone(self) -> Self {
         timezone::new().with_parent(self)
     }
