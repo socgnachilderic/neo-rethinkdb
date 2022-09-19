@@ -97,7 +97,7 @@ pub mod match_;
 pub mod max;
 pub mod merge;
 pub mod min;
-// pub mod minutes;
+pub mod minutes;
 pub mod month;
 pub mod mul;
 pub mod ne;
@@ -620,9 +620,9 @@ impl<'a> Command {
         hours::new().with_parent(self)
     }
 
-    // pub fn minutes(self) -> Self {
-    //     Self::new(TermType::Minutes).with_parent(self)
-    // }
+    pub fn minutes(self) -> Self {
+        minutes::new().with_parent(self)
+    }
 
     // pub fn seconds(self) -> Self {
     //     Self::new(TermType::Seconds).with_parent(self)

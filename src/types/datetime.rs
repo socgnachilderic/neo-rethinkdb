@@ -148,8 +148,11 @@ impl DateTime {
         )
     }
 
-    pub fn minutes(self) -> u8 {
-        self.0.time().minute()
+    pub fn minutes(self) -> ResponseWithCmd<u8> {
+        ResponseWithCmd(
+            self.0.time().minute(),
+            cmd::minutes::new().with_parent(self.cmd()),
+        )
     }
 
     pub fn seconds(self) -> u8 {
