@@ -161,12 +161,76 @@ impl r {
         cmd::random::new(args)
     }
 
-    pub fn round(self, value: f64) -> Command {
-        cmd::round::new(value)
+    pub fn round(self, args: impl cmd::round::RoundArg) -> Command {
+        cmd::round::new(args)
     }
 
-    pub fn ceil(self, value: f64) -> Command {
-        cmd::ceil::new(value)
+    /// Rounds the given value up, returning the smallest integer value 
+    /// greater than or equal to the given value (the value’s ceiling).
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.ceil(param_number) → number
+    /// cmd_number.ceil() → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: f64 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    ///
+    /// ## Examples
+    ///
+    /// Return the ceiling of 12.345.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.ceil(12.345)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 13);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// The `floor` command can also be chained after an expression.
+    /// 
+    /// ## Examples
+    ///
+    /// Return the ceiling of -12.345.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.expr(-12.345)
+    ///         .ceil()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == -13);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [floor](Self::floor)
+    /// - [round](Self::round)
+    pub fn ceil(self, args: impl cmd::ceil::CeilArg) -> Command {
+        cmd::ceil::new(args)
     }
 
     /// Rounds the given value down, returning the largest integer 
