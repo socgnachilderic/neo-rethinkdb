@@ -500,6 +500,44 @@ impl<'a> Command {
         upcase::new().with_parent(self)
     }
 
+    /// Lowercase a string.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// string.downcase() → string
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let text = "Sentence about LaTeX.";
+    ///     let response: String = r.expr(text)
+    ///         .downcase()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == text);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Note
+    /// 
+    /// `upcase` and `downcase` only affect ASCII characters.
+    ///
+    /// # Related commands
+    /// - [upcase](Self::upcase)
+    /// - [match](Self::match)
+    /// - [split](Self::split)
     pub fn downcase(self) -> Self {
         downcase::new().with_parent(self)
     }
@@ -509,7 +547,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.and(value) → bool
     /// cmd_value.and(args!(values)) → bool
     /// r.and(args!(values)) → bool
@@ -585,7 +622,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.or(value) → bool
     /// cmd_value.or(args!(values)) → bool
     /// r.or(args!(values)) → bool
@@ -688,7 +724,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.eq(value) → bool
     /// cmd_value.eq(args!(values)) → bool
     /// r.eq(args!(values)) → bool
@@ -758,7 +793,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.ne(value) → bool
     /// cmd_value.ne(args!(values)) → bool
     /// r.ne(args!(values)) → bool
@@ -828,7 +862,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.gt(value) → bool
     /// cmd_value.gt(args!(values)) → bool
     /// r.gt(args!(values)) → bool
@@ -901,7 +934,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.ge(value) → bool
     /// cmd_value.ge(args!(values)) → bool
     /// r.ge(args!(values)) → bool
@@ -974,7 +1006,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.lt(value) → bool
     /// cmd_value.lt(args!(values)) → bool
     /// r.lt(args!(values)) → bool
@@ -1048,7 +1079,6 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.ne(value) → bool
     /// cmd_value.ne(args!(values)) → bool
     /// r.ne(args!(values)) → bool
@@ -1118,7 +1148,6 @@ impl<'a> Command {
     /// Rounds the given value to the nearest whole integer.
     ///
     /// # Command syntax
-    ///
     /// ```text
     /// r.round(param_number) → number
     /// cmd_number.round() → number

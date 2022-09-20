@@ -130,7 +130,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.and(value) → bool
     /// cmd_value.and(args!(values)) → bool
     /// r.and(args!(values)) → bool
@@ -206,7 +205,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.or(value) → bool
     /// cmd_value.or(args!(values)) → bool
     /// r.or(args!(values)) → bool
@@ -309,7 +307,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.eq(value) → bool
     /// cmd_value.eq(args!(values)) → bool
     /// r.eq(args!(values)) → bool
@@ -379,7 +376,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.ne(value) → bool
     /// cmd_value.ne(args!(values)) → bool
     /// r.ne(args!(values)) → bool
@@ -449,7 +445,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.gt(value) → bool
     /// cmd_value.gt(args!(values)) → bool
     /// r.gt(args!(values)) → bool
@@ -522,7 +517,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.ge(value) → bool
     /// cmd_value.ge(args!(values)) → bool
     /// r.ge(args!(values)) → bool
@@ -595,7 +589,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.lt(value) → bool
     /// cmd_value.lt(args!(values)) → bool
     /// r.lt(args!(values)) → bool
@@ -669,7 +662,6 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    ///
     /// cmd_value.le(value) → bool
     /// cmd_value.le(args!(values)) → bool
     /// r.le(args!(values)) → bool
