@@ -149,6 +149,75 @@ impl r {
         cmd::lt::new(args)
     }
 
+    /// Compare values, testing if the left-hand value is 
+    /// less than or equal to the right-hand.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// 
+    /// cmd_value.ne(value) → bool
+    /// cmd_value.ne(values) → bool
+    /// r.ne(values) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | impl Serialize
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// Test if a player has scored 10 points or less.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("players")
+    ///         .get(1)
+    ///         .g("score")
+    ///         .le(10)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Test if variables are ordered from highest to lowest.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.le(args!([20, 10, 15]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [ne](Self::ne)
+    /// - [gt](Self::gt)
+    /// - [ge](Self::ge)
+    /// - [lt](Self::lt)
     pub fn le(self, args: impl cmd::le::LeArg) -> Command {
         cmd::le::new(args)
     }
