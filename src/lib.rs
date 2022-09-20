@@ -169,8 +169,72 @@ impl r {
         cmd::ceil::new(value)
     }
 
-    pub fn floor(self, value: f64) -> Command {
-        cmd::floor::new(value)
+    /// Rounds the given value down, returning the largest integer 
+    /// value less than or equal to the given value (the value’s floor).
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.floor(param_number) → number
+    /// cmd_number.floor() → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: f64 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    ///
+    /// ## Examples
+    ///
+    /// Return the floor of 12.345.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.floor(12.345)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 13);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// The `floor` command can also be chained after an expression.
+    /// 
+    /// ## Examples
+    ///
+    /// Return the floor of -12.345.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.expr(-12.345)
+    ///         .floor()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == -13);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [ceil](Self::ceil)
+    /// - [round](Self::round)
+    pub fn floor(self, args: impl cmd::floor::FloorArg) -> Command {
+        cmd::floor::new(args)
     }
 
     /// Compute the arithmetic "and" of one or more values.
