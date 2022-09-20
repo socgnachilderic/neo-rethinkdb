@@ -508,6 +508,105 @@ impl<'a> Command {
         and::new(args).with_parent(self)
     }
 
+    /// Compute the logical “or” of one or more values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    ///
+    /// cmd_value.or(value) → bool
+    /// cmd_value.or(args!(values)) → bool
+    /// r.or(args!(values)) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | bool
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    /// 
+    /// # Description
+    /// 
+    /// The `or` command can be used as an infix operator after 
+    /// its first argument (`r.expr(true).or(false)`) or given all 
+    /// of its arguments as parameters (`r.or(true,false)`).
+    /// 
+    /// Calling `or` with zero arguments will return `false`.
+    ///
+    /// ## Examples
+    ///
+    /// Return whether either true or false evaluate to true.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.expr(true)
+    ///         .or(false)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return whether any of false, false or false evaluate to false.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.or(args!([false, false, false]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == false);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Note
+    /// 
+    /// When using `or` inside a `filter` predicate to test the values of 
+    /// fields that may not exist on the documents being tested, 
+    /// you should use the `default` command with those fields so 
+    /// they explicitly return `false`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("table")
+    ///         .filter(func!(|post| post.clone()
+    ///             .g("category").default("foo").eq("article")
+    ///             .or(post.g("genre").default("foo").eq("mystery"))
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [ne](Self::ne)
+    /// - [and](Self::and)
     pub fn or(self, args: impl or::OrArg) -> Self {
         or::new(args).with_parent(self)
     }

@@ -129,14 +129,245 @@ impl r {
         cmd::and::new(args)
     }
 
+    /// Compute the logical “or” of one or more values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    ///
+    /// cmd_value.or(value) → bool
+    /// cmd_value.or(args!(values)) → bool
+    /// r.or(args!(values)) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | bool
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    /// 
+    /// # Description
+    /// 
+    /// The `or` command can be used as an infix operator after 
+    /// its first argument (`r.expr(true).or(false)`) or given all 
+    /// of its arguments as parameters (`r.or(true,false)`).
+    /// 
+    /// Calling `or` with zero arguments will return `false`.
+    ///
+    /// ## Examples
+    ///
+    /// Return whether either true or false evaluate to true.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.expr(true)
+    ///         .or(false)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return whether any of false, false or false evaluate to false.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.or(args!([false, false, false]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == false);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Note
+    /// 
+    /// When using `or` inside a `filter` predicate to test the values of 
+    /// fields that may not exist on the documents being tested, 
+    /// you should use the `default` command with those fields so 
+    /// they explicitly return `false`.
+    /// 
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("table")
+    ///         .filter(func!(|post| post.clone()
+    ///             .g("category").default("foo").eq("article")
+    ///             .or(post.g("genre").default("foo").eq("mystery"))
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [ne](Self::ne)
+    /// - [and](Self::and)
     pub fn or(self, args: impl cmd::or::OrArg) -> Command {
         cmd::or::new(args)
     }
 
+    /// Test if two or more values are equal.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    ///
+    /// cmd_value.eq(value) → bool
+    /// cmd_value.eq(args!(values)) → bool
+    /// r.eq(args!(values)) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | impl Serialize
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// See if a user’s `role` field is set to `administrator`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("users")
+    ///         .get(1)
+    ///         .g("role")
+    ///         .eq("administrator")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// See if three variables contain equal values.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.eq(args!([20, 10, 15]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [ne](Self::ne)
+    /// - [and](Self::and)
+    /// - [or](Self::or)
     pub fn eq(self, args: impl cmd::eq::EqArg) -> Command {
         cmd::eq::new(args)
     }
 
+    /// Test if two or more values are not equal.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    ///
+    /// cmd_value.ne(value) → bool
+    /// cmd_value.ne(args!(values)) → bool
+    /// r.ne(args!(values)) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | impl Serialize
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// See if a user’s `role` field is not set to `administrator`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("users")
+    ///         .get(1)
+    ///         .g("role")
+    ///         .ne("administrator")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// See if three variables do not contain equal values.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.ne(args!([20, 10, 15]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [and](Self::and)
+    /// - [or](Self::or)
     pub fn ne(self, args: impl cmd::ne::NeArg) -> Command {
         cmd::ne::new(args)
     }

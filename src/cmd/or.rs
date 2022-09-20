@@ -1,6 +1,6 @@
 use ql2::term::TermType;
 
-use crate::Command;
+use crate::{arguments::Args, Command};
 
 use super::CmdOpts;
 
@@ -24,29 +24,26 @@ impl OrArg for Command {
     }
 }
 
-impl OrArg for Vec<bool> {
+impl<T> OrArg for Args<T>
+where
+    T: IntoIterator<Item = bool>,
+{
     fn into_or_opts(self) -> CmdOpts {
-        let commands = self.iter().map(Command::from_json).collect();
+        let commands = self.0.into_iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
-    }
-}
-
-impl OrArg for Vec<Command> {
-    fn into_or_opts(self) -> CmdOpts {
-        CmdOpts::Many(self)
     }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_or_ops() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let data_obtained: bool = r.or(vec![true, false]).run(&conn).await?.unwrap().parse()?;
+        let data_obtained: bool = r.or(args!([true, false])).run(&conn).await?.unwrap().parse()?;
 
         assert!(data_obtained);
 
