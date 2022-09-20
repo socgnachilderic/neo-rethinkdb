@@ -496,6 +496,43 @@ impl<'a> Command {
         split::new(args).with_parent(self)
     }
 
+    /// Uppercases a string.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// string.upcase() → string
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: String = r.expr("Sentence about LaTeX.")
+    ///         .upcase()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == "SENTENCE ABOUT LATEX.");
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Note
+    /// 
+    /// `upcase` and `downcase` only affect ASCII characters.
+    ///
+    /// # Related commands
+    /// - [downcase](Self::downcase)
+    /// - [match](Self::match)
+    /// - [split](Self::split)
     pub fn upcase(self) -> Self {
         upcase::new().with_parent(self)
     }
@@ -516,15 +553,14 @@ impl<'a> Command {
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
-    ///     let text = "Sentence about LaTeX.";
-    ///     let response: String = r.expr(text)
+    ///     let response: String = r.expr("Sentence about LaTeX.")
     ///         .downcase()
     ///         .run(&conn)
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
     ///
-    ///     assert!(response == text);
+    ///     assert!(response == "sentence about latex.");
     ///     
     ///     Ok(())
     /// }
