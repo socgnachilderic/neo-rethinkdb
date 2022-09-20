@@ -117,6 +117,55 @@ impl r {
         cmd::literal::new(value)
     }
 
+    /// Creates an object from a list of key-value pairs, 
+    /// where the keys must be strings.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.object(values) → object
+    /// ```
+    ///
+    /// Where:
+    /// - values: vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// Create a simple object.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde::{Deserialize, Serialize};
+    /// 
+    /// #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
+    /// struct Post {
+    ///     id: String,
+    ///     title: String,
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let post = Post {
+    ///         id: "id1".to_string(),
+    ///         title: "title1".to_string(),
+    ///     };
+    ///     let response: Post = r.object(["id", "id1", "title", "title1"])
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == post);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [coerce_to](Self::coerce_to)
+    /// - [merge](crate::Command::merge)
+    /// - [keys](crate::Command::keys)
     pub fn object<S, T>(self, values: T) -> Command
     where
         S: Serialize,
