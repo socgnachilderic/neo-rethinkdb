@@ -504,6 +504,78 @@ impl<'a> Command {
         downcase::new().with_parent(self)
     }
 
+    /// Compute the logical “and” of one or more values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    ///
+    /// cmd_value.and(value) → bool
+    /// cmd_value.and(args!(values)) → bool
+    /// r.and(args!(values)) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | bool
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    /// 
+    /// # Description
+    /// 
+    /// The `and` command can be used as an infix operator after its 
+    /// first argument (`r.expr(true).and(false)`) or given all of 
+    /// its arguments as parameters (`r.and(args!([true, false]))`).
+    /// 
+    /// Calling `or` with zero arguments will return `false`.
+    ///
+    /// ## Examples
+    ///
+    /// Return whether either true or false evaluate to true.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.expr(true)
+    ///         .or(false)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == false);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return whether any of true, true or true evaluate to true.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.or(args!([true, true, true]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [ne](Self::ne)
+    /// - [or](Self::or)
     pub fn and(self, args: impl and::AndArg) -> Self {
         and::new(args).with_parent(self)
     }
@@ -527,7 +599,7 @@ impl<'a> Command {
     /// 
     /// The `or` command can be used as an infix operator after 
     /// its first argument (`r.expr(true).or(false)`) or given all 
-    /// of its arguments as parameters (`r.or(true,false)`).
+    /// of its arguments as parameters (`r.or(args!([true, false]))`).
     /// 
     /// Calling `or` with zero arguments will return `false`.
     ///

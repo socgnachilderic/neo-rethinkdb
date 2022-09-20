@@ -1,6 +1,6 @@
 use ql2::term::TermType;
 
-use crate::Command;
+use crate::{arguments::Args, Command};
 
 use super::CmdOpts;
 
@@ -18,9 +18,12 @@ impl AndArg for bool {
     }
 }
 
-impl AndArg for Vec<bool> {
+impl<T> AndArg for Args<T>
+where
+    T: IntoIterator<Item = bool>,
+{
     fn into_and_opts(self) -> CmdOpts {
-        let commands = self.iter().map(Command::from_json).collect();
+        let commands = self.0.into_iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }
@@ -29,13 +32,13 @@ impl AndArg for Vec<bool> {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_and_ops() -> Result<()> {
         let conn = r.connection().connect().await?;
         let data_obtained: bool = r
-            .and(vec![true, true, true])
+            .and(args!([true, true, true]))
             .run(&conn)
             .await?
             .unwrap()
