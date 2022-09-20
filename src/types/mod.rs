@@ -278,6 +278,25 @@ impl<T: Serialize + Clone> GeoJson<T> {
     }
 }
 
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct MatchResponse {
+    /// The matched string’s start
+    pub start: usize,
+    /// The matched string’s end
+    pub end: usize,
+    /// The matched string
+    pub str: Cow<'static, str>,
+    /// The capture groups defined with parentheses
+    pub groups: Vec<MatchItem>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq, PartialOrd, Eq, Ord, Hash)]
+pub struct MatchItem {
+    pub start: usize,
+    pub end: usize,
+    pub str: Cow<'static, str>,
+}
+
 /// Controls how change notifications are batched
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
 #[non_exhaustive]

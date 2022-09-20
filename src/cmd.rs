@@ -488,6 +488,56 @@ impl<'a> Command {
         values::new().with_parent(self)
     }
 
+    /// Match a string against a regular expression.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// string.match(regexp) → response
+    /// ```
+    /// 
+    /// Where:
+    /// - regexp: [Regex](regex::Regex)
+    /// - response: Option<[MatchResponse](crate::types::MatchResponse)>
+    ///
+    /// ## Examples
+    ///
+    /// ```
+    /// use regex::Regex;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MatchResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let regexp = Regex::new(".*@(.*)")?;
+    ///     let response: String = r.expr("name@domain.com")
+    ///         .match_(regexp.clone())
+    ///         .g("groups")
+    ///         .nth(0)
+    ///         .g("str")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///     let response2: Option<MatchResponse> = r.expr("name[at]domain.com")
+    ///         .match_(regexp)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == "domain.com");
+    ///     assert!(response2 == None);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [upcase](Self::upcase)
+    /// - [downcase](Self::downcase)
+    /// - [split](Self::split)
     pub fn match_(self, regexp: Regex) -> Self {
         match_::new(regexp).with_parent(self)
     }

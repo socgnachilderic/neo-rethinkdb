@@ -98,6 +98,7 @@ pub enum ReqlDriverError {
     Other(String),
     Time(String),
     Tls(String),
+    Regex(String),
 }
 
 impl From<ReqlDriverError> for ReqlError {
@@ -120,6 +121,7 @@ impl fmt::Display for ReqlDriverError {
             Self::Other(msg) => write!(f, "{}", msg),
             Self::Time(error) => write!(f, "{}", error),
             Self::Tls(error) => write!(f, "{}", error),
+            Self::Regex(error) => write!(f, "{}", error),
         }
     }
 }
@@ -163,5 +165,11 @@ impl From<time::error::InvalidFormatDescription> for ReqlError {
 impl From<time::error::Format> for ReqlError {
     fn from(err: time::error::Format) -> Self {
         ReqlDriverError::Time(err.to_string()).into()
+    }
+}
+
+impl From<regex::Error> for ReqlError {
+    fn from(err: regex::Error) -> Self {
+        ReqlDriverError::Regex(err.to_string()).into()
     }
 }
