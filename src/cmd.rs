@@ -560,6 +560,86 @@ impl<'a> Command {
         self.bitor(args)
     }
 
+    /// Compute the arithmetic "and" of one or more values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// cmd_number ^ cmd_number
+    /// number.bitxor(cmd_number) → number
+    /// number.bit_xor(param_number) → number
+    /// r.bit_xor(cmd_number, param_number) → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: i32 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// A bitwise XOR is a binary operation that takes two bit patterns 
+    /// of equal length and performs the logical exclusive OR operation 
+    /// on each pair of corresponding bits. The result in each position 
+    /// is 1 if only the first bit is 1 or only the second bit is 1, 
+    /// but will be 0 if both are 0 or both are 1. 
+    /// In this we perform the comparison of two bits, being 1 if the 
+    /// two bits are different, and 0 if they are the same.
+    ///
+    /// ## Examples
+    /// 
+    /// Compute the arithmetic "and" of 6 and 4
+    ///
+    /// ```
+    /// use std::ops::BitXor;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.expr(6)
+    ///         .bit_xor(4)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response2: i32 = r.bit_xor(r.expr(6), 4)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response3: i32 = (r.expr(6) ^ r.expr(4))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response4: i32 = r.expr(6)
+    ///         .bitxor(r.expr(4))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(
+    ///         response == 2 && 
+    ///         response == response2 &&
+    ///         response == response3 &&
+    ///         response == response4
+    ///     );
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [bit_and](Self::bit_and)
+    /// - [bit_not](Self::bit_not)
+    /// - [bit_or](Self::bit_or)
+    /// - [bit_sal](Self::bit_sal)
+    /// - [bit_sar](Self::bit_sar)
     pub fn bit_xor(self, args: impl bit_xor::BitXorArg) -> Self {
         self.bitxor(args)
     }
