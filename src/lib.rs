@@ -157,6 +157,114 @@ impl r {
         cmd::not_::new(value)
     }
 
+    /// Generate a random number between given (or implied) bounds.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.random(()) → number
+    /// r.round(param_number) → number
+    /// r.round(args!(param_number, param_number)) → number
+    /// r.round(args!(param_number, param_number, options)) → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: f64 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    /// - options: [RandomOption](crate::cmd::random::RandomOption)
+    /// 
+    /// # Description
+    /// 
+    /// `random` takes zero, one or two arguments.
+    /// 
+    /// - With *zero* arguments, the result will be a floating-point 
+    /// number in the range `[0,1)` (from 0 up to but not including 1).
+    /// - With *one* argument x, the result will be in the range `[0,x)`, and will 
+    /// be integer unless `RandomOption::default().float(true)` is given as an option. 
+    /// Specifying a floating point number without the float option will raise an error.
+    /// - With *two* arguments x and y, the result will be in the range 
+    /// `[x,y)`, and will be integer unless `RandomOption::default().float(true)` is given 
+    /// as an option. If x and y are equal an error will occur, unless the floating-point 
+    /// option has been specified, in which case x will be returned. 
+    /// Specifying a floating point number without the float option will raise an error.
+    /// 
+    /// ## Note
+    ///
+    /// The last argument given will always be the ‘open’ side of the range, but when 
+    /// generating a floating-point number, the ‘open’ side may be less than the ‘closed’ side. 
+    ///
+    /// ## Examples
+    ///
+    /// Generate a random number in the range `[0,1)`
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.random(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 3);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Generate a random integer in the range `[0,100)`
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.random(100.)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 3);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Generate a random number in the range `(-2.24,1.59]`
+    ///
+    /// ```
+    /// use reql_rust::cmd::random::RandomOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: f64 = r.random(args!(
+    ///             1.59, -2.24, 
+    ///             RandomOption::default().float(true)
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 0.);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [sample](crate::Command::sample)
     pub fn random(self, args: impl cmd::random::RandomArg) -> Command {
         cmd::random::new(args)
     }
@@ -270,7 +378,7 @@ impl r {
     /// }
     /// ```
     /// 
-    /// The `floor` command can also be chained after an expression.
+    /// The `ceil` command can also be chained after an expression.
     /// 
     /// ## Examples
     ///

@@ -2,6 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::Command;
 
 pub(crate) fn new(args: impl RandomArg) -> Command {
@@ -29,55 +30,47 @@ impl RandomArg for () {
     }
 }
 
-impl RandomArg for isize {
-    fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
-        (Some(Command::from_json(self)), None, Default::default())
-    }
-}
-
 impl RandomArg for f64 {
     fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
         (Some(Command::from_json(self)), None, Default::default())
     }
 }
 
-impl RandomArg for (isize, isize) {
+impl RandomArg for Command {
+    fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
+        (Some(self), None, Default::default())
+    }
+}
+
+impl RandomArg for Args<(f64, f64)> {
     fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
         (
-            Some(Command::from_json(self.0)),
-            Some(Command::from_json(self.1)),
+            Some(Command::from_json(self.0 .0)),
+            Some(Command::from_json(self.0 .1)),
             Default::default(),
         )
     }
 }
 
-impl RandomArg for (f64, f64) {
+impl RandomArg for Args<(Command, Command)> {
+    fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
+        (Some(self.0 .0), Some(self.0 .1), Default::default())
+    }
+}
+
+impl RandomArg for Args<(f64, f64, RandomOption)> {
     fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
         (
-            Some(Command::from_json(self.0)),
-            Some(Command::from_json(self.1)),
-            Default::default(),
+            Some(Command::from_json(self.0 .0)),
+            Some(Command::from_json(self.0 .1)),
+            self.0 .2,
         )
     }
 }
 
-impl RandomArg for (isize, isize, RandomOption) {
+impl RandomArg for Args<(Command, Command, RandomOption)> {
     fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
-        (
-            Some(Command::from_json(self.0)),
-            Some(Command::from_json(self.1)),
-            self.2,
-        )
-    }
-}
-
-impl RandomArg for (f64, f64, RandomOption) {
-    fn into_random_opts(self) -> (Option<Command>, Option<Command>, RandomOption) {
-        (
-            Some(Command::from_json(self.0)),
-            Some(Command::from_json(self.1)),
-            self.2,
-        )
+        (Some(self.0 .0), Some(self.0 .1), self.0 .2)
     }
 }
 
@@ -92,7 +85,7 @@ pub struct RandomOption {
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     use super::RandomOption;
 
@@ -100,9 +93,9 @@ mod tests {
     async fn test_random_data() -> Result<()> {
         let conn = r.connection().connect().await?;
         let data_obtained1: f64 = r.random(()).run(&conn).await?.unwrap().parse()?;
-        let data_obtained2: isize = r.random(100).run(&conn).await?.unwrap().parse()?;
+        let data_obtained2: isize = r.random(100.).run(&conn).await?.unwrap().parse()?;
         let data_obtained3: f64 = r
-            .random((-100.52, -10.71, RandomOption::default().float(true)))
+            .random(args!(-100.52, -10.71, RandomOption::default().float(true)))
             .run(&conn)
             .await?
             .unwrap()
