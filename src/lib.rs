@@ -173,6 +173,10 @@ impl r {
         cmd::floor::new(value)
     }
 
+    pub fn bit_sar(self, cmd_number: Command, args: impl cmd::bit_sar::BitSarArg) -> Command {
+        cmd_number.bit_sar(args)
+    }
+
     /// Return a time object representing the current time in UTC.
     ///
     /// # Command syntax

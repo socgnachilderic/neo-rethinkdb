@@ -572,6 +572,64 @@ impl<'a> Command {
         bit_sal::new(args).with_parent(self)
     }
 
+    /// Compute the right arithmetic shift of one or more values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// number.bit_sar(param_number) → number
+    /// r.bit_sar(cmd_number, param_number) → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: f64 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// In an arithmetic shift (also referred to as signed shift), 
+    /// like a logical shift, the bits that slide off the end disappear 
+    /// (except for the last, which goes into the carry flag). 
+    /// But in an arithmetic shift, the spaces are filled in such 
+    /// a way to preserve the sign of the number being slid. 
+    /// For this reason, arithmetic shifts are better suited for 
+    /// signed numbers in two’s complement format.
+    ///
+    /// ## Examples
+    /// 
+    /// Compute the right arithmetic shift of 32 and 3
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr(32)
+    ///         .bit_sar(3.)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response2: u8 = r.bit_sar(r.expr(32), r.expr(3))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 4 && response == response2);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [bit_and](Self::bit_and)
+    /// - [bit_not](Self::bit_not)
+    /// - [bit_or](Self::bit_or)
+    /// - [bit_sal](Self::bit_sal)
+    /// - [bit_xor](Self::bit_xor)
     pub fn bit_sar(self, args: impl bit_sar::BitSarArg) -> Self {
         bit_sar::new(args).with_parent(self)
     }
