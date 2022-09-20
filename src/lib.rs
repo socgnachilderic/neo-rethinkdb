@@ -113,6 +113,7 @@ impl r {
         cmd::contains::new(args)
     }
 
+    /// TODO Write docs
     pub fn literal(self, value: impl Serialize) -> Command {
         cmd::literal::new(value)
     }

@@ -484,6 +484,46 @@ impl<'a> Command {
         keys::new().with_parent(self)
     }
 
+    /// Return an array containing all of an object’s values.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// string.values() → array
+    /// ```
+    /// 
+    /// # Description
+    /// 
+    /// `values()` guarantees the values will 
+    /// come out in the same order as [keys](Self::keys).
+    ///
+    /// ## Examples
+    /// 
+    /// Get all of the values from a table row.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     // row: { "id": "1", "mail": "fred@example.com", "name": "fred" }
+    ///     let response: [String; 3] = r.table("users")
+    ///         .get(1)
+    ///         .values()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["1", "fred@example.com", "fred"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [keys](Self::keys)
     pub fn values(self) -> Self {
         values::new().with_parent(self)
     }
