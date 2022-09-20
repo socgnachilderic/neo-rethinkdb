@@ -173,6 +173,63 @@ impl r {
         cmd::floor::new(value)
     }
 
+    /// Compute the arithmetic inverse (not) of an expression.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// number.bit_not() → number
+    /// r.bit_not(cmd_number) → number
+    /// ```
+    ///
+    /// Where:
+    /// - cmd_number: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// A bitwise NOT, or complement, is a unary operation that performs logical 
+    /// negation on each bit, forming the ones’ complement of the given binary value. 
+    /// Bits that are 0 become 1, and those that are 1 become 0.
+    ///
+    /// ## Examples
+    /// 
+    /// Negate the arithmetice expression
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.expr(7)
+    ///         .bit_not()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response2: i32 = r.bit_not(r.expr(7))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == -8 && response == response2);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [bit_and](Self::bit_and)
+    /// - [bit_or](Self::bit_or)
+    /// - [bit_sal](Self::bit_sal)
+    /// - [bit_sar](Self::bit_sar)
+    /// - [bit_xor](Self::bit_xor)
+    pub fn bit_not(self, cmd_number: Command) -> Command {
+        cmd_number.bit_not()
+    }
+
     /// Compute the left arithmetic shift (left logical shift) of one or more values.
     ///
     /// # Command syntax

@@ -38,7 +38,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_bit_sar_ops_with_c() -> Result<()> {
+    async fn test_bit_sar_ops_with_command() -> Result<()> {
         let conn = r.connection().connect().await?;
         let response: u8 = r
             .bit_sar(r.expr(32), r.expr(3))

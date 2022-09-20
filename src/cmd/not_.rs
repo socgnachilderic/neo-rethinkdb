@@ -2,6 +2,7 @@ use ql2::term::TermType;
 
 use crate::Command;
 
+// TODO use std::ops::Not
 pub(crate) fn new(args: impl NotArg) -> Command {
     let mut command = Command::new(TermType::Not);
 
