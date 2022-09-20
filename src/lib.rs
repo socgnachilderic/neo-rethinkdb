@@ -173,6 +173,89 @@ impl r {
         cmd::floor::new(value)
     }
 
+    /// Compute the arithmetic "and" of one or more values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// cmd_number & cmd_number
+    /// number.bitand(cmd_number) → number
+    /// number.bit_and(param_number) → number
+    /// r.bit_and(cmd_number, param_number) → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: i32 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// A bitwise AND is a binary operation that takes two equal-length binary
+    /// representations and performs the logical AND operation on each pair of
+    /// the corresponding bits, which is equivalent to multiplying them.
+    /// Thus, if both bits in the compared position are 1,
+    /// the bit in the resulting binary representation is 1 (1 × 1 = 1);
+    /// otherwise, the result is 0 (1 × 0 = 0 and 0 × 0 = 0).
+    ///
+    /// ## Examples
+    ///
+    /// Compute the arithmetic "and" of 5 and 3
+    ///
+    /// ```
+    /// use std::ops::BitAnd;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.expr(5)
+    ///         .bit_and(3)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     let response2: i32 = r.bit_and(r.expr(5), 3)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     let response3: i32 = (r.expr(5) & r.expr(3))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     let response4: i32 = r.expr(5)
+    ///         .bitand(r.expr(3))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(
+    ///         response == 1 &&
+    ///         response == response2 &&
+    ///         response == response3 &&
+    ///         response == response4
+    ///     );
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [bit_or](Self::bit_or)
+    /// - [bit_not](Self::bit_not)
+    /// - [bit_xor](Self::bit_xor)
+    /// - [bit_sal](Self::bit_sal)
+    /// - [bit_sar](Self::bit_sar)
+    pub fn bit_and(self, cmd_number: Command, args: impl cmd::bit_and::BitAndArg) -> Command {
+        cmd_number.bit_and(args)
+    }
+
     /// Compute the arithmetic "or" of one or more values.
     ///
     /// # Command syntax
@@ -190,18 +273,18 @@ impl r {
     ///
     /// # Description
     ///
-    /// A bitwise OR is a binary operation that takes two bit patterns 
-    /// of equal length and performs the logical inclusive OR operation 
-    /// on each pair of corresponding bits. The result in each position 
+    /// A bitwise OR is a binary operation that takes two bit patterns
+    /// of equal length and performs the logical inclusive OR operation
+    /// on each pair of corresponding bits. The result in each position
     /// is 0 if both bits are 0, while otherwise the result is 1.
     ///
     /// ## Examples
-    /// 
+    ///
     /// Compute the arithmetic "or" of 6 and 4
     ///
     /// ```
     /// use std::ops::BitOr;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
@@ -213,19 +296,19 @@ impl r {
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     let response2: i32 = r.bit_xor(r.expr(5), 3)
     ///         .run(&conn)
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     let response3: i32 = (r.expr(5) ^ r.expr(3))
     ///         .run(&conn)
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     let response4: i32 = r.expr(5)
     ///         .bitor(r.expr(3))
     ///         .run(&conn)
@@ -234,7 +317,7 @@ impl r {
     ///         .parse()?;
     ///
     ///     assert!(
-    ///         response == 7 && 
+    ///         response == 7 &&
     ///         response == response2 &&
     ///         response == response3 &&
     ///         response == response4
@@ -271,21 +354,21 @@ impl r {
     ///
     /// # Description
     ///
-    /// A bitwise XOR is a binary operation that takes two bit patterns 
-    /// of equal length and performs the logical exclusive OR operation 
-    /// on each pair of corresponding bits. The result in each position 
-    /// is 1 if only the first bit is 1 or only the second bit is 1, 
-    /// but will be 0 if both are 0 or both are 1. 
-    /// In this we perform the comparison of two bits, being 1 if the 
+    /// A bitwise XOR is a binary operation that takes two bit patterns
+    /// of equal length and performs the logical exclusive OR operation
+    /// on each pair of corresponding bits. The result in each position
+    /// is 1 if only the first bit is 1 or only the second bit is 1,
+    /// but will be 0 if both are 0 or both are 1.
+    /// In this we perform the comparison of two bits, being 1 if the
     /// two bits are different, and 0 if they are the same.
     ///
     /// ## Examples
-    /// 
+    ///
     /// Compute the arithmetic "and" of 6 and 4
     ///
     /// ```
     /// use std::ops::BitXor;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
@@ -297,19 +380,19 @@ impl r {
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     let response2: i32 = r.bit_xor(r.expr(6), 4)
     ///         .run(&conn)
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     let response3: i32 = (r.expr(6) ^ r.expr(4))
     ///         .run(&conn)
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     let response4: i32 = r.expr(6)
     ///         .bitxor(r.expr(4))
     ///         .run(&conn)
@@ -318,7 +401,7 @@ impl r {
     ///         .parse()?;
     ///
     ///     assert!(
-    ///         response == 2 && 
+    ///         response == 2 &&
     ///         response == response2 &&
     ///         response == response3 &&
     ///         response == response4

@@ -63,7 +63,7 @@ mod tests {
     #[tokio::test]
     async fn test_bit_or_ops_with_syntax() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let response: u8 = (r.expr(7) | r.expr(3)).run(&conn).await?.unwrap().parse()?;
+        let response: u8 = (r.expr(5) | r.expr(3)).run(&conn).await?.unwrap().parse()?;
 
         assert!(response == 7);
 
