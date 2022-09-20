@@ -173,6 +173,87 @@ impl r {
         cmd::floor::new(value)
     }
 
+    /// Compute the arithmetic "or" of one or more values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// cmd_number | cmd_number
+    /// number.bitor(cmd_number) → number
+    /// number.bit_or(param_number) → number
+    /// r.bit_or(cmd_number, param_number) → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: i32 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// A bitwise OR is a binary operation that takes two bit patterns 
+    /// of equal length and performs the logical inclusive OR operation 
+    /// on each pair of corresponding bits. The result in each position 
+    /// is 0 if both bits are 0, while otherwise the result is 1.
+    ///
+    /// ## Examples
+    /// 
+    /// Compute the arithmetic "or" of 6 and 4
+    ///
+    /// ```
+    /// use std::ops::BitOr;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.expr(5)
+    ///         .bit_or(3)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response2: i32 = r.bit_xor(r.expr(5), 3)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response3: i32 = (r.expr(5) ^ r.expr(3))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let response4: i32 = r.expr(5)
+    ///         .bitor(r.expr(3))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(
+    ///         response == 7 && 
+    ///         response == response2 &&
+    ///         response == response3 &&
+    ///         response == response4
+    ///     );
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [bit_and](Self::bit_and)
+    /// - [bit_not](Self::bit_not)
+    /// - [bit_xor](Self::bit_xor)
+    /// - [bit_sal](Self::bit_sal)
+    /// - [bit_sar](Self::bit_sar)
+    pub fn bit_or(self, cmd_number: Command, args: impl cmd::bit_or::BitOrArg) -> Command {
+        cmd_number.bit_or(args)
+    }
+
     /// Compute the arithmetic "and" of one or more values.
     ///
     /// # Command syntax

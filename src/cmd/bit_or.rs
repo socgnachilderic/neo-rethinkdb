@@ -18,13 +18,7 @@ pub trait BitOrArg {
     fn into_bit_or_opts(self) -> Command;
 }
 
-impl BitOrArg for f64 {
-    fn into_bit_or_opts(self) -> Command {
-        Command::from_json(self)
-    }
-}
-
-impl BitOrArg for Vec<f64> {
+impl BitOrArg for i32 {
     fn into_bit_or_opts(self) -> Command {
         Command::from_json(self)
     }
@@ -36,4 +30,43 @@ impl BitOrArg for Command {
     }
 }
 
-// TODO write test
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::{r, Result};
+
+    #[tokio::test]
+    async fn test_bit_or_ops() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response: u8 = r.expr(5).bit_or(3).run(&conn).await?.unwrap().parse()?;
+
+        assert!(response == 7);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_bit_or_ops_with_command() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response: u8 = r
+            .bit_or(r.expr(5), r.expr(3))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(response == 7);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_bit_or_ops_with_syntax() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response: u8 = (r.expr(7) | r.expr(3)).run(&conn).await?.unwrap().parse()?;
+
+        assert!(response == 7);
+
+        Ok(())
+    }
+}
