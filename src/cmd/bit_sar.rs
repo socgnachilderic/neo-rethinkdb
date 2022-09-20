@@ -10,7 +10,7 @@ pub trait BitSarArg {
     fn into_bit_sar_opts(self) -> Command;
 }
 
-impl BitSarArg for f64 {
+impl BitSarArg for i32 {
     fn into_bit_sar_opts(self) -> Command {
         Command::from_json(self)
     }
@@ -30,7 +30,7 @@ mod tests {
     #[tokio::test]
     async fn test_bit_sar_ops() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let response: u8 = r.expr(32).bit_sar(3.).run(&conn).await?.unwrap().parse()?;
+        let response: u8 = r.expr(32).bit_sar(3).run(&conn).await?.unwrap().parse()?;
 
         assert!(response == 4);
 
