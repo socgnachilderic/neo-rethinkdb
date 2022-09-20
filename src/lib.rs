@@ -161,6 +161,75 @@ impl r {
         cmd::random::new(args)
     }
 
+    /// Rounds the given value to the nearest whole integer.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.round(param_number) → number
+    /// cmd_number.round() → number
+    /// ```
+    ///
+    /// Where:
+    /// - param_number: f64 | [Command](crate::Command)
+    /// - cmd_number: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// For example, values of 1.0 up to but not including 1.5 
+    /// will return 1.0, similar to [floor](Self::floor); values 
+    /// of 1.5 up to 2.0 will return 2.0, similar to [ceil](Self::ceil).
+    ///
+    /// ## Examples
+    ///
+    /// Round 12.345 to the nearest integer.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.round(12.345)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 12);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// The `round` command can also be chained after an expression.
+    /// 
+    /// ## Examples
+    ///
+    /// Round -12.345 to the nearest integer.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: i32 = r.expr(-12.345)
+    ///         .round()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == -12);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [ceil](Self::ceil)
+    /// - [round](Self::round)
     pub fn round(self, args: impl cmd::round::RoundArg) -> Command {
         cmd::round::new(args)
     }
