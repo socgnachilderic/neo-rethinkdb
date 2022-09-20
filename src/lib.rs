@@ -117,7 +117,11 @@ impl r {
         cmd::literal::new(value)
     }
 
-    pub fn object(self, values: Vec<impl Serialize>) -> Command {
+    pub fn object<S, T>(self, values: T) -> Command
+    where
+        S: Serialize,
+        T: IntoIterator<Item = S>,
+    {
         cmd::object::new(values)
     }
 
@@ -142,10 +146,10 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.gt(value) → bool
-    /// cmd_value.gt(values) → bool
-    /// r.gt(values) → bool
+    /// cmd_value.gt(args!(values)) → bool
+    /// r.gt(args!(values)) → bool
     /// ```
     ///
     /// Where:
@@ -179,7 +183,7 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Test if variables are ordered from lowest to highest, 
+    /// Test if variables are ordered from lowest to highest,
     /// with no values being equal to one another.
     ///
     /// ```
@@ -215,10 +219,10 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.ge(value) → bool
-    /// cmd_value.ge(values) → bool
-    /// r.ge(values) → bool
+    /// cmd_value.ge(args!(values)) → bool
+    /// r.ge(args!(values)) → bool
     /// ```
     ///
     /// Where:
@@ -252,7 +256,7 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Test if variables are ordered from lowest to highest, 
+    /// Test if variables are ordered from lowest to highest,
     /// with no values being equal to one another.
     ///
     /// ```
@@ -288,10 +292,10 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.lt(value) → bool
-    /// cmd_value.lt(values) → bool
-    /// r.lt(values) → bool
+    /// cmd_value.lt(args!(values)) → bool
+    /// r.lt(args!(values)) → bool
     /// ```
     ///
     /// Where:
@@ -325,7 +329,7 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Test if variables are ordered from highest to lowest, 
+    /// Test if variables are ordered from highest to lowest,
     /// with no values being equal to one another.
     ///
     /// ```
@@ -356,16 +360,16 @@ impl r {
         cmd::lt::new(args)
     }
 
-    /// Compare values, testing if the left-hand value is 
+    /// Compare values, testing if the left-hand value is
     /// less than or equal to the right-hand.
     ///
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.le(value) → bool
-    /// cmd_value.le(values) → bool
-    /// r.le(values) → bool
+    /// cmd_value.le(args!(values)) → bool
+    /// r.le(args!(values)) → bool
     /// ```
     ///
     /// Where:

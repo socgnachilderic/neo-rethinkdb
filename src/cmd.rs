@@ -516,6 +516,72 @@ impl<'a> Command {
         eq::new(args).with_parent(self)
     }
 
+    /// Test if two or more values are not equal.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    ///
+    /// cmd_value.ne(value) → bool
+    /// cmd_value.ne(args!(values)) → bool
+    /// r.ne(args!(values)) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | impl Serialize
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// See if a user’s `role` field is not set to `administrator`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("users")
+    ///         .get(1)
+    ///         .g("role")
+    ///         .ne("administrator")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// See if three variables do not contain equal values.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.ne(args!([20, 10, 15]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [and](Self::and)
+    /// - [or](Self::or)
     pub fn ne(self, args: impl ne::NeArg) -> Self {
         ne::new(args).with_parent(self)
     }
@@ -525,10 +591,10 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.gt(value) → bool
-    /// cmd_value.gt(values) → bool
-    /// r.gt(values) → bool
+    /// cmd_value.gt(args!(values)) → bool
+    /// r.gt(args!(values)) → bool
     /// ```
     ///
     /// Where:
@@ -562,7 +628,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Test if variables are ordered from lowest to highest, 
+    /// Test if variables are ordered from lowest to highest,
     /// with no values being equal to one another.
     ///
     /// ```
@@ -598,10 +664,10 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.ge(value) → bool
-    /// cmd_value.ge(values) → bool
-    /// r.ge(values) → bool
+    /// cmd_value.ge(args!(values)) → bool
+    /// r.ge(args!(values)) → bool
     /// ```
     ///
     /// Where:
@@ -635,7 +701,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Test if variables are ordered from lowest to highest, 
+    /// Test if variables are ordered from lowest to highest,
     /// with no values being equal to one another.
     ///
     /// ```
@@ -671,10 +737,10 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.lt(value) → bool
-    /// cmd_value.lt(values) → bool
-    /// r.lt(values) → bool
+    /// cmd_value.lt(args!(values)) → bool
+    /// r.lt(args!(values)) → bool
     /// ```
     ///
     /// Where:
@@ -708,7 +774,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Test if variables are ordered from highest to lowest, 
+    /// Test if variables are ordered from highest to lowest,
     /// with no values being equal to one another.
     ///
     /// ```
@@ -739,16 +805,16 @@ impl<'a> Command {
         lt::new(args).with_parent(self)
     }
 
-    /// Compare values, testing if the left-hand value is 
+    /// Compare values, testing if the left-hand value is
     /// less than or equal to the right-hand.
     ///
     /// # Command syntax
     ///
     /// ```text
-    /// 
+    ///
     /// cmd_value.ne(value) → bool
-    /// cmd_value.ne(values) → bool
-    /// r.ne(values) → bool
+    /// cmd_value.ne(args!(values)) → bool
+    /// r.ne(args!(values)) → bool
     /// ```
     ///
     /// Where:

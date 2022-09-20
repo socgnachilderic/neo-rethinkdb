@@ -3,7 +3,11 @@ use serde::Serialize;
 
 use crate::Command;
 
-pub(crate) fn new(values: Vec<impl Serialize>) -> Command {
+pub(crate) fn new<S, T>(values: T) -> Command
+where
+    S: Serialize,
+    T: IntoIterator<Item = S>,
+{
     let mut command = Command::new(TermType::Object);
 
     for value in values {

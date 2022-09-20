@@ -25,7 +25,7 @@ where
 
 impl NeArg for Command {
     fn into_ne_opts(self) -> CmdOpts {
-        CmdOpts::Single(self.into())
+        CmdOpts::Single(self)
     }
 }
 
