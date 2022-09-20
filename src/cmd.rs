@@ -492,6 +492,170 @@ impl<'a> Command {
         match_::new(regexp).with_parent(self)
     }
 
+    /// Split a string into substrings.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// string.split(()) → string
+    /// string.split(&str) → string
+    /// string.split(args!(&str, usize)) → string
+    /// ```
+    /// 
+    /// # Description
+    /// 
+    /// With no arguments, will split on whitespace; 
+    /// when called with a string as the first argument, 
+    /// will split using that string as a separator. 
+    /// A maximum number of splits can also be specified. 
+    ///
+    /// ## Examples
+    /// 
+    /// Split on whitespace.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let data = [
+    ///         String::from("foo"),
+    ///         String::from("bar"),
+    ///         String::from("bax"),
+    ///     ];
+    ///     let response: [String; 3] = r.expr("foo  bar bax")
+    ///         .split(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    /// 
+    /// Split the entries in a CSV file.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let data = [
+    ///         String::from("12"),
+    ///         String::from("37"),
+    ///         String::new(),
+    ///         String::from("22"),
+    ///         String::new(),
+    ///     ];
+    ///     let response: [String; 5] = r.expr("12,37,,22,")
+    ///         .split(",")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    /// 
+    /// Split a string into characters.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let data = [
+    ///         String::from("t"),
+    ///         String::from("o"),
+    ///         String::from("t"),
+    ///         String::from("o"),
+    ///     ];
+    ///     let response: [String; 4] = r.expr("toto")
+    ///         .split("")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    /// 
+    /// Split the entries in a CSV file, but only at most 3 times.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let data = [
+    ///         String::from("12"),
+    ///         String::from("37"),
+    ///         String::new(),
+    ///         String::from("22,"),
+    ///     ];
+    ///     let response: [String; 4] = r.expr("12,37,,22,")
+    ///         .split(args!(",", 3))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    /// 
+    /// Split on whitespace at most once (i.e. get the first word).
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let data = [
+    ///         String::from("foo"),
+    ///         String::from("bar bax"),
+    ///     ];
+    ///     let response: [String; 2] = r.expr("foo  bar bax")
+    ///         .split(args!(" ", 1))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [upcase](Self::upcase)
+    /// - [downcase](Self::downcase)
+    /// - [match](Self::match)
     pub fn split(self, args: impl split::SplitArg) -> Self {
         split::new(args).with_parent(self)
     }
