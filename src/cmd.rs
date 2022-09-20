@@ -512,6 +512,72 @@ impl<'a> Command {
         or::new(args).with_parent(self)
     }
 
+    /// Test if two or more values are equal.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    ///
+    /// cmd_value.eq(value) → bool
+    /// cmd_value.eq(args!(values)) → bool
+    /// r.eq(args!(values)) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | impl Serialize
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// See if a user’s `role` field is set to `administrator`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("users")
+    ///         .get(1)
+    ///         .g("role")
+    ///         .eq("administrator")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// See if three variables contain equal values.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.eq(args!([20, 10, 15]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [ne](Self::ne)
+    /// - [and](Self::and)
+    /// - [or](Self::or)
     pub fn eq(self, args: impl eq::EqArg) -> Self {
         eq::new(args).with_parent(self)
     }
