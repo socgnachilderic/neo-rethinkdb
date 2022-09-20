@@ -153,12 +153,76 @@ impl r {
         cmd::le::new(args)
     }
 
-    pub fn not(self, value: bool) -> Command {
-        cmd::not_::new(value)
+    /// Compute the logical inverse (not) of an expression.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// !cmd_bool
+    /// cmd_bool.not() → bool
+    /// r.not(cmd_bool) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - cmd_bool: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// `not` can be called either via method chaining, immediately after
+    /// an expression that evaluates as a boolean value, or by passing
+    /// the expression as a parameter to `not`. All values that are not
+    /// `false` or `None` will be converted to `true`.
+    ///
+    /// ## Examples
+    ///
+    /// Not true is false.
+    ///
+    /// ```
+    /// use std::ops::Not;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.expr(true)
+    ///         .not()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     let response2: bool = r.not(r.expr(true))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     let response3: bool = (!r.expr(true))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(
+    ///         response == false &&
+    ///         response == response2 &&
+    ///         response == response3
+    ///     );
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [ne](Self::ne)
+    pub fn not(self, cmd_bool: Command) -> Command {
+        !cmd_bool
     }
 
     /// Generate a random number between given (or implied) bounds.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -172,26 +236,26 @@ impl r {
     /// - param_number: f64 | [Command](crate::Command)
     /// - cmd_number: [Command](crate::Command)
     /// - options: [RandomOption](crate::cmd::random::RandomOption)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// `random` takes zero, one or two arguments.
-    /// 
-    /// - With *zero* arguments, the result will be a floating-point 
+    ///
+    /// - With *zero* arguments, the result will be a floating-point
     /// number in the range `[0,1)` (from 0 up to but not including 1).
-    /// - With *one* argument x, the result will be in the range `[0,x)`, and will 
-    /// be integer unless `RandomOption::default().float(true)` is given as an option. 
+    /// - With *one* argument x, the result will be in the range `[0,x)`, and will
+    /// be integer unless `RandomOption::default().float(true)` is given as an option.
     /// Specifying a floating point number without the float option will raise an error.
-    /// - With *two* arguments x and y, the result will be in the range 
-    /// `[x,y)`, and will be integer unless `RandomOption::default().float(true)` is given 
-    /// as an option. If x and y are equal an error will occur, unless the floating-point 
-    /// option has been specified, in which case x will be returned. 
+    /// - With *two* arguments x and y, the result will be in the range
+    /// `[x,y)`, and will be integer unless `RandomOption::default().float(true)` is given
+    /// as an option. If x and y are equal an error will occur, unless the floating-point
+    /// option has been specified, in which case x will be returned.
     /// Specifying a floating point number without the float option will raise an error.
-    /// 
+    ///
     /// ## Note
     ///
-    /// The last argument given will always be the ‘open’ side of the range, but when 
-    /// generating a floating-point number, the ‘open’ side may be less than the ‘closed’ side. 
+    /// The last argument given will always be the ‘open’ side of the range, but when
+    /// generating a floating-point number, the ‘open’ side may be less than the ‘closed’ side.
     ///
     /// ## Examples
     ///
@@ -249,7 +313,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response: f64 = r.random(args!(
-    ///             1.59, -2.24, 
+    ///             1.59, -2.24,
     ///             RandomOption::default().float(true)
     ///         ))
     ///         .run(&conn)
@@ -270,7 +334,7 @@ impl r {
     }
 
     /// Rounds the given value to the nearest whole integer.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -281,11 +345,11 @@ impl r {
     /// Where:
     /// - param_number: f64 | [Command](crate::Command)
     /// - cmd_number: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// For example, values of 1.0 up to but not including 1.5 
-    /// will return 1.0, similar to [floor](Self::floor); values 
+    ///
+    /// For example, values of 1.0 up to but not including 1.5
+    /// will return 1.0, similar to [floor](Self::floor); values
     /// of 1.5 up to 2.0 will return 2.0, similar to [ceil](Self::ceil).
     ///
     /// ## Examples
@@ -309,9 +373,9 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The `round` command can also be chained after an expression.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Round -12.345 to the nearest integer.
@@ -342,9 +406,9 @@ impl r {
         cmd::round::new(args)
     }
 
-    /// Rounds the given value up, returning the smallest integer value 
+    /// Rounds the given value up, returning the smallest integer value
     /// greater than or equal to the given value (the value’s ceiling).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -377,9 +441,9 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The `ceil` command can also be chained after an expression.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Return the ceiling of -12.345.
@@ -410,9 +474,9 @@ impl r {
         cmd::ceil::new(args)
     }
 
-    /// Rounds the given value down, returning the largest integer 
+    /// Rounds the given value down, returning the largest integer
     /// value less than or equal to the given value (the value’s floor).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -445,9 +509,9 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The `floor` command can also be chained after an expression.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Return the floor of -12.345.

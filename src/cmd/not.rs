@@ -1,43 +1,28 @@
+use std::ops::Not;
+
 use ql2::term::TermType;
 
 use crate::Command;
 
-// TODO use std::ops::Not
-pub(crate) fn new(args: impl NotArg) -> Command {
-    let mut command = Command::new(TermType::Not);
+impl Not for Command {
+    type Output = Self;
 
-    if let Some(arg) = args.into_not_opts() {
-        command = command.with_arg(arg)
-    }
-
-    command
-}
-
-pub trait NotArg {
-    fn into_not_opts(self) -> Option<Command>;
-}
-
-impl NotArg for () {
-    fn into_not_opts(self) -> Option<Command> {
-        None
-    }
-}
-
-impl NotArg for bool {
-    fn into_not_opts(self) -> Option<Command> {
-        Some(Command::from_json(self))
+    fn not(self) -> Self::Output {
+        Command::new(TermType::Not).with_arg(self)
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::ops::Not;
+
     use crate::prelude::Converter;
     use crate::{r, Result};
 
     #[tokio::test]
     async fn test_not_data_r() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let data_obtained: bool = r.not(false).run(&conn).await?.unwrap().parse()?;
+        let data_obtained: bool = r.not(r.expr(false)).run(&conn).await?.unwrap().parse()?;
 
         assert!(data_obtained);
 
@@ -51,7 +36,7 @@ mod tests {
         let data_obtained: bool = r
             .object(object)
             .has_fields("content")
-            .not_()
+            .not()
             .run(&conn)
             .await?
             .unwrap()

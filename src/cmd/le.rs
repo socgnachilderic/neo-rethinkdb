@@ -20,9 +20,19 @@ impl<T: Serialize> LeArg for T {
     }
 }
 
-impl<T: Serialize> LeArg for Args<Vec<T>> {
+impl LeArg for Command {
     fn into_le_opts(self) -> CmdOpts {
-        let commands = self.0.iter().map(Command::from_json).collect();
+        CmdOpts::Single(self)
+    }
+}
+
+impl<S, T> LeArg for Args<T>
+where
+    S: Serialize,
+    T: IntoIterator<Item = S>,
+{
+    fn into_le_opts(self) -> CmdOpts {
+        let commands = self.0.into_iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }
@@ -54,12 +64,7 @@ mod tests {
     #[tokio::test]
     async fn test_le_data_r() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let data_obtained: bool = r
-            .le(args!(vec![5, 6, 7]))
-            .run(&conn)
-            .await?
-            .unwrap()
-            .parse()?;
+        let data_obtained: bool = r.le(args!([5, 6, 7])).run(&conn).await?.unwrap().parse()?;
 
         assert!(data_obtained);
 

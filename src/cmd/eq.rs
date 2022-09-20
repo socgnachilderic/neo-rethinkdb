@@ -1,7 +1,7 @@
 use ql2::term::TermType;
 use serde::Serialize;
 
-use crate::Command;
+use crate::{arguments::Args, Command};
 
 use super::CmdOpts;
 
@@ -13,15 +13,28 @@ pub trait EqArg {
     fn into_eq_opts(self) -> CmdOpts;
 }
 
+impl<T> EqArg for T
+where
+    T: Serialize,
+{
+    fn into_eq_opts(self) -> CmdOpts {
+        CmdOpts::Single(Command::from_json(self))
+    }
+}
+
 impl EqArg for Command {
     fn into_eq_opts(self) -> CmdOpts {
         CmdOpts::Single(self)
     }
 }
 
-impl<T: Serialize> EqArg for Vec<T> {
+impl<S, T> EqArg for Args<T>
+where
+    S: Serialize,
+    T: IntoIterator<Item = S>,
+{
     fn into_eq_opts(self) -> CmdOpts {
-        let commands = self.iter().map(Command::from_json).collect();
+        let commands = self.0.into_iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }
@@ -31,7 +44,7 @@ impl<T: Serialize> EqArg for Vec<T> {
 mod tests {
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down};
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_eq_data() -> Result<()> {
@@ -39,7 +52,7 @@ mod tests {
         let data_obtained: bool = table
             .get(1)
             .g("title")
-            .eq(r.expr("title1"))
+            .eq("title1")
             .run(&conn)
             .await?
             .unwrap()
@@ -53,7 +66,7 @@ mod tests {
     #[tokio::test]
     async fn test_eq_data_r() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let data_obtained: bool = r.eq(vec![5, 5, 5]).run(&conn).await?.unwrap().parse()?;
+        let data_obtained: bool = r.eq(args!([5, 5, 5])).run(&conn).await?.unwrap().parse()?;
 
         assert!(data_obtained);
 

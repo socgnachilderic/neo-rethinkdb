@@ -101,7 +101,7 @@ pub mod minutes;
 pub mod month;
 pub mod mul;
 pub mod ne;
-pub mod not_;
+pub mod not;
 pub mod now;
 pub mod nth;
 pub mod object;
@@ -536,12 +536,8 @@ impl<'a> Command {
         le::new(args).with_parent(self)
     }
 
-    pub fn not_(self) -> Self {
-        not_::new(()).with_parent(self)
-    }
-
     /// Rounds the given value to the nearest whole integer.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -552,11 +548,11 @@ impl<'a> Command {
     /// Where:
     /// - param_number: f64 | [Command](crate::Command)
     /// - cmd_number: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// For example, values of 1.0 up to but not including 1.5 
-    /// will return 1.0, similar to [floor](Self::floor); values 
+    ///
+    /// For example, values of 1.0 up to but not including 1.5
+    /// will return 1.0, similar to [floor](Self::floor); values
     /// of 1.5 up to 2.0 will return 2.0, similar to [ceil](Self::ceil).
     ///
     /// ## Examples
@@ -580,9 +576,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The `round` command can also be chained after an expression.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Round -12.345 to the nearest integer.
@@ -613,9 +609,9 @@ impl<'a> Command {
         round::new(()).with_parent(self)
     }
 
-    /// Rounds the given value up, returning the smallest integer value 
+    /// Rounds the given value up, returning the smallest integer value
     /// greater than or equal to the given value (the value’s ceiling).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -648,9 +644,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The `ceil` command can also be chained after an expression.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Return the ceiling of -12.345.
@@ -681,9 +677,9 @@ impl<'a> Command {
         ceil::new(()).with_parent(self)
     }
 
-    /// Rounds the given value down, returning the largest integer 
+    /// Rounds the given value down, returning the largest integer
     /// value less than or equal to the given value (the value’s floor).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -716,9 +712,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The `floor` command can also be chained after an expression.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Return the floor of -12.345.
@@ -2141,6 +2137,8 @@ impl<'a> Command {
     /// Another way to do the same query is to use hasFields.
     ///
     /// ```
+    /// use std::ops::Not;
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
@@ -2148,7 +2146,7 @@ impl<'a> Command {
     ///     let conn = r.connection().connect().await?;
     ///
     ///     let response = r.table("users")
-    ///         .filter(func!(|user| user.clone().has_fields("age").not_().or(user.g("age").lt(18))))
+    ///         .filter(func!(|user| user.clone().has_fields("age").not().or(user.g("age").lt(18))))
     ///         .run(&conn)
     ///         .await?;
     ///

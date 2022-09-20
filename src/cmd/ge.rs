@@ -20,9 +20,19 @@ impl<T: Serialize> GeArg for T {
     }
 }
 
-impl<T: Serialize> GeArg for Args<Vec<T>> {
+impl GeArg for Command {
     fn into_ge_opts(self) -> CmdOpts {
-        let commands = self.0.iter().map(Command::from_json).collect();
+        CmdOpts::Single(self)
+    }
+}
+
+impl<S, T> GeArg for Args<T>
+where
+    S: Serialize,
+    T: IntoIterator<Item = S>,
+{
+    fn into_ge_opts(self) -> CmdOpts {
+        let commands = self.0.into_iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }
@@ -54,12 +64,7 @@ mod tests {
     #[tokio::test]
     async fn test_ge_data_r() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let data_obtained: bool = r
-            .ge(args!(vec![7, 6, 5]))
-            .run(&conn)
-            .await?
-            .unwrap()
-            .parse()?;
+        let data_obtained: bool = r.ge(args!([7, 6, 5])).run(&conn).await?.unwrap().parse()?;
 
         assert!(data_obtained);
 

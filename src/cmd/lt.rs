@@ -20,9 +20,19 @@ impl<T: Serialize> LtArg for T {
     }
 }
 
-impl<T: Serialize> LtArg for Args<Vec<T>> {
+impl LtArg for Command {
     fn into_lt_opts(self) -> CmdOpts {
-        let commands = self.0.iter().map(Command::from_json).collect();
+        CmdOpts::Single(self)
+    }
+}
+
+impl<S, T> LtArg for Args<T>
+where
+    S: Serialize,
+    T: IntoIterator<Item = S>,
+{
+    fn into_lt_opts(self) -> CmdOpts {
+        let commands = self.0.into_iter().map(Command::from_json).collect();
 
         CmdOpts::Many(commands)
     }
@@ -54,12 +64,7 @@ mod tests {
     #[tokio::test]
     async fn test_lt_data_r() -> Result<()> {
         let conn = r.connection().connect().await?;
-        let data_obtained: bool = r
-            .lt(args!(vec![5, 6, 7]))
-            .run(&conn)
-            .await?
-            .unwrap()
-            .parse()?;
+        let data_obtained: bool = r.lt(args!([5, 6, 7])).run(&conn).await?.unwrap().parse()?;
 
         assert!(data_obtained);
 
