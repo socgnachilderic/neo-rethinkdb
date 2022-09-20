@@ -528,6 +528,75 @@ impl<'a> Command {
         ge::new(args).with_parent(self)
     }
 
+    /// Compare values, testing if the left-hand value is less than the right-hand.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// 
+    /// cmd_value.lt(value) → bool
+    /// cmd_value.lt(values) → bool
+    /// r.lt(values) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: [Command](crate::Command) | impl Serialize
+    /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// Test if a player has scored less than 10 points.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("players")
+    ///         .get(1)
+    ///         .g("score")
+    ///         .lt(10)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Test if variables are ordered from highest to lowest, 
+    /// with no values being equal to one another.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.lt(args!([20, 10, 15]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == true);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq](Self::eq)
+    /// - [ne](Self::ne)
+    /// - [gt](Self::gt)
+    /// - [ge](Self::ge)
+    /// - [le](Self::le)
     pub fn lt(self, args: impl lt::LtArg) -> Self {
         lt::new(args).with_parent(self)
     }
