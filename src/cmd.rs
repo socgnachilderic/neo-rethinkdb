@@ -480,6 +480,47 @@ impl<'a> Command {
         change_at::new(offset, value).with_parent(self)
     }
 
+    /// Return an array containing all of an object’s keys.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// string.keys() → array
+    /// ```
+    /// 
+    /// # Description
+    /// 
+    /// Note that the keys will be sorted as described in 
+    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order) 
+    /// (for strings, lexicographically).
+    ///
+    /// ## Examples
+    /// 
+    /// Get all the keys from a table row.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     // row: { "id": "1", "mail": "fred@example.com", "name": "fred" }
+    ///     let response: [String; 3] = r.table("users")
+    ///         .get(1)
+    ///         .keys()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["id", "mail", "name"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [values](Self::values)
     pub fn keys(self) -> Self {
         keys::new().with_parent(self)
     }
