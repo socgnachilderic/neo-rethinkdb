@@ -448,8 +448,84 @@ impl<'a> Command {
         set_difference::new(values).with_parent(self)
     }
 
-    pub fn bracket(self, value: impl Serialize) -> Self {
-        bracket::new(value).with_parent(self)
+    /// Get a single field from an object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.get_field(attr) → value
+    /// ```
+    /// 
+    /// Where:
+    /// - attr: String, &str
+    /// 
+    /// # Description
+    /// 
+    /// If called on a sequence, gets that field from every object 
+    /// in the sequence, skipping objects that lack it.
+    /// 
+    /// ``` text
+    /// Under most circumstances, you’ll want to use [get_field](Self::get_field) 
+    /// (or its shorthand g) or [nth](Self::nth) rather than `bracket`. 
+    /// The `bracket` term may be useful in situations where you are unsure of the 
+    /// data type returned by the term you are calling `bracket` on.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// How old is Moussa
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.table("simbad")
+    ///         .get(1)
+    ///         .bracket("age")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// The `bracket` command also accepts integer arguments 
+    /// as array offsets, like the [nth](Self::nth) command.
+    /// 
+    /// ## Examples
+    ///
+    /// How old is Moussa
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([10, 20, 30, 40, 50])
+    ///         .bracket(3)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 40);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get_field](Self::get_field)
+    /// - [nth](Self::nth)
+    pub fn bracket(self, attr: impl Serialize) -> Self {
+        bracket::new(attr).with_parent(self)
     }
 
     /// Get a single field from an object.
@@ -464,6 +540,7 @@ impl<'a> Command {
     /// - attr: String, &str
     /// 
     /// # Description
+    /// 
     /// If called on a sequence, gets that field from every object 
     /// in the sequence, skipping objects that lack it.
     /// 
@@ -512,6 +589,7 @@ impl<'a> Command {
     /// - attr: String, &str
     /// 
     /// # Description
+    /// 
     /// If called on a sequence, gets that field from every object 
     /// in the sequence, skipping objects that lack it.
     /// 
