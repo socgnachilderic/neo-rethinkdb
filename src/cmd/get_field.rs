@@ -1,10 +1,9 @@
 use ql2::term::TermType;
-use serde::Serialize;
 
 use crate::Command;
 
-pub(crate) fn new(attr: impl Serialize) -> Command {
-    let arg = Command::from_json(attr);
+pub(crate) fn new(attr: impl Into<String>) -> Command {
+    let arg = Command::from_json(attr.into());
 
     Command::new(TermType::GetField).with_arg(arg)
 }

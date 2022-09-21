@@ -452,11 +452,99 @@ impl<'a> Command {
         bracket::new(value).with_parent(self)
     }
 
-    pub fn get_field(self, attr: impl Serialize) -> Self {
+    /// Get a single field from an object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.get_field(attr) → value
+    /// ```
+    /// 
+    /// Where:
+    /// - attr: String, &str
+    /// 
+    /// # Description
+    /// If called on a sequence, gets that field from every object 
+    /// in the sequence, skipping objects that lack it.
+    /// 
+    /// You may use either `get_field` or its shorthand, `g`.
+    ///
+    /// ## Examples
+    ///
+    /// How old is Moussa
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.table("simbad")
+    ///         .get(1)
+    ///         .get_field("age")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [bracket](Self::bracket)
+    /// - [nth](Self::nth)
+    pub fn get_field(self, attr: impl Into<String>) -> Self {
         get_field::new(attr).with_parent(self)
     }
 
-    pub fn g(self, attr: impl Serialize) -> Self {
+    /// Get a single field from an object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.g(attr) → value
+    /// ```
+    /// 
+    /// Where:
+    /// - attr: String, &str
+    /// 
+    /// # Description
+    /// If called on a sequence, gets that field from every object 
+    /// in the sequence, skipping objects that lack it.
+    /// 
+    /// You may use either `get_field` or its shorthand, `g`.
+    ///
+    /// ## Examples
+    ///
+    /// How old is Moussa
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.table("simbad")
+    ///         .get(1)
+    ///         .g("age")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [bracket](Self::bracket)
+    /// - [nth](Self::nth)
+    pub fn g(self, attr: impl Into<String>) -> Self {
         get_field::new(attr).with_parent(self)
     }
 
