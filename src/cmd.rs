@@ -460,6 +460,158 @@ impl<'a> Command {
         get_field::new(attr).with_parent(self)
     }
 
+    /// Test if an object has one or more fields.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.has_fields(selector) → response
+    /// ```
+    /// 
+    /// Where:
+    /// - selector: impl Serialize
+    /// - response: array | bool
+    /// 
+    /// # Description
+    /// 
+    /// An object has a field if it has that key and the key has a non-null value. 
+    /// For instance, the object `{'a': 1,'b': 2,'c': null}` has the fields `a` and `b`.
+    /// 
+    /// When applied to a single object, `has_fields` returns `true` if the object has 
+    /// the fields and `false` if it does not. When applied to a sequence, it will return 
+    /// a new sequence (an array or stream) containing the elements that have the specified fields.
+    ///
+    /// ## Examples
+    ///
+    /// Return the players who have won games.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .has_fields("games_won")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the players who have not won games. 
+    /// To do this, use `has_fields` with [not](crate::r::not), 
+    /// wrapped with [filter](Self::filter).
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .filter(func!(|player| !player.has_fields("games_won")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Test if a specific player has won any games.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("players")
+    ///         .get(1)
+    ///         .has_fields("games_won")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Nested Fields
+    /// 
+    /// `has_fields` lets you test for nested fields in objects. 
+    /// If the value of a field is itself a set of key/value pairs, 
+    /// you can test for the presence of specific keys.
+    ///
+    /// ## Examples
+    ///
+    /// In the `players` table, the `games_won` field contains one 
+    /// or more fields for kinds of games won:
+    /// 
+    /// ```text
+    /// {
+    ///     'games_won': {
+    ///         'playoffs': 2,
+    ///         'championships': 1
+    ///     }
+    /// }
+    /// ```
+    /// 
+    /// Return players who have the “championships” field.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .has_fields(json!({"games_won": {"championships": true}}))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// Note that `true` in the example above is testing for the existence of `championships` 
+    /// as a field, not testing to see if the value of the `championships` field is set to `true`. 
+    /// There’s a more convenient shorthand form available. 
+    /// (See [pluck](Self::pluck) for more details on this.)
+    /// 
+    /// ```
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .has_fields(json!({"games_won": "championships"}))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get_field](Self::get_field)
+    /// - [with_fields](Self::with_fields)
     pub fn has_fields(self, selector: impl Serialize) -> Self {
         has_fields::new(selector).with_parent(self)
     }
