@@ -464,6 +464,45 @@ impl<'a> Command {
         has_fields::new(selector).with_parent(self)
     }
 
+    /// Insert a value in to an array at a given index. Returns the modified array.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// array.insert_at(offset, value) → array
+    /// ```
+    ///
+    /// Where:
+    /// - offset: isize
+    /// - value: impl Serialize
+    ///
+    /// ## Examples
+    ///
+    /// Alima decide to join Simbad.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [String; 4] = r.expr(["Moussa", "Ali", "Fati"])
+    ///         .insert_at(1, "Alima")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["Moussa", "Alima", "Ali", "Fati"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [splice_at](Self::splice_at)
+    /// - [change_at](Self::change_at)
+    /// - [delete_at](Self::delete_at)
     pub fn insert_at(self, offset: isize, value: impl Serialize) -> Self {
         insert_at::new(offset, value).with_parent(self)
     }
