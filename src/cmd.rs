@@ -468,41 +468,80 @@ impl<'a> Command {
         insert_at::new(offset, value).with_parent(self)
     }
 
-    pub fn splice_at(self, offset: isize, value: impl Serialize) -> Self {
-        splice_at::new(offset, value).with_parent(self)
+    /// Insert several values into an array at the given index.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// array.splice_at(args!(offset, list)) → array
+    /// ```
+    ///
+    /// Where:
+    /// - offset: isize | [Command](crate::Command)
+    /// - value: vec![...] | [...] | &[...] | [Command](crate::Command)
+    ///
+    /// ## Examples
+    ///
+    /// Fati and Alima decide to join Simbad.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [String; 4] = r.expr(["Moussa", "Ali"])
+    ///         .splice_at(args!(1, ["Fati", "Alima"]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["Moussa", "Fati", "Alima", "Ali"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [insert_at](Self::insert_at)
+    /// - [delete_at](Self::delete_at)
+    /// - [change_at](Self::change_at)
+    pub fn splice_at(self, args: impl splice_at::SpliceAtArg) -> Self{
+        splice_at::new(args).with_parent(self)
     }
 
     /// Remove one or more elements from an array at a given index.
-    /// (Note: `delete_at` operates on arrays, not documents; 
+    /// (Note: `delete_at` operates on arrays, not documents;
     /// to delete documents, see the [delete](Self::delete) command.)
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// array.delete_at(offset) → array
     /// array.delete_at(args!(offset, end_offset)) → array
     /// ```
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If only `offset` is specified, `delete_at` removes the element at that index. 
-    /// If both `offset` and `end_offset` are specified, `delete_at` removes the range 
-    /// of elements between `offset` and `end_offset`, inclusive of `offset` but not 
+    ///
+    /// If only `offset` is specified, `delete_at` removes the element at that index.
+    /// If both `offset` and `end_offset` are specified, `delete_at` removes the range
+    /// of elements between `offset` and `end_offset`, inclusive of `offset` but not
     /// inclusive of `end_offset`.
-    /// 
-    /// If `end_offset` is specified, it must not be less than `offset`. 
-    /// Both `offset` and `end_offset` must be within the array’s bounds 
-    /// (i.e., if the array has 10 elements, an `offset` or `end_offset` 
+    ///
+    /// If `end_offset` is specified, it must not be less than `offset`.
+    /// Both `offset` and `end_offset` must be within the array’s bounds
+    /// (i.e., if the array has 10 elements, an `offset` or `end_offset`
     /// of 10 or higher is invalid).
-    /// 
-    /// By using a negative `offset` you can delete from the end of the array. 
-    /// `-1` is the last element in the array, `-2` is the second-to-last element, and so on. 
-    /// You may specify a negative `end_offset`, although just as with a positive value, 
-    /// this will not be inclusive. The range `(2,-1)` specifies the third element through 
+    ///
+    /// By using a negative `offset` you can delete from the end of the array.
+    /// `-1` is the last element in the array, `-2` is the second-to-last element, and so on.
+    /// You may specify a negative `end_offset`, although just as with a positive value,
+    /// this will not be inclusive. The range `(2,-1)` specifies the third element through
     /// the next-to-last element.
     ///
     /// ## Examples
-    /// 
+    ///
     /// Delete the second element of an array.
     ///
     /// ```
@@ -525,7 +564,7 @@ impl<'a> Command {
     /// ```
     ///
     /// ## Examples
-    /// 
+    ///
     /// Delete the second and third elements of an array.
     ///
     /// ```
@@ -546,9 +585,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
-    /// 
+    ///
     /// Delete the next-to-last element of an array.
     ///
     /// ```
@@ -569,15 +608,15 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
-    /// 
+    ///
     /// Delete a comment on a post.
-    /// 
+    ///
     /// Given a post document such as:
-    /// 
+    ///
     /// ```text
-    /// 
+    ///
     /// ```
     /// {
     ///     "id": 1,
@@ -588,12 +627,12 @@ impl<'a> Command {
     ///         { "author": "Fatima", "text": "Comment 2" }
     ///     ]
     /// }
-    /// 
+    ///
     /// The second comment can be deleted by using `update` and `delete_at` together.
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     ///
@@ -625,20 +664,20 @@ impl<'a> Command {
         delete_at::new(args).with_parent(self)
     }
 
-    /// Change a value in an array at a given index. 
-    /// 
+    /// Change a value in an array at a given index.
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// array.change_at(offset, value) → array
     /// ```
-    /// 
+    ///
     /// Where:
     /// - offset: isize
     /// - value: impl Serialize
     ///
     /// ## Examples
-    /// 
+    ///
     /// Replace Ali by Alima in array.
     ///
     /// ```
@@ -669,21 +708,21 @@ impl<'a> Command {
     }
 
     /// Return an array containing all of an object’s keys.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// string.keys() → array
     /// ```
-    /// 
+    ///
     /// # Description
-    /// 
-    /// Note that the keys will be sorted as described in 
-    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order) 
+    ///
+    /// Note that the keys will be sorted as described in
+    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order)
     /// (for strings, lexicographically).
     ///
     /// ## Examples
-    /// 
+    ///
     /// Get all the keys from a table row.
     ///
     /// ```
@@ -714,20 +753,20 @@ impl<'a> Command {
     }
 
     /// Return an array containing all of an object’s values.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// string.values() → array
     /// ```
-    /// 
+    ///
     /// # Description
-    /// 
-    /// `values()` guarantees the values will 
+    ///
+    /// `values()` guarantees the values will
     /// come out in the same order as [keys](Self::keys).
     ///
     /// ## Examples
-    /// 
+    ///
     /// Get all of the values from a table row.
     ///
     /// ```
@@ -758,13 +797,13 @@ impl<'a> Command {
     }
 
     /// Match a string against a regular expression.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// string.match(regexp) → response
     /// ```
-    /// 
+    ///
     /// Where:
     /// - regexp: [Regex](regex::Regex)
     /// - response: Option<[MatchResponse](crate::types::MatchResponse)>
@@ -812,7 +851,7 @@ impl<'a> Command {
     }
 
     /// Split a string into substrings.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -820,16 +859,16 @@ impl<'a> Command {
     /// string.split(&str) → string
     /// string.split(args!(&str, usize)) → string
     /// ```
-    /// 
+    ///
     /// # Description
-    /// 
-    /// With no arguments, will split on whitespace; 
-    /// when called with a string as the first argument, 
-    /// will split using that string as a separator. 
-    /// A maximum number of splits can also be specified. 
+    ///
+    /// With no arguments, will split on whitespace;
+    /// when called with a string as the first argument,
+    /// will split using that string as a separator.
+    /// A maximum number of splits can also be specified.
     ///
     /// ## Examples
-    /// 
+    ///
     /// Split on whitespace.
     ///
     /// ```
@@ -857,7 +896,7 @@ impl<'a> Command {
     /// ```
     ///
     /// ## Examples
-    /// 
+    ///
     /// Split the entries in a CSV file.
     ///
     /// ```
@@ -887,7 +926,7 @@ impl<'a> Command {
     /// ```
     ///
     /// ## Examples
-    /// 
+    ///
     /// Split a string into characters.
     ///
     /// ```
@@ -916,7 +955,7 @@ impl<'a> Command {
     /// ```
     ///
     /// ## Examples
-    /// 
+    ///
     /// Split the entries in a CSV file, but only at most 3 times.
     ///
     /// ```
@@ -945,7 +984,7 @@ impl<'a> Command {
     /// ```
     ///
     /// ## Examples
-    /// 
+    ///
     /// Split on whitespace at most once (i.e. get the first word).
     ///
     /// ```
@@ -980,7 +1019,7 @@ impl<'a> Command {
     }
 
     /// Uppercases a string.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -1007,9 +1046,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Note
-    /// 
+    ///
     /// `upcase` and `downcase` only affect ASCII characters.
     ///
     /// # Related commands
@@ -1021,7 +1060,7 @@ impl<'a> Command {
     }
 
     /// Lowercase a string.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -1048,9 +1087,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Note
-    /// 
+    ///
     /// `upcase` and `downcase` only affect ASCII characters.
     ///
     /// # Related commands
@@ -1074,13 +1113,13 @@ impl<'a> Command {
     /// Where:
     /// - value: [Command](crate::Command) | bool
     /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
-    /// 
+    ///
     /// # Description
-    /// 
-    /// The `and` command can be used as an infix operator after its 
-    /// first argument (`r.expr(true).and(false)`) or given all of 
+    ///
+    /// The `and` command can be used as an infix operator after its
+    /// first argument (`r.expr(true).and(false)`) or given all of
     /// its arguments as parameters (`r.and(args!([true, false]))`).
-    /// 
+    ///
     /// Calling `or` with zero arguments will return `false`.
     ///
     /// ## Examples
@@ -1149,13 +1188,13 @@ impl<'a> Command {
     /// Where:
     /// - value: [Command](crate::Command) | bool
     /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
-    /// 
+    ///
     /// # Description
-    /// 
-    /// The `or` command can be used as an infix operator after 
-    /// its first argument (`r.expr(true).or(false)`) or given all 
+    ///
+    /// The `or` command can be used as an infix operator after
+    /// its first argument (`r.expr(true).or(false)`) or given all
     /// of its arguments as parameters (`r.or(args!([true, false]))`).
-    /// 
+    ///
     /// Calling `or` with zero arguments will return `false`.
     ///
     /// ## Examples
@@ -1202,14 +1241,14 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Note
-    /// 
-    /// When using `or` inside a `filter` predicate to test the values of 
-    /// fields that may not exist on the documents being tested, 
-    /// you should use the `default` command with those fields so 
+    ///
+    /// When using `or` inside a `filter` predicate to test the values of
+    /// fields that may not exist on the documents being tested,
+    /// you should use the `default` command with those fields so
     /// they explicitly return `false`.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};

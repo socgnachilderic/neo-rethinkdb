@@ -14,7 +14,8 @@ pub(crate) fn new(offset: isize, value: impl Serialize) -> Command {
 
 #[cfg(test)]
 mod tests {
-    use crate::{prelude::Converter, r, Result};
+    use crate::prelude::Converter;
+    use crate::{r, Result};
 
     #[tokio::test]
     async fn test_change_at_ops() -> Result<()> {
@@ -27,8 +28,8 @@ mod tests {
             .unwrap()
             .parse()?;
 
-            assert!(response == ["Moussa", "Alima", "Fati"]);
-            
+        assert!(response == ["Moussa", "Alima", "Fati"]);
+
         Ok(())
     }
 }
