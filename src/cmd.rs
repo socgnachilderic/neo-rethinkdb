@@ -476,6 +476,41 @@ impl<'a> Command {
         delete_at::new(args).with_parent(self)
     }
 
+    /// Change a value in an array at a given index. 
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// string.keys() → array
+    /// ```
+    ///
+    /// ## Examples
+    /// 
+    /// Replace Ali by Alima in array.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [String; 3] = r.expr(["Moussa", "Ali", "Fati"])
+    ///         .change_at(1, "Alima")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["Moussa", "Alima", "Fati"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [insert_at](Self::insert_at)
+    /// - [splice_at](Self::splice_at)
+    /// - [delete_at](Self::delete_at)
     pub fn change_at(self, offset: isize, value: impl Serialize) -> Self {
         change_at::new(offset, value).with_parent(self)
     }
