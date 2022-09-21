@@ -164,7 +164,7 @@ impl r {
     /// ```
     ///
     /// # Related commands
-    /// - [coerce_to](Self::coerce_to)
+    /// - [coerce_to](crate::Command::coerce_to)
     /// - [merge](crate::Command::merge)
     /// - [keys](crate::Command::keys)
     pub fn object<S, T>(self, values: T) -> Command

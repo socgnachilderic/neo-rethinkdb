@@ -6,6 +6,7 @@ use crate::arguments::{AnyParam, Durability, ReturnChanges};
 use crate::Command;
 
 use super::CmdOpts;
+use super::func::Func;
 
 pub(crate) fn new(args: impl UpdateArg) -> Command {
     let (args, opts) = args.into_update_opts();
@@ -27,6 +28,12 @@ impl UpdateArg for AnyParam {
 impl UpdateArg for Command {
     fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
         (CmdOpts::Single(self), Default::default())
+    }
+}
+
+impl UpdateArg for Func {
+    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
+        (CmdOpts::Single(self.0), Default::default())
     }
 }
 

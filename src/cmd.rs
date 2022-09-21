@@ -472,6 +472,155 @@ impl<'a> Command {
         splice_at::new(offset, value).with_parent(self)
     }
 
+    /// Remove one or more elements from an array at a given index.
+    /// (Note: `delete_at` operates on arrays, not documents; 
+    /// to delete documents, see the [delete](Self::delete) command.)
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// array.delete_at(offset) → array
+    /// array.delete_at(args!(offset, end_offset)) → array
+    /// ```
+    /// 
+    /// # Description
+    /// 
+    /// If only `offset` is specified, `delete_at` removes the element at that index. 
+    /// If both `offset` and `end_offset` are specified, `delete_at` removes the range 
+    /// of elements between `offset` and `end_offset`, inclusive of `offset` but not 
+    /// inclusive of `end_offset`.
+    /// 
+    /// If `end_offset` is specified, it must not be less than `offset`. 
+    /// Both `offset` and `end_offset` must be within the array’s bounds 
+    /// (i.e., if the array has 10 elements, an `offset` or `end_offset` 
+    /// of 10 or higher is invalid).
+    /// 
+    /// By using a negative `offset` you can delete from the end of the array. 
+    /// `-1` is the last element in the array, `-2` is the second-to-last element, and so on. 
+    /// You may specify a negative `end_offset`, although just as with a positive value, 
+    /// this will not be inclusive. The range `(2,-1)` specifies the third element through 
+    /// the next-to-last element.
+    ///
+    /// ## Examples
+    /// 
+    /// Delete the second element of an array.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [char; 5] = r.expr(['a', 'b', 'c', 'd', 'e', 'f'])
+    ///         .delete_at(1)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ['a', 'c', 'd', 'e', 'f']);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    /// 
+    /// Delete the second and third elements of an array.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [char; 4] = r.expr(['a', 'b', 'c', 'd', 'e', 'f'])
+    ///         .delete_at(args!(1, 3))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ['a', 'd', 'e', 'f']);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    /// 
+    /// Delete the next-to-last element of an array.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [char; 5] = r.expr(['a', 'b', 'c', 'd', 'e', 'f'])
+    ///         .delete_at(-2)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ['a', 'b', 'c', 'd', 'f']);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    /// 
+    /// Delete a comment on a post.
+    /// 
+    /// Given a post document such as:
+    /// 
+    /// ```text
+    /// 
+    /// ```
+    /// {
+    ///     "id": 1,
+    ///     "title": "Post title",
+    ///     "author": "Ali",
+    ///     "comments": [
+    ///         { "author": "Agatha", "text": "Comment 1" },
+    ///         { "author": "Fatima", "text": "Comment 2" }
+    ///     ]
+    /// }
+    /// 
+    /// The second comment can be deleted by using `update` and `delete_at` together.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [char; 5] = r.table("posts")
+    ///         .get(1)
+    ///         .update(func!(|post| {
+    ///             let mut comments = HashMap::new();
+    ///             comments.insert("comments", post.g("comments").delete_at(1));
+    ///             r.hash_map(comments)
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ['a', 'b', 'c', 'd', 'f']);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [insert_at](Self::insert_at)
+    /// - [splice_at](Self::splice_at)
+    /// - [change_at](Self::change_at)
     pub fn delete_at(self, args: impl delete_at::DeleteAtArg) -> Self {
         delete_at::new(args).with_parent(self)
     }
@@ -481,8 +630,12 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// string.keys() → array
+    /// array.change_at(offset, value) → array
     /// ```
+    /// 
+    /// Where:
+    /// - offset: isize
+    /// - value: impl Serialize
     ///
     /// ## Examples
     /// 
@@ -821,7 +974,7 @@ impl<'a> Command {
     /// # Related commands
     /// - [upcase](Self::upcase)
     /// - [downcase](Self::downcase)
-    /// - [match](Self::match)
+    /// - [match](Self::match_)
     pub fn split(self, args: impl split::SplitArg) -> Self {
         split::new(args).with_parent(self)
     }
@@ -861,7 +1014,7 @@ impl<'a> Command {
     ///
     /// # Related commands
     /// - [downcase](Self::downcase)
-    /// - [match](Self::match)
+    /// - [match](Self::match_)
     /// - [split](Self::split)
     pub fn upcase(self) -> Self {
         upcase::new().with_parent(self)
@@ -902,7 +1055,7 @@ impl<'a> Command {
     ///
     /// # Related commands
     /// - [upcase](Self::upcase)
-    /// - [match](Self::match)
+    /// - [match](Self::match_)
     /// - [split](Self::split)
     pub fn downcase(self) -> Self {
         downcase::new().with_parent(self)
