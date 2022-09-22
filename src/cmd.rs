@@ -440,8 +440,52 @@ impl<'a> Command {
         set_union::new(values).with_parent(self)
     }
 
-    pub fn set_intersection(self, values: Vec<impl Serialize>) -> Self {
-        set_intersection::new(values).with_parent(self)
+    /// Intersect two arrays returning values that occur in 
+    /// both of them as a set (an array with distinct values)
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.set_intersection(attr) → array
+    /// ```
+    ///
+    /// Where:
+    /// - attr: vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// Check which colour Simon likes from a fixed list. 
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     // ["green", "pink", "red", "blue", "purple"]
+    ///     let response: [String; 2] = r.table("simbad")
+    ///         .get(1)
+    ///         .g("colour")
+    ///         .set_intersection(["purple", "pink", "yellow"])
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["purple", "pink"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [union](Self::union)
+    /// - [difference](Self::difference)
+    /// - [set_insert](Self::set_insert)
+    /// - [set_union](Self::set_union)
+    /// - [set_difference](Self::set_difference)
+    pub fn set_intersection(self, args: impl set_intersection::SetIntersectionArg) -> Self {
+        set_intersection::new(args).with_parent(self)
     }
 
     /// Remove the elements of one array from another and 
@@ -458,7 +502,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Check which pieces of colour Simon likes, 
+    /// Check which colour Simon likes, 
     /// excluding a fixed list. 
     ///
     /// ```
@@ -467,6 +511,7 @@ impl<'a> Command {
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
+    ///     // ["green", "pink", "red", "blue", "purple"]
     ///     let response: [String; 3] = r.table("simbad")
     ///         .get(1)
     ///         .g("colour")
