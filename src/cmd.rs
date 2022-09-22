@@ -428,8 +428,51 @@ impl<'a> Command {
         prepend::new(value).with_parent(self)
     }
 
-    pub fn difference(self, values: Vec<impl Serialize>) -> Self {
-        difference::new(values).with_parent(self)
+    /// Remove the elements of one array from another array
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.difference(attr) → array
+    /// ```
+    ///
+    /// Where:
+    /// - attr: vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve Simon's colour list without pink and purple
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     // ["green", "pink", "red", "blue", "purple"]
+    ///     let response: [String; 3] = r.table("simbad")
+    ///         .get(1)
+    ///         .g("colour")
+    ///         .difference(["pink", "purple", "yellow"])
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["green", "red", "blue"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [union](Self::union)
+    /// - [set_insert](Self::set_insert)
+    /// - [set_union](Self::set_union)
+    /// - [set_intersection](Self::set_intersection)
+    /// - [set_difference](Self::set_difference)
+    pub fn difference(self, args: impl difference::DifferenceArg) -> Self {
+        difference::new(args).with_parent(self)
     }
 
     /// Add a value to an array and return it as a set 
