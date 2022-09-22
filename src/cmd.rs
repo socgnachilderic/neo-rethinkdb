@@ -432,6 +432,50 @@ impl<'a> Command {
         difference::new(values).with_parent(self)
     }
 
+    /// Add a value to an array and return it as a set 
+    /// (an array with distinct values).
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.set_insert(value) → array
+    /// ```
+    ///
+    /// Where:
+    /// - value: impl Serialize
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve Simon's colours list with the addition of yellow
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     // ["green", "pink", "red", "blue", "purple"]
+    ///     let response: [String; 6] = r.table("simbad")
+    ///         .get(1)
+    ///         .g("colour")
+    ///         .set_insert("yellow")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["green", "pink", "red", "blue", "purple", "yellow"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [union](Self::union)
+    /// - [difference](Self::difference)
+    /// - [set_union](Self::set_union)
+    /// - [set_intersection](Self::set_intersection)
+    /// - [set_difference](Self::set_difference)
     pub fn set_insert(self, value: impl Serialize) -> Self {
         set_insert::new(value).with_parent(self)
     }
