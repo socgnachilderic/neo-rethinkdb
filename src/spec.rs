@@ -63,7 +63,7 @@ impl Post {
             id,
             view,
             title: title.to_string(),
-            content: content.map(|text| text.to_string()),
+            content: content.map(String::from),
         }
     }
 

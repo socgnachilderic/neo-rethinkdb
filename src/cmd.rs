@@ -444,8 +444,52 @@ impl<'a> Command {
         set_intersection::new(values).with_parent(self)
     }
 
-    pub fn set_difference(self, values: Vec<impl Serialize>) -> Self {
-        set_difference::new(values).with_parent(self)
+    /// Remove the elements of one array from another and 
+    /// return them as set (an array with distinct values)
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.set_difference(attr) → array
+    /// ```
+    ///
+    /// Where:
+    /// - attr: vec![...] | [...] | &[...]
+    ///
+    /// ## Examples
+    ///
+    /// Check which pieces of colour Simon likes, 
+    /// excluding a fixed list. 
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: [String; 3] = r.table("simbad")
+    ///         .get(1)
+    ///         .g("colour")
+    ///         .set_difference(["purple", "pink"])
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["green", "red", "blue"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [union](Self::union)
+    /// - [difference](Self::difference)
+    /// - [set_insert](Self::set_insert)
+    /// - [set_union](Self::set_union)
+    /// - [set_intersection](Self::set_intersection)
+    pub fn set_difference(self, args: impl set_difference::SetDifferenceArg) -> Self {
+        set_difference::new(args).with_parent(self)
     }
 
     /// Get a single field from an object.
@@ -455,19 +499,19 @@ impl<'a> Command {
     /// ```text
     /// query.get_field(attr) → value
     /// ```
-    /// 
+    ///
     /// Where:
     /// - attr: String, &str
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If called on a sequence, gets that field from every object 
+    ///
+    /// If called on a sequence, gets that field from every object
     /// in the sequence, skipping objects that lack it.
-    /// 
+    ///
     /// ``` text
-    /// Under most circumstances, you’ll want to use [get_field](Self::get_field) 
-    /// (or its shorthand g) or [nth](Self::nth) rather than `bracket`. 
-    /// The `bracket` term may be useful in situations where you are unsure of the 
+    /// Under most circumstances, you’ll want to use [get_field](Self::get_field)
+    /// (or its shorthand g) or [nth](Self::nth) rather than `bracket`.
+    /// The `bracket` term may be useful in situations where you are unsure of the
     /// data type returned by the term you are calling `bracket` on.
     /// ```
     ///
@@ -494,10 +538,10 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
-    /// The `bracket` command also accepts integer arguments 
+    ///
+    /// The `bracket` command also accepts integer arguments
     /// as array offsets, like the [nth](Self::nth) command.
-    /// 
+    ///
     /// ## Examples
     ///
     /// How old is Moussa
@@ -535,15 +579,15 @@ impl<'a> Command {
     /// ```text
     /// query.get_field(attr) → value
     /// ```
-    /// 
+    ///
     /// Where:
     /// - attr: String, &str
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If called on a sequence, gets that field from every object 
+    ///
+    /// If called on a sequence, gets that field from every object
     /// in the sequence, skipping objects that lack it.
-    /// 
+    ///
     /// You may use either `get_field` or its shorthand, `g`.
     ///
     /// ## Examples
@@ -584,15 +628,15 @@ impl<'a> Command {
     /// ```text
     /// query.g(attr) → value
     /// ```
-    /// 
+    ///
     /// Where:
     /// - attr: String, &str
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If called on a sequence, gets that field from every object 
+    ///
+    /// If called on a sequence, gets that field from every object
     /// in the sequence, skipping objects that lack it.
-    /// 
+    ///
     /// You may use either `get_field` or its shorthand, `g`.
     ///
     /// ## Examples
@@ -627,24 +671,24 @@ impl<'a> Command {
     }
 
     /// Test if an object has one or more fields.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// query.has_fields(selector) → response
     /// ```
-    /// 
+    ///
     /// Where:
     /// - selector: impl Serialize
     /// - response: array | bool
-    /// 
+    ///
     /// # Description
-    /// 
-    /// An object has a field if it has that key and the key has a non-null value. 
+    ///
+    /// An object has a field if it has that key and the key has a non-null value.
     /// For instance, the object `{'a': 1,'b': 2,'c': null}` has the fields `a` and `b`.
-    /// 
-    /// When applied to a single object, `has_fields` returns `true` if the object has 
-    /// the fields and `false` if it does not. When applied to a sequence, it will return 
+    ///
+    /// When applied to a single object, `has_fields` returns `true` if the object has
+    /// the fields and `false` if it does not. When applied to a sequence, it will return
     /// a new sequence (an array or stream) containing the elements that have the specified fields.
     ///
     /// ## Examples
@@ -669,8 +713,8 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Return the players who have not won games. 
-    /// To do this, use `has_fields` with [not](crate::r::not), 
+    /// Return the players who have not won games.
+    /// To do this, use `has_fields` with [not](crate::r::not),
     /// wrapped with [filter](Self::filter).
     ///
     /// ```
@@ -713,18 +757,18 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Nested Fields
-    /// 
-    /// `has_fields` lets you test for nested fields in objects. 
-    /// If the value of a field is itself a set of key/value pairs, 
+    ///
+    /// `has_fields` lets you test for nested fields in objects.
+    /// If the value of a field is itself a set of key/value pairs,
     /// you can test for the presence of specific keys.
     ///
     /// ## Examples
     ///
-    /// In the `players` table, the `games_won` field contains one 
+    /// In the `players` table, the `games_won` field contains one
     /// or more fields for kinds of games won:
-    /// 
+    ///
     /// ```text
     /// {
     ///     'games_won': {
@@ -733,7 +777,7 @@ impl<'a> Command {
     ///     }
     /// }
     /// ```
-    /// 
+    ///
     /// Return players who have the “championships” field.
     ///
     /// ```
@@ -752,12 +796,12 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
-    /// Note that `true` in the example above is testing for the existence of `championships` 
-    /// as a field, not testing to see if the value of the `championships` field is set to `true`. 
-    /// There’s a more convenient shorthand form available. 
+    ///
+    /// Note that `true` in the example above is testing for the existence of `championships`
+    /// as a field, not testing to see if the value of the `championships` field is set to `true`.
+    /// There’s a more convenient shorthand form available.
     /// (See [pluck](Self::pluck) for more details on this.)
-    /// 
+    ///
     /// ```
     /// use reql_rust::{r, Result};
     /// use serde_json::json;
@@ -864,7 +908,7 @@ impl<'a> Command {
     /// - [insert_at](Self::insert_at)
     /// - [delete_at](Self::delete_at)
     /// - [change_at](Self::change_at)
-    pub fn splice_at(self, args: impl splice_at::SpliceAtArg) -> Self{
+    pub fn splice_at(self, args: impl splice_at::SpliceAtArg) -> Self {
         splice_at::new(args).with_parent(self)
     }
 
