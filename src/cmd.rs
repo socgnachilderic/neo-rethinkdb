@@ -412,8 +412,115 @@ impl<'a> Command {
         pluck::new(selector).with_parent(self)
     }
 
-    pub fn without(self, selector: impl Serialize) -> Self {
-        without::new(selector).with_parent(self)
+    /// The opposite of pluck; takes an object or a sequence of objects, 
+    /// and returns them with the specified paths removed.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.without(selectors) → any
+    /// ```
+    ///
+    /// Where:
+    /// - selectors: impl Serialize | [Command](crate::Command) |
+    /// args!(Vec<Command>) | args!([Command; N]) | args!(&[Command])
+    ///
+    /// ## Examples
+    ///
+    /// Since we don’t need it for this computation we’ll save bandwidth 
+    /// and leave out the list of IronMan’s romantic conquests.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .get("IronMan")
+    ///         .without("personalVictoriesList")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Without their prized weapons, our enemies will quickly be vanquished.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("enemies")
+    ///         .without("weapons")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Nested objects can be used to remove the damage 
+    /// subfield from the weapons and abilities fields.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .without(json!({
+    ///             "weapons": { "damage": true },
+    ///             "abilities": { "damage": true }
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// The nested syntax can quickly become overly verbose so there’s a shorthand for it.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .without(json!({
+    ///             "weapons": "damage",
+    ///             "abilities": "damage"
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [pluck](Self::pluck)
+    /// - [map](Self::map)
+    pub fn without(self, args: impl without::WithoutArg) -> Self {
+        without::new(args).with_parent(self)
     }
 
     /// Merge two or more objects together to construct 
