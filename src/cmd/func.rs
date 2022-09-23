@@ -16,3 +16,9 @@ impl Func {
         )
     }
 }
+
+impl From<Func> for Command {
+    fn from(func: Func) -> Self {
+        func.0
+    }
+}

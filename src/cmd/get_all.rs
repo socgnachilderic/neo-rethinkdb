@@ -4,7 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::Command;
+use crate::{arguments::Args, Command};
 
 use super::CmdOpts;
 
@@ -19,7 +19,11 @@ pub trait GetAllArg {
     fn into_get_all_opts(self) -> (CmdOpts, GetAllOption);
 }
 
-impl<T: Serialize> GetAllArg for Vec<T> {
+impl<S, T> GetAllArg for T
+where
+    S: Serialize,
+    T: IntoIterator<Item = S>,
+{
     fn into_get_all_opts(self) -> (CmdOpts, GetAllOption) {
         let keys = self
             .into_iter()
@@ -30,15 +34,32 @@ impl<T: Serialize> GetAllArg for Vec<T> {
     }
 }
 
-impl<T: Serialize> GetAllArg for (Vec<T>, GetAllOption) {
+impl GetAllArg for Command {
+    fn into_get_all_opts(self) -> (CmdOpts, GetAllOption) {
+        (CmdOpts::Single(self), Default::default())
+    }
+}
+
+impl<S, T> GetAllArg for Args<(T, GetAllOption)>
+where
+    S: Serialize,
+    T: IntoIterator<Item = S>,
+{
     fn into_get_all_opts(self) -> (CmdOpts, GetAllOption) {
         let keys = self
             .0
+             .0
             .into_iter()
             .map(|key| Command::from_json(key))
             .collect();
 
-        (CmdOpts::Many(keys), self.1)
+        (CmdOpts::Many(keys), self.0 .1)
+    }
+}
+
+impl GetAllArg for Args<(Command, GetAllOption)> {
+    fn into_get_all_opts(self) -> (CmdOpts, GetAllOption) {
+        (CmdOpts::Single(self.0 .0), self.0 .1)
     }
 }
 
@@ -50,6 +71,7 @@ pub struct GetAllOption {
 
 #[cfg(test)]
 mod tests {
+    use crate::args;
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down, Post};
     use crate::Result;
@@ -64,7 +86,7 @@ mod tests {
         table.clone().sync().run(&conn).await?;
 
         let data_get: Vec<Post> = table
-            .get_all((vec!["title4"], GetAllOption::default().index("title")))
+            .get_all(args!(["title4"], GetAllOption::default().index("title")))
             .run(&conn)
             .await?
             .unwrap()

@@ -416,6 +416,159 @@ impl<'a> Command {
         without::new(selector).with_parent(self)
     }
 
+    /// Merge two or more objects together to construct 
+    /// a new object with properties from all.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.merge(params) → any
+    /// ```
+    ///
+    /// Where:
+    /// - params: impl Serialize | func!(...) | 
+    /// [Command](crate::Command) | Vec<Command>, Vec<Func> |
+    /// [Command; N] | [Func; N] | &[Command] | &[Func]
+    /// 
+    /// # Description
+    /// 
+    /// When there is a conflict between field names, preference is 
+    /// given to fields in the rightmost object in the argument list 
+    /// `merge` also accepts a subquery function that returns an object, 
+    /// which will be used similarly to a [map](Self::map) function.
+    ///
+    /// ## Examples
+    ///
+    /// Equip Thor for battle.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .get("thor")
+    ///         .merge(args!([
+    ///             r.table("equipment").get("hammer"),
+    ///             r.table("equipment").get("pimento_sandwich"),
+    ///         ]))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Equip every hero for battle, using a subquery 
+    /// function to retrieve their weapons.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// 
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .get("thor")
+    ///         .merge(func!(|hero| {
+    ///             let mut weapons = HashMap::new();
+    ///             weapons.insert("weapons", r.table("weapons").get(hero.g("weapon_id")));
+    ///             r.hash_map(weapons)
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Use `merge` to join each blog post with its comments.
+    /// 
+    /// Note that the sequence being merged—in this example, 
+    /// the comments—must be coerced from a selection to an array. 
+    /// Without `coerce_to` the operation will throw an error 
+    /// (“Expected type DATUM but found SELECTION”).
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    /// 
+    /// use reql_rust::cmd::get_all::GetAllOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .merge(func!(|post| {
+    ///             let mut comments = HashMap::new();
+    ///             comments.insert("comments", r.table("comments")
+    ///                 .get_all(args!(
+    ///                     post.g("id"),
+    ///                     GetAllOption::default().index("title")
+    ///                 ))
+    ///                 .coerce_to("array")
+    ///             );
+    ///             r.hash_map(comments)
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Merge can be used recursively to modify object within objects.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.expr(json!({
+    ///             "weapons": {
+    ///                 "spectacular graviton beam": {
+    ///                     "dmg": 10,
+    ///                     "cooldown": 20
+    ///                 }
+    ///             }
+    ///         }))
+    ///         .merge(json!({
+    ///             "weapons": {
+    ///                 "spectacular graviton beam": {
+    ///                     "dmg": 10
+    ///                 }
+    ///             }
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [pluck](Self::pluck)
+    /// - [without](Self::without)
+    /// - [map](Self::map)
     pub fn merge(self, args: impl merge::MergeArg) -> Self {
         merge::new(args).with_parent(self)
     }
