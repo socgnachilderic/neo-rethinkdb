@@ -424,8 +424,51 @@ impl<'a> Command {
         append::new(value).with_parent(self)
     }
 
-    pub fn prepend(self, value: impl Serialize) -> Self {
-        prepend::new(value).with_parent(self)
+    /// Prepend a value to an array.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.prepend(value) → array
+    /// ```
+    ///
+    /// Where:
+    /// - value: impl Serialize | [Command](crate::Command)
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve Simon's colours list with the addition of yellow
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     // ["green", "pink", "red", "blue", "purple"]
+    ///     let response: [String; 6] = r.table("simbad")
+    ///         .get(1)
+    ///         .g("colour")
+    ///         .prepend("yellow")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["yellow", "green", "pink", "red", "blue", "purple"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [append](Self::append)
+    /// - [merge](Self::merge)
+    /// - [insert_at](Self::insert_at)
+    /// - [delete_at](Self::delete_at)
+    /// - [change_at](Self::change_at)
+    pub fn prepend(self, args: impl prepend::PrependArg) -> Self {
+        prepend::new(args).with_parent(self)
     }
 
     /// Remove the elements of one array from another array
