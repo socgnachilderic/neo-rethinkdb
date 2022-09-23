@@ -33,8 +33,8 @@ impl SpliceAtArg for Args<(Command, Command)> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{args, r, Result};
     use crate::prelude::Converter;
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_splice_at_ops() -> Result<()> {

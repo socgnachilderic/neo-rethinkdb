@@ -118,9 +118,9 @@ impl r {
         cmd::literal::new(value)
     }
 
-    /// Creates an object from a list of key-value pairs, 
+    /// Creates an object from a list of key-value pairs,
     /// where the keys must be strings.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -138,7 +138,7 @@ impl r {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Deserialize, Serialize};
-    /// 
+    ///
     /// #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
     /// struct Post {
     ///     id: String,
@@ -188,13 +188,13 @@ impl r {
     /// Where:
     /// - value: [Command](crate::Command) | bool
     /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
-    /// 
+    ///
     /// # Description
-    /// 
-    /// The `and` command can be used as an infix operator after its 
-    /// first argument (`r.expr(true).and(false)`) or given all of 
+    ///
+    /// The `and` command can be used as an infix operator after its
+    /// first argument (`r.expr(true).and(false)`) or given all of
     /// its arguments as parameters (`r.and(args!([true, false]))`).
-    /// 
+    ///
     /// Calling `or` with zero arguments will return `false`.
     ///
     /// ## Examples
@@ -263,13 +263,13 @@ impl r {
     /// Where:
     /// - value: [Command](crate::Command) | bool
     /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
-    /// 
+    ///
     /// # Description
-    /// 
-    /// The `or` command can be used as an infix operator after 
-    /// its first argument (`r.expr(true).or(false)`) or given all 
+    ///
+    /// The `or` command can be used as an infix operator after
+    /// its first argument (`r.expr(true).or(false)`) or given all
     /// of its arguments as parameters (`r.or(args!([true, false]))`).
-    /// 
+    ///
     /// Calling `or` with zero arguments will return `false`.
     ///
     /// ## Examples
@@ -316,14 +316,14 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Note
-    /// 
-    /// When using `or` inside a `filter` predicate to test the values of 
-    /// fields that may not exist on the documents being tested, 
-    /// you should use the `default` command with those fields so 
+    ///
+    /// When using `or` inside a `filter` predicate to test the values of
+    /// fields that may not exist on the documents being tested,
+    /// you should use the `default` command with those fields so
     /// they explicitly return `false`.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};

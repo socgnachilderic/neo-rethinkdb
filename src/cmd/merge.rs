@@ -117,19 +117,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_merge_ops_multi() -> Result<()> {
-        let (
-            conn,
-            comment_table,
-            post_table,
-            _,
-            comment_table_name,
-            post_table_name,
-        ) = set_up2().await?;
+        let (conn, comment_table, post_table, _, comment_table_name, post_table_name) =
+            set_up2().await?;
 
-        let response = post_table.get(1).merge(args!([
-            comment_table.clone().get(1),
-            comment_table.get(2),
-        ]))
+        let response = post_table
+            .get(1)
+            .merge(args!([comment_table.clone().get(1), comment_table.get(2),]))
             .run(&conn)
             .await?;
 

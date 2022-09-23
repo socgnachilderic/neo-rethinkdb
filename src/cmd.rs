@@ -408,9 +408,9 @@ impl<'a> Command {
         contains::new(args).with_parent(self)
     }
 
-    /// Plucks out one or more attributes from either 
+    /// Plucks out one or more attributes from either
     /// an object or a sequence of objects (projection).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -423,7 +423,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// We just need information about IronMan’s 
+    /// We just need information about IronMan’s
     /// reactor and not the rest of the document.
     ///
     /// ```
@@ -489,7 +489,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// The nested syntax can quickly become overly 
+    /// The nested syntax can quickly become overly
     /// verbose so there’s a shorthand for it.
     ///
     /// ```
@@ -511,8 +511,8 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
-    /// For more information read the 
+    ///
+    /// For more information read the
     /// [nested field documentation](https://rethinkdb.com/docs/nested-fields/python/).
     ///
     /// # Related commands
@@ -522,9 +522,9 @@ impl<'a> Command {
         pluck::new(args).with_parent(self)
     }
 
-    /// The opposite of pluck; takes an object or a sequence of objects, 
+    /// The opposite of pluck; takes an object or a sequence of objects,
     /// and returns them with the specified paths removed.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -537,7 +537,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Since we don’t need it for this computation we’ll save bandwidth 
+    /// Since we don’t need it for this computation we’ll save bandwidth
     /// and leave out the list of IronMan’s romantic conquests.
     ///
     /// ```
@@ -579,7 +579,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Nested objects can be used to remove the damage 
+    /// Nested objects can be used to remove the damage
     /// subfield from the weapons and abilities fields.
     ///
     /// ```
@@ -633,9 +633,9 @@ impl<'a> Command {
         without::new(args).with_parent(self)
     }
 
-    /// Merge two or more objects together to construct 
+    /// Merge two or more objects together to construct
     /// a new object with properties from all.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -643,15 +643,15 @@ impl<'a> Command {
     /// ```
     ///
     /// Where:
-    /// - params: impl Serialize | func!(...) | 
+    /// - params: impl Serialize | func!(...) |
     /// [Command](crate::Command) | Vec<Command>, Vec<Func> |
     /// [Command; N] | [Func; N] | &[Command] | &[Func]
-    /// 
+    ///
     /// # Description
-    /// 
-    /// When there is a conflict between field names, preference is 
-    /// given to fields in the rightmost object in the argument list 
-    /// `merge` also accepts a subquery function that returns an object, 
+    ///
+    /// When there is a conflict between field names, preference is
+    /// given to fields in the rightmost object in the argument list
+    /// `merge` also accepts a subquery function that returns an object,
     /// which will be used similarly to a [map](Self::map) function.
     ///
     /// ## Examples
@@ -681,12 +681,12 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Equip every hero for battle, using a subquery 
+    /// Equip every hero for battle, using a subquery
     /// function to retrieve their weapons.
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// 
+    ///
     /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
@@ -711,15 +711,15 @@ impl<'a> Command {
     /// ## Examples
     ///
     /// Use `merge` to join each blog post with its comments.
-    /// 
-    /// Note that the sequence being merged—in this example, 
-    /// the comments—must be coerced from a selection to an array. 
-    /// Without `coerce_to` the operation will throw an error 
+    ///
+    /// Note that the sequence being merged—in this example,
+    /// the comments—must be coerced from a selection to an array.
+    /// Without `coerce_to` the operation will throw an error
     /// (“Expected type DATUM but found SELECTION”).
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// 
+    ///
     /// use reql_rust::cmd::get_all::GetAllOption;
     /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
@@ -791,7 +791,7 @@ impl<'a> Command {
     }
 
     /// Append a value to an array.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -838,7 +838,7 @@ impl<'a> Command {
     }
 
     /// Prepend a value to an array.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -885,7 +885,7 @@ impl<'a> Command {
     }
 
     /// Remove the elements of one array from another array
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -931,9 +931,9 @@ impl<'a> Command {
         difference::new(args).with_parent(self)
     }
 
-    /// Add a value to an array and return it as a set 
+    /// Add a value to an array and return it as a set
     /// (an array with distinct values).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -979,9 +979,9 @@ impl<'a> Command {
         set_insert::new(value).with_parent(self)
     }
 
-    /// Add a several values to an array and return 
+    /// Add a several values to an array and return
     /// it as a set (an array with distinct values).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -1027,9 +1027,9 @@ impl<'a> Command {
         set_union::new(args).with_parent(self)
     }
 
-    /// Intersect two arrays returning values that occur in 
+    /// Intersect two arrays returning values that occur in
     /// both of them as a set (an array with distinct values).
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -1041,7 +1041,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Check which colour Simon likes from a fixed list. 
+    /// Check which colour Simon likes from a fixed list.
     ///
     /// ```
     /// use reql_rust::prelude::*;
@@ -1075,9 +1075,9 @@ impl<'a> Command {
         set_intersection::new(args).with_parent(self)
     }
 
-    /// Remove the elements of one array from another and 
+    /// Remove the elements of one array from another and
     /// return them as set (an array with distinct values)
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -1089,8 +1089,8 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Check which colour Simon likes, 
-    /// excluding a fixed list. 
+    /// Check which colour Simon likes,
+    /// excluding a fixed list.
     ///
     /// ```
     /// use reql_rust::prelude::*;

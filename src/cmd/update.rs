@@ -5,8 +5,8 @@ use serde::Serialize;
 use crate::arguments::{AnyParam, Durability, ReturnChanges};
 use crate::Command;
 
-use super::CmdOpts;
 use super::func::Func;
+use super::CmdOpts;
 
 pub(crate) fn new(args: impl UpdateArg) -> Command {
     let (args, opts) = args.into_update_opts();
