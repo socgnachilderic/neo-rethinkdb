@@ -408,8 +408,118 @@ impl<'a> Command {
         contains::new(args).with_parent(self)
     }
 
-    pub fn pluck(self, selector: impl Serialize) -> Self {
-        pluck::new(selector).with_parent(self)
+    /// Plucks out one or more attributes from either 
+    /// an object or a sequence of objects (projection).
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.pluck(selectors) → any
+    /// ```
+    ///
+    /// Where:
+    /// - selectors: impl Serialize | [Command](crate::Command) |
+    /// args!(Vec<Command>) | args!([Command; N]) | args!(&[Command])
+    ///
+    /// ## Examples
+    ///
+    /// We just need information about IronMan’s 
+    /// reactor and not the rest of the document.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .get("IronMan")
+    ///         .pluck(["reactorState", "reactorPower"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// For the hero beauty contest we only care about certain qualities.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .pluck(["beauty", "muscleTone", "charm"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Pluck can also be used on nested objects.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .pluck(json!({
+    ///             "abilities": {"damage": true, "mana_cost": true},
+    ///             "weapons": true
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// The nested syntax can quickly become overly 
+    /// verbose so there’s a shorthand for it.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .pluck(args!([
+    ///             r.expr(json!({"abilities": ["damage", "mana_cost"]})),
+    ///             r.expr("weapons")
+    ///         ]))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// For more information read the 
+    /// [nested field documentation](https://rethinkdb.com/docs/nested-fields/python/).
+    ///
+    /// # Related commands
+    /// - [without](Self::without)
+    /// - [map](Self::map)
+    pub fn pluck(self, args: impl pluck::PluckArg) -> Self {
+        pluck::new(args).with_parent(self)
     }
 
     /// The opposite of pluck; takes an object or a sequence of objects, 
