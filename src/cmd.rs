@@ -420,8 +420,51 @@ impl<'a> Command {
         merge::new(args).with_parent(self)
     }
 
-    pub fn append(self, value: impl Serialize) -> Self {
-        append::new(value).with_parent(self)
+    /// Append a value to an array.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.append(value) → array
+    /// ```
+    ///
+    /// Where:
+    /// - value: impl Serialize | [Command](crate::Command)
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve Simon's colours list with the addition of yellow
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     // ["green", "pink", "red", "blue", "purple"]
+    ///     let response: [String; 6] = r.table("simbad")
+    ///         .get(1)
+    ///         .g("colour")
+    ///         .append("yellow")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == ["green", "pink", "red", "blue", "purple", "yellow"]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [prepend](Self::prepend)
+    /// - [merge](Self::merge)
+    /// - [insert_at](Self::insert_at)
+    /// - [delete_at](Self::delete_at)
+    /// - [change_at](Self::change_at)
+    pub fn append(self, args: impl append::AppendArg) -> Self {
+        append::new(args).with_parent(self)
     }
 
     /// Prepend a value to an array.
