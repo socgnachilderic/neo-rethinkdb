@@ -400,6 +400,102 @@ impl<'a> Command {
         max::new(args).with_parent(self)
     }
 
+    /// Removes duplicate elements from a sequence.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.distinct(()) → array
+    /// table.distinct(options) → stream
+    /// r.distinct(sequence) → array
+    /// r.distinct(table, options) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - options: [DistinctOption](crate::cmd::distinct::DistinctOption)
+    /// - sequence: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// The `distinct` command can be called on any sequence or table with an index.
+    /// 
+    /// ```text
+    /// While `distinct` can be called on a table without an index, 
+    /// the only effect will be to convert the table into a stream; 
+    /// the content of the stream will not be affected.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Which unique villains have been vanquished by Marvel heroes?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .concat_map(func!(|hero| hero.g("villain_list")))
+    ///         .distinct(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Topics in a table of messages have a secondary index on them, 
+    /// and more than one message can have the same topic. 
+    /// What are the unique topics in the table?
+    ///
+    /// ```
+    /// use reql_rust::cmd::distinct::DistinctOption;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("messages")
+    ///         .distinct(DistinctOption::default().index("topics"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// The above structure is functionally identical to:
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("messages")
+    ///         .g("topics")
+    ///         .distinct(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// However, the first form (passing the index as an argument to `distinct`) is faster, 
+    /// and won’t run into array limit issues since it’s returning a stream.
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [concat_map](Self::concat_map)
+    /// - [group](Self::group)
     pub fn distinct(self, args: impl distinct::DistinctArg) -> Self {
         distinct::new(args).with_parent(self)
     }

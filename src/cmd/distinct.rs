@@ -39,12 +39,6 @@ impl DistinctArg for Command {
     }
 }
 
-impl DistinctArg for (Command, DistinctOption) {
-    fn into_distinct_opts(self) -> (Option<Command>, DistinctOption) {
-        (Some(self.0), self.1)
-    }
-}
-
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct DistinctOption {
     #[serde(skip_serializing_if = "Option::is_none")]
