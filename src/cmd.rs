@@ -396,6 +396,166 @@ impl<'a> Command {
         min::new(args).with_parent(self)
     }
 
+    /// Finds the maximum element of a sequence.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.max(()) → element
+    /// sequence.max(args!(field)) → element
+    /// sequence.max(func) → element
+    /// sequence.max(options) → element
+    /// r.max(sequence) → element
+    /// r.max(sequence, args!(field)) → element
+    /// r.max(sequence, func) → element
+    /// r.max(sequence, options) → element
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - options: [MaxOption](crate::cmd::max::MaxOption)
+    /// - sequence: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// The `max` command can be called with:
+    /// - a `field name`, to return the element of the sequence 
+    /// with the largest value in that field;
+    /// - a `function`, to apply the function to every element within the sequence 
+    /// and return the element which returns the largest value from the function, 
+    /// ignoring any elements where the function produces a non-existence error;
+    /// - an `index` (the primary key or a secondary index), to return the element 
+    /// of the sequence with the largest value in that index;
+    /// 
+    /// For more information on RethinkDB’s sorting order, read the section in 
+    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
+    /// 
+    /// Calling `max` on an empty sequence will throw a non-existence error; 
+    /// this can be handled using the [default](Self::default) command.
+    ///
+    /// ## Examples
+    ///
+    /// Return the maximum value in the list [3, 5, 7].
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([3, 5, 7])
+    ///         .max(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 7);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the most points.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(args!("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// The same as above, but using a secondary index on the `points` field.
+    ///
+    /// ```
+    /// use reql_rust::cmd::max::MaxOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(MaxOption::default().index("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the most points, 
+    /// adding in bonus points from a separate field using a function.
+    ///
+    /// ```
+    /// use reql_rust::cmd::max::MaxOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(func!(|user| user.clone().g("points") + user.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the highest number of points any user has ever scored. 
+    /// This returns the value of that `points` field, not a document.
+    ///
+    /// ```
+    /// use reql_rust::cmd::max::MaxOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.table("users")
+    ///         .max(args!("points"))
+    ///         .g("points")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [group](Self::group)
     pub fn max(self, args: impl max::MaxArg) -> Self {
         max::new(args).with_parent(self)
     }

@@ -101,10 +101,266 @@ impl r {
         cmd::min::new(args)
     }
 
-    pub fn max(self, args: impl cmd::max::MaxArg) -> Command {
-        cmd::max::new(args)
+    /// Finds the maximum element of a sequence.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.max(()) → element
+    /// sequence.max(args!(field)) → element
+    /// sequence.max(func) → element
+    /// sequence.max(options) → element
+    /// r.max(sequence) → element
+    /// r.max(sequence, args!(field)) → element
+    /// r.max(sequence, func) → element
+    /// r.max(sequence, options) → element
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - options: [MaxOption](crate::cmd::max::MaxOption)
+    /// - sequence: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// The `max` command can be called with:
+    /// - a `field name`, to return the element of the sequence 
+    /// with the largest value in that field;
+    /// - a `function`, to apply the function to every element within the sequence 
+    /// and return the element which returns the largest value from the function, 
+    /// ignoring any elements where the function produces a non-existence error;
+    /// - an `index` (the primary key or a secondary index), to return the element 
+    /// of the sequence with the largest value in that index;
+    /// 
+    /// For more information on RethinkDB’s sorting order, read the section in 
+    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
+    /// 
+    /// Calling `max` on an empty sequence will throw a non-existence error; 
+    /// this can be handled using the [default](crate::Command::default) command.
+    ///
+    /// ## Examples
+    ///
+    /// Return the maximum value in the list [3, 5, 7].
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([3, 5, 7])
+    ///         .max(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 7);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the most points.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(args!("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// The same as above, but using a secondary index on the `points` field.
+    ///
+    /// ```
+    /// use reql_rust::cmd::max::MaxOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(MaxOption::default().index("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the most points, 
+    /// adding in bonus points from a separate field using a function.
+    ///
+    /// ```
+    /// use reql_rust::cmd::max::MaxOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(func!(|user| user.clone().g("points") + user.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the highest number of points any user has ever scored. 
+    /// This returns the value of that `points` field, not a document.
+    ///
+    /// ```
+    /// use reql_rust::cmd::max::MaxOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.table("users")
+    ///         .max(args!("points"))
+    ///         .g("points")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [group](crate::Command::group)
+    pub fn max(self, sequence: Command, args: impl cmd::max::MaxArg) -> Command {
+        sequence.max(args)
     }
 
+    /// Removes duplicate elements from a sequence.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.distinct(()) → array
+    /// table.distinct(options) → stream
+    /// r.distinct(sequence) → array
+    /// r.distinct(table, options) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - options: [DistinctOption](crate::cmd::distinct::DistinctOption)
+    /// - sequence: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// The `distinct` command can be called on any sequence or table with an index.
+    /// 
+    /// ```text
+    /// While `distinct` can be called on a table without an index, 
+    /// the only effect will be to convert the table into a stream; 
+    /// the content of the stream will not be affected.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Which unique villains have been vanquished by Marvel heroes?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .concat_map(func!(|hero| hero.g("villain_list")))
+    ///         .distinct(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Topics in a table of messages have a secondary index on them, 
+    /// and more than one message can have the same topic. 
+    /// What are the unique topics in the table?
+    ///
+    /// ```
+    /// use reql_rust::cmd::distinct::DistinctOption;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("messages")
+    ///         .distinct(DistinctOption::default().index("topics"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// The above structure is functionally identical to:
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("messages")
+    ///         .g("topics")
+    ///         .distinct(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// However, the first form (passing the index as an argument to `distinct`) is faster, 
+    /// and won’t run into array limit issues since it’s returning a stream.
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [concat_map](crate::Command::concat_map)
+    /// - [group](crate::Command::group)
     pub fn distinct(self, seq_or_table: Command, args: impl cmd::distinct::DistinctArg) -> Command {
         seq_or_table.distinct(args)
     }
