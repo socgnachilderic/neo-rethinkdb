@@ -404,6 +404,131 @@ impl<'a> Command {
         distinct::new(args).with_parent(self)
     }
 
+    /// When called with values, returns `true` 
+    /// if a sequence contains all the specified values.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.contains(value) → bool
+    /// r.contains(sequence, value) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: impl Serialize | [Command](crate::Command)
+    /// - sequence: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// When called with predicate functions, returns `true` 
+    /// if for each predicate there exists at least one element 
+    /// of the stream where that predicate returns `true`.
+    /// 
+    /// Values and predicates may be mixed freely in the argument list.
+    ///
+    /// ## Examples
+    ///
+    /// Has Iron Man ever fought Superman?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .get("ironman")
+    ///         .g("opponents")
+    ///         .contains("superman")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Has Iron Man ever defeated Superman in battle?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .get("ironman")
+    ///         .g("battles")
+    ///         .contains(func!(|battle| battle.clone().g("winner").eq("ironman").and(
+    ///             battle.g("loser").eq("superman")
+    ///         )))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all heroes who have fought both Loki and the Hulk.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .filter(func!(|hero| hero.g("opponents").contains(["loki", "hulk"])))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Use contains with a predicate function to simulate an or. 
+    /// Return the Marvel superheroes who live in Detroit, Chicago or Hoboken.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .filter(func!(|hero| r.expr(["Detroit", "Chicago", "Hoboken"]).contains(hero.g("city"))))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [concat_map](Self::concat_map)
+    /// - [group](Self::group)
     pub fn contains(self, args: impl contains::ContainsArg) -> Self {
         contains::new(args).with_parent(self)
     }

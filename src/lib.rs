@@ -109,8 +109,8 @@ impl r {
         cmd::distinct::new(args)
     }
 
-    pub fn contains(self, args: impl cmd::contains::ContainsArg) -> Command {
-        cmd::contains::new(args)
+    pub fn contains(self, sequence: Command, args: impl cmd::contains::ContainsArg) -> Command {
+        sequence.contains(args)
     }
 
     /// TODO Write docs
