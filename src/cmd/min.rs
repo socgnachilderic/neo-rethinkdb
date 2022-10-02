@@ -4,18 +4,15 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
 pub(crate) fn new(args: impl MinArg) -> Command {
-    let (arg1, arg2, opts) = args.into_min_opts();
+    let (arg, opts) = args.into_min_opts();
     let mut command = Command::new(TermType::Min);
 
-    if let Some(arg) = arg1 {
-        command = command.with_arg(arg)
-    }
-
-    if let Some(arg) = arg2 {
+    if let Some(arg) = arg {
         command = command.with_arg(arg)
     }
 
@@ -23,46 +20,41 @@ pub(crate) fn new(args: impl MinArg) -> Command {
 }
 
 pub trait MinArg {
-    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption);
+    fn into_min_opts(self) -> (Option<Command>, MinOption);
 }
 
-impl MinArg for &str {
-    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
-        let arg = Command::from_json(self);
+impl MinArg for () {
+    fn into_min_opts(self) -> (Option<Command>, MinOption) {
+        (None, Default::default())
+    }
+}
 
-        (None, Some(arg), Default::default())
+impl<T> MinArg for Args<T>
+where
+    T: Into<String>,
+{
+    fn into_min_opts(self) -> (Option<Command>, MinOption) {
+        let arg = Command::from_json(self.0.into());
+
+        (Some(arg), Default::default())
     }
 }
 
 impl MinArg for Func {
-    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
-        (None, Some(self.0), Default::default())
+    fn into_min_opts(self) -> (Option<Command>, MinOption) {
+        (Some(self.0), Default::default())
     }
 }
 
 impl MinArg for MinOption {
-    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
-        (None, None, self)
+    fn into_min_opts(self) -> (Option<Command>, MinOption) {
+        (None, self)
     }
 }
 
-impl MinArg for (Command, &str) {
-    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
-        let arg = Command::from_json(self.1);
-
-        (Some(self.0), Some(arg), Default::default())
-    }
-}
-
-impl MinArg for (Command, Func) {
-    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
-        (Some(self.0), None, Default::default())
-    }
-}
-
-impl MinArg for (Command, MinOption) {
-    fn into_min_opts(self) -> (Option<Command>, Option<Command>, MinOption) {
-        (Some(self.0), None, self.1)
+impl MinArg for Command {
+    fn into_min_opts(self) -> (Option<Command>, MinOption) {
+        (Some(self), Default::default())
     }
 }
 
@@ -76,13 +68,18 @@ pub struct MinOption {
 mod tests {
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::Result;
+    use crate::{args, Result};
 
     #[tokio::test]
     async fn test_min_data() -> Result<()> {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
-        let data_obtained: Post = table.min("view").run(&conn).await?.unwrap().parse()?;
+        let data_obtained: Post = table
+            .min(args!("view"))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
         assert!(Some(&data_obtained) == data.last());
 
