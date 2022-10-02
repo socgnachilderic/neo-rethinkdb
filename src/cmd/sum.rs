@@ -4,14 +4,9 @@ use crate::prelude::Func;
 use crate::Command;
 
 pub(crate) fn new(args: impl SumArg) -> Command {
-    let (arg1, arg2) = args.into_sum_opts();
     let mut command = Command::new(TermType::Sum);
 
-    if let Some(arg) = arg1 {
-        command = command.with_arg(arg)
-    }
-
-    if let Some(arg) = arg2 {
+    if let Some(arg) = args.into_sum_opts() {
         command = command.with_arg(arg)
     }
 
@@ -19,48 +14,32 @@ pub(crate) fn new(args: impl SumArg) -> Command {
 }
 
 pub trait SumArg {
-    fn into_sum_opts(self) -> (Option<Command>, Option<Command>);
+    fn into_sum_opts(self) -> Option<Command>;
 }
 
 impl SumArg for () {
-    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
-        (None, None)
+    fn into_sum_opts(self) -> Option<Command> {
+        None
     }
 }
 
 impl SumArg for &str {
-    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
+    fn into_sum_opts(self) -> Option<Command> {
         let arg = Command::from_json(self);
 
-        (None, Some(arg))
+        Some(arg)
     }
 }
 
 impl SumArg for Func {
-    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
-        (None, Some(self.0))
+    fn into_sum_opts(self) -> Option<Command> {
+        Some(self.0)
     }
 }
 
 impl SumArg for Command {
-    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
-        (Some(self), None)
-    }
-}
-
-impl SumArg for (Command, &str) {
-    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
-        let arg = Command::from_json(self.1);
-
-        (Some(self.0), Some(arg))
-    }
-}
-
-impl SumArg for (Command, Func) {
-    fn into_sum_opts(self) -> (Option<Command>, Option<Command>) {
-        let Func(func) = self.1;
-
-        (Some(self.0), Some(func))
+    fn into_sum_opts(self) -> Option<Command> {
+        Some(self)
     }
 }
 

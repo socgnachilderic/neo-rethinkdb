@@ -384,6 +384,106 @@ impl<'a> Command {
         count::new(args).with_parent(self)
     }
 
+    /// Sum all the elements of sequence.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.sum(()) → number
+    /// sequence.sum(field) → number
+    /// sequence.sum(func) → number
+    /// r.sum(sequence) → number
+    /// r.sum(sequence, field) → number
+    /// r.sum(sequence, func) → number
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// If called with a field name, sums all the values of that field in 
+    /// the sequence, skipping elements of the sequence that lack that field.
+    /// If called with a function, calls that function on every element of the 
+    /// sequence and sums the results, skipping elements of the sequence 
+    /// where that function returns `None` or non-existence error.
+    /// 
+    /// Returns `0` when called on an empty sequence.
+    ///
+    /// ## Examples
+    ///
+    /// What's 3 + 5 + 7?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([3, 5, 7])
+    ///         .sum(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// How many points have been scored across all games?
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .sum("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// How many points have been scored across all games, counting bonus points?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .sum(func!(|game| game.clone().g("points") + game.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    /// - [group](Self::group)
     pub fn sum(self, args: impl sum::SumArg) -> Self {
         sum::new(args).with_parent(self)
     }
@@ -419,7 +519,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// What's the average of 3, 5 and 7.
+    /// What's the average of 3, 5 and 7?
     ///
     /// ```
     /// use reql_rust::prelude::*;
@@ -471,7 +571,7 @@ impl<'a> Command {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("games")
-    ///         .min(func!(|game| game.clone().g("points") + game.g("bonus_points")))
+    ///         .avg(func!(|game| game.clone().g("points") + game.g("bonus_points")))
     ///         .run(&conn)
     ///         .await?;
     ///
