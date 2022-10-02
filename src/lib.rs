@@ -93,8 +93,109 @@ impl r {
         cmd::sum::new(args)
     }
 
-    pub fn avg(self, args: impl cmd::avg::AvgArg) -> Command {
-        cmd::avg::new(args)
+    /// Averages all the elements of sequence.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.avg(()) → Option<f64>
+    /// sequence.avg(field) → Option<f64>
+    /// sequence.avg(func) → Option<f64>
+    /// r.avg(sequence) → Option<f64>
+    /// r.avg(sequence, field) → Option<f64>
+    /// r.avg(sequence, func) → Option<f64>
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// If called with a field name, averages all the values of that field in 
+    /// the sequence, skipping elements of the sequence that lack that field.
+    /// If called with a function, calls that function on every element of the 
+    /// sequence and averages the results, skipping elements of the sequence 
+    /// where that function returns `None` or non-existence error.
+    /// 
+    /// Produces a non-existence error when called on an empty sequence. 
+    /// You can handle this case with `default`.
+    ///
+    /// ## Examples
+    ///
+    /// What's the average of 3, 5 and 7.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Option<f64> = r.expr([3, 5, 7])
+    ///         .avg(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == Some(5.));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// What's the average number of points scored in a games?
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .avg("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// What's the average number of points scored in a games, counting bonus points?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .min(func!(|game| game.clone().g("points") + game.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    /// - [group](crate::Command::group)
+    pub fn avg(self, sequence: Command, args: impl cmd::avg::AvgArg) -> Command {
+        sequence.avg(args)
     }
 
     /// Finds the minimum element of a sequence.
@@ -254,8 +355,8 @@ impl r {
     /// - [avg](Self::avg)
     /// - [max](Self::max)
     /// - [group](crate::Command::group)
-    pub fn min(self, args: impl cmd::min::MinArg) -> Command {
-        cmd::min::new(args)
+    pub fn min(self, sequence: Command, args: impl cmd::min::MinArg) -> Command {
+        sequence.min(args)
     }
 
     /// Finds the maximum element of a sequence.

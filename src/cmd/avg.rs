@@ -4,14 +4,9 @@ use crate::prelude::Func;
 use crate::Command;
 
 pub(crate) fn new(args: impl AvgArg) -> Command {
-    let (arg1, arg2) = args.into_avg_opts();
     let mut command = Command::new(TermType::Avg);
 
-    if let Some(arg) = arg1 {
-        command = command.with_arg(arg)
-    }
-
-    if let Some(arg) = arg2 {
+    if let Some(arg) = args.into_avg_opts() {
         command = command.with_arg(arg)
     }
 
@@ -19,48 +14,32 @@ pub(crate) fn new(args: impl AvgArg) -> Command {
 }
 
 pub trait AvgArg {
-    fn into_avg_opts(self) -> (Option<Command>, Option<Command>);
+    fn into_avg_opts(self) -> Option<Command>;
 }
 
 impl AvgArg for () {
-    fn into_avg_opts(self) -> (Option<Command>, Option<Command>) {
-        (None, None)
+    fn into_avg_opts(self) -> Option<Command> {
+        None
     }
 }
 
 impl AvgArg for &str {
-    fn into_avg_opts(self) -> (Option<Command>, Option<Command>) {
+    fn into_avg_opts(self) -> Option<Command> {
         let arg = Command::from_json(self);
 
-        (None, Some(arg))
+        Some(arg)
     }
 }
 
 impl AvgArg for Func {
-    fn into_avg_opts(self) -> (Option<Command>, Option<Command>) {
-        (None, Some(self.0))
+    fn into_avg_opts(self) -> Option<Command> {
+        Some(self.0)
     }
 }
 
 impl AvgArg for Command {
-    fn into_avg_opts(self) -> (Option<Command>, Option<Command>) {
-        (Some(self), None)
-    }
-}
-
-impl AvgArg for (Command, &str) {
-    fn into_avg_opts(self) -> (Option<Command>, Option<Command>) {
-        let arg = Command::from_json(self.1);
-
-        (Some(self.0), Some(arg))
-    }
-}
-
-impl AvgArg for (Command, Func) {
-    fn into_avg_opts(self) -> (Option<Command>, Option<Command>) {
-        let Func(func) = self.1;
-
-        (Some(self.0), Some(func))
+    fn into_avg_opts(self) -> Option<Command> {
+        Some(self)
     }
 }
 
