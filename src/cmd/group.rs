@@ -4,6 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
@@ -28,7 +29,7 @@ impl GroupArg for &str {
     }
 }
 
-impl GroupArg for Vec<&str> {
+impl<const N: usize> GroupArg for [&str; N] {
     fn into_group_opts(self) -> (CmdOpts, GroupOption) {
         let args = self.into_iter().map(Command::from_json).collect();
 
@@ -42,27 +43,43 @@ impl GroupArg for Func {
     }
 }
 
-impl GroupArg for (&str, GroupOption) {
+impl<const N: usize> GroupArg for [Func; N] {
     fn into_group_opts(self) -> (CmdOpts, GroupOption) {
-        let arg = Command::from_json(self.0);
+        let args = self.into_iter().map(|func| func.0).collect();
 
-        (CmdOpts::Single(arg), self.1)
+        (CmdOpts::Many(args), Default::default())
     }
 }
 
-impl GroupArg for (Vec<&str>, GroupOption) {
+impl GroupArg for Args<(&str, GroupOption)> {
     fn into_group_opts(self) -> (CmdOpts, GroupOption) {
-        let args = self.0.into_iter().map(Command::from_json).collect();
+        let arg = Command::from_json(self.0 .0);
 
-        (CmdOpts::Many(args), self.1)
+        (CmdOpts::Single(arg), self.0 .1)
     }
 }
 
-impl GroupArg for (Func, GroupOption) {
+impl<const N: usize> GroupArg for Args<([&str; N], GroupOption)> {
     fn into_group_opts(self) -> (CmdOpts, GroupOption) {
-        let Func(func) = self.0;
+        let args = self.0 .0.into_iter().map(Command::from_json).collect();
 
-        (CmdOpts::Single(func), self.1)
+        (CmdOpts::Many(args), self.0 .1)
+    }
+}
+
+impl GroupArg for Args<(Func, GroupOption)> {
+    fn into_group_opts(self) -> (CmdOpts, GroupOption) {
+        let Func(func) = self.0 .0;
+
+        (CmdOpts::Single(func), self.0 .1)
+    }
+}
+
+impl<const N: usize> GroupArg for Args<([Func; N], GroupOption)> {
+    fn into_group_opts(self) -> (CmdOpts, GroupOption) {
+        let funcs = self.0 .0.into_iter().map(|func| func.0).collect();
+
+        (CmdOpts::Many(funcs), self.0 .1)
     }
 }
 
@@ -74,21 +91,20 @@ pub struct GroupOption {
     pub multi: Option<bool>,
 }
 
-// GroupStream
-
 #[cfg(test)]
 mod tests {
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::types::GroupStream;
+    use crate::types::GroupedStream;
     use crate::Result;
 
     #[tokio::test]
     async fn test_group_data() -> Result<()> {
         let (conn, table, table_name) = set_up(true).await?;
-        let data_obtained: GroupStream<String, Post> =
+        let data_obtained: GroupedStream<String, Post> =
             table.group("title").run(&conn).await?.unwrap().parse()?;
 
+        dbg!(&data_obtained);
         let data_obtained = data_obtained.collect();
 
         assert!(data_obtained.len() == 4);

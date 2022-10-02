@@ -364,13 +364,124 @@ impl<'a> Command {
         sample::new(number).with_parent(self)
     }
 
+    /// Takes a stream and partitions it into multiple
+    /// groups based on the fields or functions provided.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.group(field) → grouped_stream
+    /// sequence.group(func) → grouped_stream
+    /// sequence.group(args!(field, options)) → grouped_stream
+    /// sequence.group(args!(func, options)) → grouped_stream
+    /// r.group(sequence, field) → grouped_stream
+    /// r.group(sequence, func) → grouped_stream
+    /// r.group(sequence, args!(field, options)) → grouped_stream
+    /// r.group(sequence, args!(func, options)) → grouped_stream
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str | [&str; N]
+    /// - func: func!(...) | [func!(...); N]
+    /// - grouped_stream: [GroupedStream](crate::types::GroupedStream)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// With the `multi` flag single documents can be assigned to multiple groups,
+    /// similar to the behavior of
+    /// [multi-indexes](https://rethinkdb.com/docs/secondary-indexes/javascript).
+    /// When `multi` is `true` and the grouping value is an array, documents
+    /// will be placed in each group that corresponds to the elements of the array.
+    /// If the array is empty the row will be ignored.
+    ///
+    /// Suppose that the table games has the following data:
+    ///
+    /// ```text
+    /// [
+    ///     {id: 2, player: "Moussa", points: 15, class: "ranked"},
+    ///     {id: 5, player: "Fatou", points: 7, class: "free"},
+    ///     {id: 11, player: "Moussa", points: 10, class: "free"},
+    ///     {id: 12, player: "Fatou", points: 2, class: "free"}
+    /// ]
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Group games by player.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::{GroupedItem, GroupedStream};
+    /// use reql_rust::{args, r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Serialize, Deserialize, PartialEq, Eq)]
+    /// struct Player {
+    ///     id: u8,
+    ///     player: String,
+    ///     points: u8,
+    ///     class: String,
+    /// }
+    ///
+    /// impl Player {
+    ///     fn new(id: u8, player: &str, points: u8, class: &str) -> Self {
+    ///         Self {
+    ///             id,
+    ///             points,
+    ///             player: player.to_owned(),
+    ///             class: class.to_owned(),
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let expected_data = vec![
+    ///         GroupedItem {
+    ///             group: String::from("Fatou"),
+    ///             values: vec![
+    ///                 Player::new(5, "Fatou", 7, "free"),
+    ///                 Player::new(12, "Fatou", 2, "free"),
+    ///             ]
+    ///         },
+    ///         GroupedItem {
+    ///             group: String::from("Moussa"),
+    ///             values: vec![
+    ///                 Player::new(2, "Moussa", 15, "ranked"),
+    ///                 Player::new(11, "Moussa", 10, "free"),
+    ///             ]
+    ///         },
+    ///     ];
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: GroupedStream<String, Player> = r.table("games")
+    ///         .group("player")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.collect() == expected_data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [ungroup](Self::ungroup)
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
     pub fn group(self, args: impl group::GroupArg) -> Self {
         group::new(args).with_parent(self)
     }
 
-    /// Takes a grouped stream or grouped data and turns it 
+    /// Takes a grouped stream or grouped data and turns it
     /// into an array of objects representing the groups.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -383,14 +494,15 @@ impl<'a> Command {
     ///
     /// # Description
     ///
-    /// Any commands chained after `ungroup` will operate on this array, 
-    /// rather than operating on each group individually. This is useful 
+    /// Any commands chained after `ungroup` will operate on this array,
+    /// rather than operating on each group individually. This is useful
     /// if you want to e.g. order the groups by the value of their reduction.
-    /// 
-    /// The format of the array returned by `ungroup` is the same as 
+    ///
+    /// The format of the array returned by `ungroup` is the same as
     /// the default native format of grouped data in the javascript driver and data explorer.
-    /// 
+    ///
     /// Suppose that the table games has the following data:
+    ///
     /// ```text
     /// [
     ///     {id: 2, player: "Moussa", points: 15, type: "ranked"},
@@ -436,7 +548,7 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// A shorter way to execute this query is to use [count](Self::count).
     ///
     /// ## Examples
@@ -453,7 +565,7 @@ impl<'a> Command {
     ///     let response = r.table("posts")
     ///         .map(func!(|post| post.g("comments").count(())))
     ///         .reduce(func!(|left, right| r.branch(
-    ///             left.clone().gt(right.clone()), 
+    ///             left.clone().gt(right.clone()),
     ///             args!(left, right)
     ///         )))
     ///         .default(0)
@@ -465,18 +577,18 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// A shorter way to execute this query is to use [max](Self::max).
-    /// 
+    ///
     /// # Related commands
     /// - [group](Self::group)
     pub fn ungroup(self) -> Self {
         ungroup::new().with_parent(self)
     }
 
-    /// Produce a single value from a sequence through 
+    /// Produce a single value from a sequence through
     /// repeated application of a reduction function.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -491,20 +603,20 @@ impl<'a> Command {
     /// # Description
     ///
     /// The reduction function can be called on:
-    /// 
+    ///
     /// - two elements of the sequence
     /// - one element of the sequence and one result of a previous reduction
     /// - two results of previous reductions
-    /// 
-    /// The reduction function can be called on the results of 
-    /// two previous reductions because the `reduce` command is 
-    /// distributed and parallelized across shards and CPU cores. 
-    /// A common mistaken when using the `reduce` command is to 
-    /// suppose that the reduction is executed from left to right. 
-    /// [Read the map-reduce in RethinkDB](https://rethinkdb.com/docs/map-reduce/) 
+    ///
+    /// The reduction function can be called on the results of
+    /// two previous reductions because the `reduce` command is
+    /// distributed and parallelized across shards and CPU cores.
+    /// A common mistaken when using the `reduce` command is to
+    /// suppose that the reduction is executed from left to right.
+    /// [Read the map-reduce in RethinkDB](https://rethinkdb.com/docs/map-reduce/)
     /// article to see an example.
-    /// 
-    /// If the sequence is empty, the server will produce a 
+    ///
+    /// If the sequence is empty, the server will produce a
     /// `ReqlRuntimeError` that can be caught with default.
     /// If the sequence has only one element, the first element will be returned.
     ///
@@ -530,7 +642,7 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// A shorter way to execute this query is to use [count](Self::count).
     ///
     /// ## Examples
@@ -547,7 +659,7 @@ impl<'a> Command {
     ///     let response = r.table("posts")
     ///         .map(func!(|post| post.g("comments").count(())))
     ///         .reduce(func!(|left, right| r.branch(
-    ///             left.clone().gt(right.clone()), 
+    ///             left.clone().gt(right.clone()),
     ///             args!(left, right)
     ///         )))
     ///         .default(0)
@@ -559,9 +671,9 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// A shorter way to execute this query is to use [max](Self::max).
-    /// 
+    ///
     /// # Related commands
     /// - [group](Self::group)
     /// - [map](Self::map)
@@ -574,9 +686,9 @@ impl<'a> Command {
         reduce::new(func).with_parent(self)
     }
 
-    /// Apply a function to a sequence in order, 
+    /// Apply a function to a sequence in order,
     /// maintaining state via an accumulator.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -591,16 +703,16 @@ impl<'a> Command {
     /// # Description
     ///
     /// The `fold` command returns either a single value or a new sequence.
-    /// 
-    /// In its first form, `fold` operates like [reduce](Self::reduce), returning a value 
-    /// by applying a combining function to each element in a sequence. 
-    /// The combining function takes two parameters: the previous reduction 
-    /// result (the accumulator) and the current element. However, `fold` has 
+    ///
+    /// In its first form, `fold` operates like [reduce](Self::reduce), returning a value
+    /// by applying a combining function to each element in a sequence.
+    /// The combining function takes two parameters: the previous reduction
+    /// result (the accumulator) and the current element. However, `fold` has
     /// the following differences from `reduce`:
     /// - it is guaranteed to proceed through the sequence from first element to last.
-    /// - it passes an initial base value to the function with the first element in 
+    /// - it passes an initial base value to the function with the first element in
     /// place of the previous reduction result.
-    /// 
+    ///
     /// ```text
     /// combining_function(accumulator | base, element) → new_accumulator
     /// ```
@@ -631,12 +743,12 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
-    /// (This example could be implemented with `reduce`, 
-    /// but `fold` will preserve the order when `words` is 
-    /// a RethinkDB table or other stream, which is 
+    ///
+    /// (This example could be implemented with `reduce`,
+    /// but `fold` will preserve the order when `words` is
+    /// a RethinkDB table or other stream, which is
     /// not guaranteed with `reduce`.)
-    /// 
+    ///
     /// # Related commands
     /// - [reduce](Self::reduce)
     /// - [concat_map](Self::concat_map)

@@ -29,7 +29,10 @@ impl MaxArg for () {
     }
 }
 
-impl<T> MaxArg for Args<T> where T: Into<String> {
+impl<T> MaxArg for Args<T>
+where
+    T: Into<String>,
+{
     fn into_max_opts(self) -> (Option<Command>, MaxOption) {
         let arg = Command::from_json(self.0.into());
 
@@ -65,13 +68,18 @@ pub struct MaxOption {
 mod tests {
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::{Result, args};
+    use crate::{args, Result};
 
     #[tokio::test]
     async fn test_max_data() -> Result<()> {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
-        let data_obtained: Post = table.max(args!("view")).run(&conn).await?.unwrap().parse()?;
+        let data_obtained: Post = table
+            .max(args!("view"))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
         assert!(Some(&data_obtained) == data.first());
 

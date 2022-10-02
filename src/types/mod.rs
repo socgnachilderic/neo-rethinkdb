@@ -11,7 +11,7 @@ pub use crate::cmd::point::Point;
 pub use crate::cmd::polygon::Polygon;
 pub use binary::Binary;
 pub use datetime::DateTime;
-pub use group_stream::{GroupItem, GroupStream};
+pub use group_stream::{GroupedItem, GroupedStream};
 pub use time_::Time;
 
 pub(crate) use datetime::timezone_to_string;
@@ -26,10 +26,11 @@ mod time_;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord)]
 #[non_exhaustive]
-#[serde(rename_all = "UPPERCASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReqlType {
     Geometry,
-    GroupStream,
+    GroupedStream,
+    GroupedData,
     Binary,
     Time,
 }

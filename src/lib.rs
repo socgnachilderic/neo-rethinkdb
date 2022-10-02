@@ -82,9 +82,124 @@ impl r {
         cmd::union::new(args)
     }
 
-    /// Produce a single value from a sequence through 
+    /// Takes a stream and partitions it into multiple
+    /// groups based on the fields or functions provided.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.group(field) → grouped_stream
+    /// sequence.group(func) → grouped_stream
+    /// sequence.group(args!(field, options)) → grouped_stream
+    /// sequence.group(args!(func, options)) → grouped_stream
+    /// r.group(sequence, field) → grouped_stream
+    /// r.group(sequence, func) → grouped_stream
+    /// r.group(sequence, args!(field, options)) → grouped_stream
+    /// r.group(sequence, args!(func, options)) → grouped_stream
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str | [&str; N]
+    /// - func: func!(...) | [func!(...); N]
+    /// - grouped_stream: [GroupedStream](crate::types::GroupedStream)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// With the `multi` flag single documents can be assigned to multiple groups,
+    /// similar to the behavior of
+    /// [multi-indexes](https://rethinkdb.com/docs/secondary-indexes/javascript).
+    /// When `multi` is `true` and the grouping value is an array, documents
+    /// will be placed in each group that corresponds to the elements of the array.
+    /// If the array is empty the row will be ignored.
+    ///
+    /// Suppose that the table games has the following data:
+    ///
+    /// ```text
+    /// [
+    ///     {id: 2, player: "Moussa", points: 15, class: "ranked"},
+    ///     {id: 5, player: "Fatou", points: 7, class: "free"},
+    ///     {id: 11, player: "Moussa", points: 10, class: "free"},
+    ///     {id: 12, player: "Fatou", points: 2, class: "free"}
+    /// ]
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Group games by player.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::{GroupedItem, GroupedStream};
+    /// use reql_rust::{args, r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Serialize, Deserialize, PartialEq, Eq)]
+    /// struct Player {
+    ///     id: u8,
+    ///     player: String,
+    ///     points: u8,
+    ///     class: String,
+    /// }
+    ///
+    /// impl Player {
+    ///     fn new(id: u8, player: &str, points: u8, class: &str) -> Self {
+    ///         Self {
+    ///             id,
+    ///             points,
+    ///             player: player.to_owned(),
+    ///             class: class.to_owned(),
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let expected_data = vec![
+    ///         GroupedItem {
+    ///             group: String::from("Fatou"),
+    ///             values: vec![
+    ///                 Player::new(5, "Fatou", 7, "free"),
+    ///                 Player::new(12, "Fatou", 2, "free"),
+    ///             ]
+    ///         },
+    ///         GroupedItem {
+    ///             group: String::from("Moussa"),
+    ///             values: vec![
+    ///                 Player::new(2, "Moussa", 15, "ranked"),
+    ///                 Player::new(11, "Moussa", 10, "free"),
+    ///             ]
+    ///         },
+    ///     ];
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: GroupedStream<String, Player> = r.table("games")
+    ///         .group("player")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.collect() == expected_data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [ungroup](crate::Command::ungroup)
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    pub fn group(self, sequence: Command, args: impl cmd::group::GroupArg) -> Command {
+        sequence.group(args)
+    }
+
+    /// Produce a single value from a sequence through
     /// repeated application of a reduction function.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -99,20 +214,20 @@ impl r {
     /// # Description
     ///
     /// The reduction function can be called on:
-    /// 
+    ///
     /// - two elements of the sequence
     /// - one element of the sequence and one result of a previous reduction
     /// - two results of previous reductions
-    /// 
-    /// The reduction function can be called on the results of 
-    /// two previous reductions because the `reduce` command is 
-    /// distributed and parallelized across shards and CPU cores. 
-    /// A common mistaken when using the `reduce` command is to 
-    /// suppose that the reduction is executed from left to right. 
-    /// [Read the map-reduce in RethinkDB](https://rethinkdb.com/docs/map-reduce/) 
+    ///
+    /// The reduction function can be called on the results of
+    /// two previous reductions because the `reduce` command is
+    /// distributed and parallelized across shards and CPU cores.
+    /// A common mistaken when using the `reduce` command is to
+    /// suppose that the reduction is executed from left to right.
+    /// [Read the map-reduce in RethinkDB](https://rethinkdb.com/docs/map-reduce/)
     /// article to see an example.
-    /// 
-    /// If the sequence is empty, the server will produce a 
+    ///
+    /// If the sequence is empty, the server will produce a
     /// `ReqlRuntimeError` that can be caught with default.
     /// If the sequence has only one element, the first element will be returned.
     ///
@@ -138,7 +253,7 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// A shorter way to execute this query is to use [count](Self::count).
     ///
     /// ## Examples
@@ -155,7 +270,7 @@ impl r {
     ///     let response = r.table("posts")
     ///         .map(func!(|post| post.g("comments").count(())))
     ///         .reduce(func!(|left, right| r.branch(
-    ///             left.clone().gt(right.clone()), 
+    ///             left.clone().gt(right.clone()),
     ///             args!(left, right)
     ///         )))
     ///         .default(0)
@@ -167,9 +282,9 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// A shorter way to execute this query is to use [max](Self::max).
-    /// 
+    ///
     /// # Related commands
     /// - [group](crate::Command::group)
     /// - [map](Self::map)
@@ -182,9 +297,9 @@ impl r {
         sequence.reduce(func)
     }
 
-    /// Count the number of elements in sequence or key/value pairs in an object, 
+    /// Count the number of elements in sequence or key/value pairs in an object,
     /// or returns the size of a string or binary object.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -203,14 +318,14 @@ impl r {
     /// - value: impl Serialize
     /// - func: func!(...)
     /// - sequence, binary, string, object, query_cmd: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// When `count` is called on a sequence with a predicate value or function, 
-    /// it returns the number of elements in the sequence equal to that value or 
-    /// where the function returns `true`. On a [binary](Self::binary) object, `count` 
-    /// returns the size of the object in bytes; on strings, `count` returns the string’s length. 
-    /// This is determined by counting the number of Unicode codepoints in the string, 
+    ///
+    /// When `count` is called on a sequence with a predicate value or function,
+    /// it returns the number of elements in the sequence equal to that value or
+    /// where the function returns `true`. On a [binary](Self::binary) object, `count`
+    /// returns the size of the object in bytes; on strings, `count` returns the string’s length.
+    /// This is determined by counting the number of Unicode codepoints in the string,
     /// counting combining codepoints separately.
     ///
     /// ## Examples
@@ -335,7 +450,7 @@ impl r {
     }
 
     /// Sum all the elements of sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -351,15 +466,15 @@ impl r {
     /// - field: &str, String, Cow<'static, str>
     /// - func: func!(...)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If called with a field name, sums all the values of that field in 
+    ///
+    /// If called with a field name, sums all the values of that field in
     /// the sequence, skipping elements of the sequence that lack that field.
-    /// If called with a function, calls that function on every element of the 
-    /// sequence and sums the results, skipping elements of the sequence 
+    /// If called with a function, calls that function on every element of the
+    /// sequence and sums the results, skipping elements of the sequence
     /// where that function returns `None` or non-existence error.
-    /// 
+    ///
     /// Returns `0` when called on an empty sequence.
     ///
     /// ## Examples
@@ -439,7 +554,7 @@ impl r {
     }
 
     /// Averages all the elements of sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -455,16 +570,16 @@ impl r {
     /// - field: &str, String, Cow<'static, str>
     /// - func: func!(...)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If called with a field name, averages all the values of that field in 
+    ///
+    /// If called with a field name, averages all the values of that field in
     /// the sequence, skipping elements of the sequence that lack that field.
-    /// If called with a function, calls that function on every element of the 
-    /// sequence and averages the results, skipping elements of the sequence 
+    /// If called with a function, calls that function on every element of the
+    /// sequence and averages the results, skipping elements of the sequence
     /// where that function returns `None` or non-existence error.
-    /// 
-    /// Produces a non-existence error when called on an empty sequence. 
+    ///
+    /// Produces a non-existence error when called on an empty sequence.
     /// You can handle this case with `default`.
     ///
     /// ## Examples
@@ -544,7 +659,7 @@ impl r {
     }
 
     /// Finds the minimum element of a sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -563,22 +678,22 @@ impl r {
     /// - func: func!(...)
     /// - options: [MinOption](crate::cmd::min::MinOption)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// The `min` command can be called with:
-    /// - a `field name`, to return the element of the sequence 
+    /// - a `field name`, to return the element of the sequence
     /// with the largest value in that field;
-    /// - a `function`, to apply the function to every element within the sequence 
-    /// and return the element which returns the largest value from the function, 
+    /// - a `function`, to apply the function to every element within the sequence
+    /// and return the element which returns the largest value from the function,
     /// ignoring any elements where the function produces a non-existence error;
-    /// - an `index` (the primary key or a secondary index), to return the element 
+    /// - an `index` (the primary key or a secondary index), to return the element
     /// of the sequence with the largest value in that index;
-    /// 
-    /// For more information on RethinkDB’s sorting order, read the section in 
+    ///
+    /// For more information on RethinkDB’s sorting order, read the section in
     /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
-    /// 
-    /// Calling `min` on an empty sequence will throw a non-existence error; 
+    ///
+    /// Calling `min` on an empty sequence will throw a non-existence error;
     /// this can be handled using the [default](crate::Command::default) command.
     ///
     /// ## Examples
@@ -647,7 +762,7 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Return the user who has scored the fewest points, 
+    /// Return the user who has scored the fewest points,
     /// adding in bonus points from a separate field using a function.
     ///
     /// ```
@@ -669,7 +784,7 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Return the highest number of points any user has ever scored. 
+    /// Return the highest number of points any user has ever scored.
     /// This returns the value of that `points` field, not a document.
     ///
     /// ```
@@ -705,7 +820,7 @@ impl r {
     }
 
     /// Finds the maximum element of a sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -724,22 +839,22 @@ impl r {
     /// - func: func!(...)
     /// - options: [MaxOption](crate::cmd::max::MaxOption)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// The `max` command can be called with:
-    /// - a `field name`, to return the element of the sequence 
+    /// - a `field name`, to return the element of the sequence
     /// with the largest value in that field;
-    /// - a `function`, to apply the function to every element within the sequence 
-    /// and return the element which returns the largest value from the function, 
+    /// - a `function`, to apply the function to every element within the sequence
+    /// and return the element which returns the largest value from the function,
     /// ignoring any elements where the function produces a non-existence error;
-    /// - an `index` (the primary key or a secondary index), to return the element 
+    /// - an `index` (the primary key or a secondary index), to return the element
     /// of the sequence with the largest value in that index;
-    /// 
-    /// For more information on RethinkDB’s sorting order, read the section in 
+    ///
+    /// For more information on RethinkDB’s sorting order, read the section in
     /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
-    /// 
-    /// Calling `max` on an empty sequence will throw a non-existence error; 
+    ///
+    /// Calling `max` on an empty sequence will throw a non-existence error;
     /// this can be handled using the [default](crate::Command::default) command.
     ///
     /// ## Examples
@@ -808,7 +923,7 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Return the user who has scored the most points, 
+    /// Return the user who has scored the most points,
     /// adding in bonus points from a separate field using a function.
     ///
     /// ```
@@ -830,7 +945,7 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Return the highest number of points any user has ever scored. 
+    /// Return the highest number of points any user has ever scored.
     /// This returns the value of that `points` field, not a document.
     ///
     /// ```
@@ -866,7 +981,7 @@ impl r {
     }
 
     /// Removes duplicate elements from a sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -879,14 +994,14 @@ impl r {
     /// Where:
     /// - options: [DistinctOption](crate::cmd::distinct::DistinctOption)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// The `distinct` command can be called on any sequence or table with an index.
-    /// 
+    ///
     /// ```text
-    /// While `distinct` can be called on a table without an index, 
-    /// the only effect will be to convert the table into a stream; 
+    /// While `distinct` can be called on a table without an index,
+    /// the only effect will be to convert the table into a stream;
     /// the content of the stream will not be affected.
     /// ```
     ///
@@ -914,8 +1029,8 @@ impl r {
     ///
     /// ## Examples
     ///
-    /// Topics in a table of messages have a secondary index on them, 
-    /// and more than one message can have the same topic. 
+    /// Topics in a table of messages have a secondary index on them,
+    /// and more than one message can have the same topic.
     /// What are the unique topics in the table?
     ///
     /// ```
@@ -934,7 +1049,7 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The above structure is functionally identical to:
     ///
     /// ```
@@ -954,7 +1069,7 @@ impl r {
     /// }
     /// ```
     ///
-    /// However, the first form (passing the index as an argument to `distinct`) is faster, 
+    /// However, the first form (passing the index as an argument to `distinct`) is faster,
     /// and won’t run into array limit issues since it’s returning a stream.
     ///
     /// # Related commands
