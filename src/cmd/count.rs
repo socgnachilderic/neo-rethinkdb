@@ -1,4 +1,5 @@
 use ql2::term::TermType;
+use serde::Serialize;
 
 use crate::arguments::Args;
 use crate::prelude::Func;
@@ -6,13 +7,8 @@ use crate::Command;
 
 pub(crate) fn new(args: impl CountArg) -> Command {
     let mut command = Command::new(TermType::Count);
-    let (arg1, arg2) = args.into_count_arg();
 
-    if let Some(arg) = arg1 {
-        command = command.with_arg(arg)
-    }
-
-    if let Some(arg) = arg2 {
+    if let Some(arg) = args.into_count_arg() {
         command = command.with_arg(arg)
     }
 
@@ -20,32 +16,33 @@ pub(crate) fn new(args: impl CountArg) -> Command {
 }
 
 pub trait CountArg {
-    fn into_count_arg(self) -> (Option<Command>, Option<Command>);
+    fn into_count_arg(self) -> Option<Command>;
 }
 
 impl CountArg for () {
-    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
-        (None, None)
+    fn into_count_arg(self) -> Option<Command> {
+        None
     }
 }
 
 impl CountArg for Command {
-    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
-        (Some(self), None)
+    fn into_count_arg(self) -> Option<Command> {
+        Some(self)
     }
 }
 
 impl CountArg for Func {
-    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
-        (Some(self.0), None)
+    fn into_count_arg(self) -> Option<Command> {
+        Some(self.0)
     }
 }
 
-impl CountArg for Args<(Command, Func)> {
-    fn into_count_arg(self) -> (Option<Command>, Option<Command>) {
-        let Func(func) = self.0 .1;
-
-        (Some(self.0 .0), Some(func))
+impl<T> CountArg for Args<T>
+where
+    T: Serialize,
+{
+    fn into_count_arg(self) -> Option<Command> {
+        Some(Command::from_json(self.0))
     }
 }
 

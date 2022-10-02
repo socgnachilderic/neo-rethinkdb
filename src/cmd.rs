@@ -380,6 +380,154 @@ impl<'a> Command {
         fold::new(base, func).with_parent(self)
     }
 
+    /// Count the number of elements in sequence or key/value pairs in an object, 
+    /// or returns the size of a string or binary object.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// binary.count(()) → number
+    /// string.count(()) → number
+    /// object.count(()) → number
+    /// sequence.count(()) → number
+    /// sequence.count(args!(value)) → number
+    /// sequence.count(func) → number
+    /// r.count(query_cmd) → number
+    /// r.count(query_cmd, args!(value)) → number
+    /// r.count(query_cmd, func) → number
+    /// ```
+    ///
+    /// Where:
+    /// - value: impl Serialize
+    /// - func: func!(...)
+    /// - sequence, binary, string, object, query_cmd: [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// When `count` is called on a sequence with a predicate value or function, 
+    /// it returns the number of elements in the sequence equal to that value or 
+    /// where the function returns `true`. On a [binary](crate::r::binary) object, `count` 
+    /// returns the size of the object in bytes; on strings, `count` returns the string’s length. 
+    /// This is determined by counting the number of Unicode codepoints in the string, 
+    /// counting combining codepoints separately.
+    ///
+    /// ## Examples
+    ///
+    /// Count the number of users.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .count(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Count the number of 18 year old users.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .g("age")
+    ///         .count(args!(18))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Count the number of users over 18.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .g("age")
+    ///         .count(func!(|age| age.gt(18)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the length of a Unicode string.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: usize = r.expr("こんにちは")
+    ///         .count(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 5);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the length of an array.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: usize = r.expr(['0','1','2'])
+    ///         .count(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 3);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    /// - [group](Self::group)
     pub fn count(self, args: impl count::CountArg) -> Self {
         count::new(args).with_parent(self)
     }
