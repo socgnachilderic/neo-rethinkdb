@@ -360,6 +360,72 @@ impl<'a> Command {
         union::new(args).with_parent(self)
     }
 
+    /// Select a given number of elements from 
+    /// a sequence with uniform random distribution.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.sample(number) → selection
+    /// stream.sample(number) → array
+    /// array.sample(number) → array
+    /// ```
+    ///
+    /// Where:
+    /// - number: usize
+    /// - sequence, stream, array: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// Select a given number of elements from a 
+    /// sequence with uniform random distribution. 
+    /// Selection is done without replacement.
+    /// 
+    /// If the sequence has less than the requested 
+    /// number of elements (i.e., calling `sample(10)` 
+    /// on a sequence with only five elements), `sample` 
+    /// will return the entire sequence in a random order.
+    ///
+    /// ## Examples
+    ///
+    /// Select 3 random heroes.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .sample(3)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Select and stratify 3 random heroes by belovedness.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .group("belovedness")
+    ///         .sample(3)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn sample(self, number: usize) -> Self {
         sample::new(number).with_parent(self)
     }
