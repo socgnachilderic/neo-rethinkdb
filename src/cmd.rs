@@ -376,13 +376,82 @@ impl<'a> Command {
         reduce::new(func).with_parent(self)
     }
 
-    pub fn fold(self, base: AnyParam, func: Func) -> Self {
+    /// Apply a function to a sequence in order, 
+    /// maintaining state via an accumulator.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.fold(base, func) → value
+    /// ```
+    ///
+    /// Where:
+    /// - base, value: impl Serialize
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// The `fold` command returns either a single value or a new sequence.
+    /// 
+    /// In its first form, `fold` operates like [reduce](Self::reduce), returning a value 
+    /// by applying a combining function to each element in a sequence. 
+    /// The combining function takes two parameters: the previous reduction 
+    /// result (the accumulator) and the current element. However, `fold` has 
+    /// the following differences from `reduce`:
+    /// - it is guaranteed to proceed through the sequence from first element to last.
+    /// - it passes an initial base value to the function with the first element in 
+    /// place of the previous reduction result.
+    /// 
+    /// ```text
+    /// combining_function(accumulator | base, element) → new_accumulator
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Concatenate words from a list.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("words")
+    ///         .order_by(r.expr("id"))
+    ///         .fold(
+    ///             "",
+    ///             func!(|acc, word| acc.clone()
+    ///                 + r.branch(acc.eq(""), args!(r.expr(""), r.expr(", ")))
+    ///                 + word),
+    ///         )
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// (This example could be implemented with `reduce`, 
+    /// but `fold` will preserve the order when `words` is 
+    /// a RethinkDB table or other stream, which is 
+    /// not guaranteed with `reduce`.)
+    /// 
+    /// # Related commands
+    /// - [reduce](Self::reduce)
+    /// - [concat_map](Self::concat_map)
+    pub fn fold<T>(self, base: T, func: Func) -> Self
+    where
+        T: Serialize,
+    {
         fold::new(base, func).with_parent(self)
     }
 
-    /// Count the number of elements in sequence or key/value pairs in an object, 
+    /// Count the number of elements in sequence or key/value pairs in an object,
     /// or returns the size of a string or binary object.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -401,14 +470,14 @@ impl<'a> Command {
     /// - value: impl Serialize
     /// - func: func!(...)
     /// - sequence, binary, string, object, query_cmd: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// When `count` is called on a sequence with a predicate value or function, 
-    /// it returns the number of elements in the sequence equal to that value or 
-    /// where the function returns `true`. On a [binary](crate::r::binary) object, `count` 
-    /// returns the size of the object in bytes; on strings, `count` returns the string’s length. 
-    /// This is determined by counting the number of Unicode codepoints in the string, 
+    ///
+    /// When `count` is called on a sequence with a predicate value or function,
+    /// it returns the number of elements in the sequence equal to that value or
+    /// where the function returns `true`. On a [binary](crate::r::binary) object, `count`
+    /// returns the size of the object in bytes; on strings, `count` returns the string’s length.
+    /// This is determined by counting the number of Unicode codepoints in the string,
     /// counting combining codepoints separately.
     ///
     /// ## Examples
@@ -533,7 +602,7 @@ impl<'a> Command {
     }
 
     /// Sum all the elements of sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -549,15 +618,15 @@ impl<'a> Command {
     /// - field: &str, String, Cow<'static, str>
     /// - func: func!(...)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If called with a field name, sums all the values of that field in 
+    ///
+    /// If called with a field name, sums all the values of that field in
     /// the sequence, skipping elements of the sequence that lack that field.
-    /// If called with a function, calls that function on every element of the 
-    /// sequence and sums the results, skipping elements of the sequence 
+    /// If called with a function, calls that function on every element of the
+    /// sequence and sums the results, skipping elements of the sequence
     /// where that function returns `None` or non-existence error.
-    /// 
+    ///
     /// Returns `0` when called on an empty sequence.
     ///
     /// ## Examples
@@ -637,7 +706,7 @@ impl<'a> Command {
     }
 
     /// Averages all the elements of sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -653,16 +722,16 @@ impl<'a> Command {
     /// - field: &str, String, Cow<'static, str>
     /// - func: func!(...)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// If called with a field name, averages all the values of that field in 
+    ///
+    /// If called with a field name, averages all the values of that field in
     /// the sequence, skipping elements of the sequence that lack that field.
-    /// If called with a function, calls that function on every element of the 
-    /// sequence and averages the results, skipping elements of the sequence 
+    /// If called with a function, calls that function on every element of the
+    /// sequence and averages the results, skipping elements of the sequence
     /// where that function returns `None` or non-existence error.
-    /// 
-    /// Produces a non-existence error when called on an empty sequence. 
+    ///
+    /// Produces a non-existence error when called on an empty sequence.
     /// You can handle this case with `default`.
     ///
     /// ## Examples
@@ -742,7 +811,7 @@ impl<'a> Command {
     }
 
     /// Finds the minimum element of a sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -761,22 +830,22 @@ impl<'a> Command {
     /// - func: func!(...)
     /// - options: [MinOption](crate::cmd::min::MinOption)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// The `min` command can be called with:
-    /// - a `field name`, to return the element of the sequence 
+    /// - a `field name`, to return the element of the sequence
     /// with the largest value in that field;
-    /// - a `function`, to apply the function to every element within the sequence 
-    /// and return the element which returns the largest value from the function, 
+    /// - a `function`, to apply the function to every element within the sequence
+    /// and return the element which returns the largest value from the function,
     /// ignoring any elements where the function produces a non-existence error;
-    /// - an `index` (the primary key or a secondary index), to return the element 
+    /// - an `index` (the primary key or a secondary index), to return the element
     /// of the sequence with the largest value in that index;
-    /// 
-    /// For more information on RethinkDB’s sorting order, read the section in 
+    ///
+    /// For more information on RethinkDB’s sorting order, read the section in
     /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
-    /// 
-    /// Calling `min` on an empty sequence will throw a non-existence error; 
+    ///
+    /// Calling `min` on an empty sequence will throw a non-existence error;
     /// this can be handled using the [default](Self::default) command.
     ///
     /// ## Examples
@@ -845,7 +914,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Return the user who has scored the fewest points, 
+    /// Return the user who has scored the fewest points,
     /// adding in bonus points from a separate field using a function.
     ///
     /// ```
@@ -867,7 +936,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Return the highest number of points any user has ever scored. 
+    /// Return the highest number of points any user has ever scored.
     /// This returns the value of that `points` field, not a document.
     ///
     /// ```
@@ -903,7 +972,7 @@ impl<'a> Command {
     }
 
     /// Finds the maximum element of a sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -922,22 +991,22 @@ impl<'a> Command {
     /// - func: func!(...)
     /// - options: [MaxOption](crate::cmd::max::MaxOption)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// The `max` command can be called with:
-    /// - a `field name`, to return the element of the sequence 
+    /// - a `field name`, to return the element of the sequence
     /// with the largest value in that field;
-    /// - a `function`, to apply the function to every element within the sequence 
-    /// and return the element which returns the largest value from the function, 
+    /// - a `function`, to apply the function to every element within the sequence
+    /// and return the element which returns the largest value from the function,
     /// ignoring any elements where the function produces a non-existence error;
-    /// - an `index` (the primary key or a secondary index), to return the element 
+    /// - an `index` (the primary key or a secondary index), to return the element
     /// of the sequence with the largest value in that index;
-    /// 
-    /// For more information on RethinkDB’s sorting order, read the section in 
+    ///
+    /// For more information on RethinkDB’s sorting order, read the section in
     /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
-    /// 
-    /// Calling `max` on an empty sequence will throw a non-existence error; 
+    ///
+    /// Calling `max` on an empty sequence will throw a non-existence error;
     /// this can be handled using the [default](Self::default) command.
     ///
     /// ## Examples
@@ -1006,7 +1075,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Return the user who has scored the most points, 
+    /// Return the user who has scored the most points,
     /// adding in bonus points from a separate field using a function.
     ///
     /// ```
@@ -1028,7 +1097,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Return the highest number of points any user has ever scored. 
+    /// Return the highest number of points any user has ever scored.
     /// This returns the value of that `points` field, not a document.
     ///
     /// ```
@@ -1064,7 +1133,7 @@ impl<'a> Command {
     }
 
     /// Removes duplicate elements from a sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -1077,14 +1146,14 @@ impl<'a> Command {
     /// Where:
     /// - options: [DistinctOption](crate::cmd::distinct::DistinctOption)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// The `distinct` command can be called on any sequence or table with an index.
-    /// 
+    ///
     /// ```text
-    /// While `distinct` can be called on a table without an index, 
-    /// the only effect will be to convert the table into a stream; 
+    /// While `distinct` can be called on a table without an index,
+    /// the only effect will be to convert the table into a stream;
     /// the content of the stream will not be affected.
     /// ```
     ///
@@ -1112,8 +1181,8 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Topics in a table of messages have a secondary index on them, 
-    /// and more than one message can have the same topic. 
+    /// Topics in a table of messages have a secondary index on them,
+    /// and more than one message can have the same topic.
     /// What are the unique topics in the table?
     ///
     /// ```
@@ -1132,7 +1201,7 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// The above structure is functionally identical to:
     ///
     /// ```
@@ -1152,7 +1221,7 @@ impl<'a> Command {
     /// }
     /// ```
     ///
-    /// However, the first form (passing the index as an argument to `distinct`) is faster, 
+    /// However, the first form (passing the index as an argument to `distinct`) is faster,
     /// and won’t run into array limit issues since it’s returning a stream.
     ///
     /// # Related commands
@@ -1163,9 +1232,9 @@ impl<'a> Command {
         distinct::new(args).with_parent(self)
     }
 
-    /// When called with values, returns `true` 
+    /// When called with values, returns `true`
     /// if a sequence contains all the specified values.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -1176,13 +1245,13 @@ impl<'a> Command {
     /// Where:
     /// - value: impl Serialize | [Command](crate::Command)
     /// - sequence: [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// When called with predicate functions, returns `true` 
-    /// if for each predicate there exists at least one element 
+    ///
+    /// When called with predicate functions, returns `true`
+    /// if for each predicate there exists at least one element
     /// of the stream where that predicate returns `true`.
-    /// 
+    ///
     /// Values and predicates may be mixed freely in the argument list.
     ///
     /// ## Examples
@@ -1262,7 +1331,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Use contains with a predicate function to simulate an or. 
+    /// Use contains with a predicate function to simulate an or.
     /// Return the Marvel superheroes who live in Detroit, Chicago or Hoboken.
     ///
     /// ```
