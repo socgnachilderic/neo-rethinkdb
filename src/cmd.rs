@@ -368,6 +368,108 @@ impl<'a> Command {
         group::new(args).with_parent(self)
     }
 
+    /// Takes a grouped stream or grouped data and turns it 
+    /// into an array of objects representing the groups.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// grouped_stream.ungroup() → array
+    /// grouped_data.ungroup() → array
+    /// ```
+    ///
+    /// Where:
+    /// - grouped_stream, grouped_data: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// Any commands chained after `ungroup` will operate on this array, 
+    /// rather than operating on each group individually. This is useful 
+    /// if you want to e.g. order the groups by the value of their reduction.
+    /// 
+    /// The format of the array returned by `ungroup` is the same as 
+    /// the default native format of grouped data in the javascript driver and data explorer.
+    /// 
+    /// Suppose that the table games has the following data:
+    /// ```text
+    /// [
+    ///     {id: 2, player: "Moussa", points: 15, type: "ranked"},
+    ///     {id: 5, player: "Fatou", points: 7, type: "free"},
+    ///     {id: 11, player: "Ibrahim", points: 10, type: "free"},
+    ///     {id: 12, player: "Abess", points: 2, type: "free"}
+    /// ]
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// What is the maximum number of points scored by each player, with the highest scorers first?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let expected_data = json!([
+    ///         {
+    ///             "group": "Bob",
+    ///             "reduction": 15
+    ///         },
+    ///         {
+    ///             "group": "Alice",
+    ///             "reduction": 7
+    ///         }
+    ///     ]);
+    ///     let response = r.table("games")
+    ///         .group("player")
+    ///         .max(args!("points"))
+    ///         .g("points")
+    ///         .ungroup()
+    ///         .order_by(r.desc("reduction"))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap();
+    ///
+    ///     assert!(response == expected_data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// A shorter way to execute this query is to use [count](Self::count).
+    ///
+    /// ## Examples
+    ///
+    /// Suppose that each `post` has a field `comments` that is an array of comments.
+    /// Return the maximum number comments per post.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .map(func!(|post| post.g("comments").count(())))
+    ///         .reduce(func!(|left, right| r.branch(
+    ///             left.clone().gt(right.clone()), 
+    ///             args!(left, right)
+    ///         )))
+    ///         .default(0)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// A shorter way to execute this query is to use [max](Self::max).
+    /// 
+    /// # Related commands
+    /// - [group](Self::group)
     pub fn ungroup(self) -> Self {
         ungroup::new().with_parent(self)
     }
