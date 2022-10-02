@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use prelude::Func;
 use serde::Serialize;
 
 use arguments::Permission;
@@ -81,8 +82,104 @@ impl r {
         cmd::union::new(args)
     }
 
-    pub fn reduce(self, args: impl cmd::reduce::ReduceArg) -> Command {
-        cmd::reduce::new(args)
+    /// Produce a single value from a sequence through 
+    /// repeated application of a reduction function.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.fold(base, func) → value
+    /// ```
+    ///
+    /// Where:
+    /// - base, value: impl Serialize
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// The reduction function can be called on:
+    /// 
+    /// - two elements of the sequence
+    /// - one element of the sequence and one result of a previous reduction
+    /// - two results of previous reductions
+    /// 
+    /// The reduction function can be called on the results of 
+    /// two previous reductions because the `reduce` command is 
+    /// distributed and parallelized across shards and CPU cores. 
+    /// A common mistaken when using the `reduce` command is to 
+    /// suppose that the reduction is executed from left to right. 
+    /// [Read the map-reduce in RethinkDB](https://rethinkdb.com/docs/map-reduce/) 
+    /// article to see an example.
+    /// 
+    /// If the sequence is empty, the server will produce a 
+    /// `ReqlRuntimeError` that can be caught with default.
+    /// If the sequence has only one element, the first element will be returned.
+    ///
+    /// ## Examples
+    ///
+    /// Return the number of documents in the table posts.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .map(func!(|| r.expr(1)))
+    ///         .reduce(func!(|left, right| left + right))
+    ///         .default(0)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// A shorter way to execute this query is to use [count](Self::count).
+    ///
+    /// ## Examples
+    ///
+    /// Suppose that each `post` has a field `comments` that is an array of comments.
+    /// Return the maximum number comments per post.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .map(func!(|post| post.g("comments").count(())))
+    ///         .reduce(func!(|left, right| r.branch(
+    ///             left.clone().gt(right.clone()), 
+    ///             args!(left, right)
+    ///         )))
+    ///         .default(0)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// A shorter way to execute this query is to use [max](Self::max).
+    /// 
+    /// # Related commands
+    /// - [group](crate::Command::group)
+    /// - [map](Self::map)
+    /// - [concat_map](crate::Command::concat_map)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    pub fn reduce(self, sequence: Command, func: Func) -> Command {
+        sequence.reduce(func)
     }
 
     /// Count the number of elements in sequence or key/value pairs in an object, 

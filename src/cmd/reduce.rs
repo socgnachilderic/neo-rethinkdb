@@ -1,44 +1,33 @@
 use ql2::term::TermType;
 
-use crate::arguments::AnyParam;
 use crate::prelude::Func;
 use crate::Command;
 
-pub(crate) fn new(args: impl ReduceArg) -> Command {
-    let (sequence, func) = args.into_reduce_opts();
-    let mut command = Command::new(TermType::Reduce);
-
-    if let Some(seq) = sequence {
-        command = command.with_arg(seq)
-    }
-
-    command.with_arg(func)
+pub(crate) fn new(func: Func) -> Command {
+    Command::new(TermType::Reduce).with_arg(func.0)
 }
 
-pub trait ReduceArg {
-    fn into_reduce_opts(self) -> (Option<Command>, Command);
-}
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::spec::{set_up, tear_down, Post};
+    use crate::{r, Result};
 
-impl ReduceArg for Func {
-    fn into_reduce_opts(self) -> (Option<Command>, Command) {
-        (None, self.0)
-    }
-}
+    #[tokio::test]
+    async fn test_reduce_ops() -> Result<()> {
+        let post_number = Post::get_many_data().len();
+        let (conn, table, table_name) = set_up(true).await?;
+        let response: usize = table
+            .map(func!(|| r.expr(1)))
+            .reduce(func!(|left, right| left + right))
+            .default(0)
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
-impl ReduceArg for (Command, Func) {
-    fn into_reduce_opts(self) -> (Option<Command>, Command) {
-        let Func(func) = self.1;
+        assert!(response == post_number);
 
-        (Some(self.0), func)
-    }
-}
-
-impl ReduceArg for (AnyParam, Func) {
-    fn into_reduce_opts(self) -> (Option<Command>, Command) {
-        let Func(func) = self.1;
-
-        (Some(self.0.into()), func)
+        tear_down(conn, &table_name).await
     }
 }
-
-// TODO write test
