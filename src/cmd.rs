@@ -352,6 +352,39 @@ impl<'a> Command {
         offsets_of::new(args).with_parent(self)
     }
 
+    /// Test if a sequence is empty.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.is_empty() → bool
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Are there any documents in the simbad table?
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("simbad")
+    ///         .is_empty()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// # Related commands
+    /// - [offsets_of](Self::offsets_of)
     pub fn is_empty(self) -> Self {
         is_empty::new().with_parent(self)
     }
