@@ -307,14 +307,6 @@ pub enum Squash {
     Float(f32),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-#[serde(untagged)]
-pub enum Interleave {
-    Bool(bool),
-    FieldName(&'static str),
-}
-
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub enum GeoSystem {
     #[serde(rename = "unit_sphere")]

@@ -78,8 +78,42 @@ impl r {
         cmd::order_by::new(args)
     }
 
-    pub fn union(self, args: impl cmd::union::UnionArg) -> Command {
-        cmd::union::new(args)
+    /// Merge two or more sequences.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// stream.union(sequence) → stream
+    /// stream.union(vec![sequence]) → stream
+    /// stream.union(args!(sequence, options)) → stream
+    /// stream.union(args!(vec![sequence], options)) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - sequence: [Command](crate::Command)
+    /// - options: [UnionOption](crate::cmd::union::UnionOption)
+    ///
+    /// ## Examples
+    ///
+    /// Construct a stream of all characters.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .union(r.table("kirikou"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn union(self, stream: Command, args: impl cmd::union::UnionArg) -> Command {
+        stream.union(args)
     }
 
     /// Takes a stream and partitions it into multiple

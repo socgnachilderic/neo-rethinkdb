@@ -122,3 +122,12 @@ pub enum Unit {
     #[serde(rename = "ft")]
     InternationalFoot,
 }
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[serde(untagged)]
+#[non_exhaustive]
+pub enum Interleave {
+    Bool(bool),
+    FieldName(&'static str),
+    // Function
+}

@@ -356,6 +356,40 @@ impl<'a> Command {
         is_empty::new().with_parent(self)
     }
 
+    /// Merge two or more sequences.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// stream.union(sequence) → stream
+    /// stream.union(vec![sequence]) → stream
+    /// stream.union(args!(sequence, options)) → stream
+    /// stream.union(args!(vec![sequence], options)) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - sequence: [Command](crate::Command)
+    /// - options: [UnionOption](crate::cmd::union::UnionOption)
+    ///
+    /// ## Examples
+    ///
+    /// Construct a stream of all characters.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .union(r.table("kirikou"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn union(self, args: impl union::UnionArg) -> Self {
         union::new(args).with_parent(self)
     }
