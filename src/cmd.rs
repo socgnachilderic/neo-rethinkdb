@@ -348,6 +348,64 @@ impl<'a> Command {
         nth::new(index).with_parent(self)
     }
 
+    /// Get the indexes of an element in a sequence.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.is_empty() → bool
+    /// ```
+    /// 
+    /// ## Description
+    ///
+    /// If the argument is a predicate, get 
+    /// the indexes of all elements matching it.
+    /// 
+    /// ## Examples
+    ///
+    /// Find the position of the letter ‘c’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<usize> = r.expr(['a','b','c'])
+    ///         .offsets_of('c')
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response.first(), Some(&2));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Find the popularity ranking of invisible heroes.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .union(r.table("dc"))
+    ///         .order_by(r.expr("popularity"))
+    ///         .offsets_of(func!(|hero| hero.g("superpowers").contains("invisibility")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn offsets_of(self, args: impl offsets_of::OffsetsOfArg) -> Self {
         offsets_of::new(args).with_parent(self)
     }
