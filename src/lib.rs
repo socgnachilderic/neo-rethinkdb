@@ -79,7 +79,7 @@ impl r {
     }
 
     /// Merge two or more sequences.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text

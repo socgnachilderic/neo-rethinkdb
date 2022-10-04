@@ -103,7 +103,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: GroupedStream<String, Post> =
             table.group("title").run(&conn).await?.unwrap().parse()?;
-            
+
         let data_obtained = data_obtained.collect();
 
         assert!(data_obtained.len() == 4);

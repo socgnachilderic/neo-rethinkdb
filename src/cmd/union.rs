@@ -44,13 +44,13 @@ impl UnionArg for Args<(Vec<Command>, UnionOption)> {
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct UnionOption {
-    /// The optional `interleave` argument controls 
+    /// The optional `interleave` argument controls
     /// how the sequences will be merged:
-    /// - `Interleave::Bool(true)`: results will be mixed together; 
-    /// this is the fastest setting, but ordering of elements is not guaranteed. 
+    /// - `Interleave::Bool(true)`: results will be mixed together;
+    /// this is the fastest setting, but ordering of elements is not guaranteed.
     /// (This is the default.)
     /// - `Interleave::Bool(false)`: input sequences will be appended to one another, left to right.
-    /// - `Interleave::FieldName(field_name)`: a string will be taken as the name of a field 
+    /// - `Interleave::FieldName(field_name)`: a string will be taken as the name of a field
     /// to perform a merge-sort on. The input sequences must be ordered **before** being passed to `union`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interleave: Option<Interleave>,

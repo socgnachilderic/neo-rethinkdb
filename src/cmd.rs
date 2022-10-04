@@ -344,23 +344,113 @@ impl<'a> Command {
         slice::new(args).with_parent(self)
     }
 
+    /// Get the **nth** element of a sequence, counting from zero.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.nth(index) → object
+    /// ```
+    ///
+    /// Where:
+    /// - index: isize
+    ///
+    /// # Description
+    ///
+    /// If the argument is negative, count from the last element.
+    ///
+    /// ## Examples
+    ///
+    /// Select the second element in the array.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([1, 2, 3])
+    ///         .nth(1)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 2);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Select the bronze medalist from the competitors.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .order_by(r.desc("score"))
+    ///         .nth(3)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Select the last place competitors.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .order_by(r.desc("score"))
+    ///         .nth(-1)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [order_by](Self::order_by)
+    /// - [skip](Self::skip)
+    /// - [limit](Self::limit)
+    /// - [bracket](Self::bracket)
+    /// - [slice](Self::slice)
     pub fn nth(self, index: isize) -> Self {
         nth::new(index).with_parent(self)
     }
 
     /// Get the indexes of an element in a sequence.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
-    /// sequence.is_empty() → bool
+    /// sequence.offsets_of(datum) → array
+    /// sequence.offsets_of(func!(...)) → array
     /// ```
-    /// 
-    /// ## Description
     ///
-    /// If the argument is a predicate, get 
+    /// Where:
+    /// - datum: impl Serialize
+    ///
+    /// # Description
+    ///
+    /// If the argument is a predicate, get
     /// the indexes of all elements matching it.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Find the position of the letter ‘c’.
@@ -383,7 +473,7 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
     /// Find the popularity ranking of invisible heroes.
@@ -411,13 +501,13 @@ impl<'a> Command {
     }
 
     /// Test if a sequence is empty.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// sequence.is_empty() → bool
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
     /// Are there any documents in the simbad table?
@@ -440,7 +530,7 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// # Related commands
     /// - [offsets_of](Self::offsets_of)
     pub fn is_empty(self) -> Self {
@@ -448,7 +538,7 @@ impl<'a> Command {
     }
 
     /// Merge two or more sequences.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -485,9 +575,9 @@ impl<'a> Command {
         union::new(args).with_parent(self)
     }
 
-    /// Select a given number of elements from 
+    /// Select a given number of elements from
     /// a sequence with uniform random distribution.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -502,13 +592,13 @@ impl<'a> Command {
     ///
     /// # Description
     ///
-    /// Select a given number of elements from a 
-    /// sequence with uniform random distribution. 
+    /// Select a given number of elements from a
+    /// sequence with uniform random distribution.
     /// Selection is done without replacement.
-    /// 
-    /// If the sequence has less than the requested 
-    /// number of elements (i.e., calling `sample(10)` 
-    /// on a sequence with only five elements), `sample` 
+    ///
+    /// If the sequence has less than the requested
+    /// number of elements (i.e., calling `sample(10)`
+    /// on a sequence with only five elements), `sample`
     /// will return the entire sequence in a random order.
     ///
     /// ## Examples
