@@ -336,12 +336,50 @@ impl<'a> Command {
         skip::new(n).with_parent(self)
     }
 
+    /// End the sequence after the given numbers of elements.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.limit(n) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - n: usize
+    ///
+    /// ## Examples
+    ///
+    /// Only so many can fit in our Pantheon of heroes.
+    ///
+    /// ```
+    /// use reql_rust::cmd::order_by::OrderByOption;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .order_by(OrderByOption::default().index("age"))
+    ///         .limit(10)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [order_by](Self::order_by)
+    /// - [skip](Self::skip)
+    /// - [slice](Self::slice)
+    /// - [nth](Self::nth)
     pub fn limit(self, n: usize) -> Self {
         limit::new(n).with_parent(self)
     }
 
     /// Return the elements of a sequence within the specified range.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -433,10 +471,10 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
-    /// Return the elements of an array from the second through 
+    /// Return the elements of an array from the second through
     /// two from the end (that is, not including the last two).
     ///
     /// ```
@@ -457,7 +495,7 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
     /// Return the thirds through fifth characters of a string.
