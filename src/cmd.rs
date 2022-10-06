@@ -340,6 +340,152 @@ impl<'a> Command {
         limit::new(n).with_parent(self)
     }
 
+    /// Return the elements of a sequence within the specified range.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// selection.slice(start_offset) → selection
+    /// selection.slice(args!(start_offset, options)) → selection
+    /// selection.slice(args!(start_offset, end_offset)) → selection
+    /// selection.slice(args!(start_offset, end_offset, options)) → selection
+    /// ```
+    ///
+    /// Where:
+    /// - start_offset, end_offset: isize
+    /// - options: [SliceOption](crate::cmd::slice::SliceOption)
+    ///
+    /// # Description
+    ///
+    /// // TODO Complete this description
+    ///
+    /// ## Examples
+    ///
+    /// Return the fourth, fifth and sixth youngest players.
+    /// (The youngest player is at index 0, so those are elements 3-5.)
+    ///
+    /// ```
+    /// use reql_rust::cmd::order_by::OrderByOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .order_by(OrderByOption::default().index("age"))
+    ///         .slice(args!(3, 6))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all but the top three playerss who have a red flag.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .filter(r.expr(json!({"flag": "red"})))
+    ///         .slice(3)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the holders of tickets `X` through `Y`,
+    /// assuming tickets are numbered sequentially.
+    /// We want to include ticket `Y`.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Status;
+    /// use reql_rust::cmd::order_by::OrderByOption;
+    /// use reql_rust::cmd::slice::SliceOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let x = 3;
+    ///     let y = 6;
+    ///     let order_by_options = OrderByOption::default().index("ticket");
+    ///     let slice_options = SliceOption::default().right_bound(Status::Closed);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .order_by(order_by_options)
+    ///         .slice(args!(x, y, slice_options))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Return the elements of an array from the second through 
+    /// two from the end (that is, not including the last two).
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<u8> = r.expr([0, 1, 2, 3, 4, 5])
+    ///         .slice(args!(2, -2))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response, vec![2, 3]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Return the thirds through fifth characters of a string.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: String = r.expr("I love africa.")
+    ///         .slice(args!(-7, -1))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response, "africa");
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [order_by](Self::order_by)
+    /// - [skip](Self::skip)
+    /// - [limit](Self::limit)
+    /// - [nth](Self::nth)
     pub fn slice(self, args: impl slice::SliceArg) -> Self {
         slice::new(args).with_parent(self)
     }
