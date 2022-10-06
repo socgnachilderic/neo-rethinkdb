@@ -332,6 +332,44 @@ impl<'a> Command {
         order_by::new(args).with_parent(self)
     }
 
+    /// Skip a number of elements from the head of the sequence.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.skip(n) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - n: usize
+    ///
+    /// ## Examples
+    ///
+    /// Only so many can fit in our Pantheon of heroes.
+    ///
+    /// ```
+    /// use reql_rust::cmd::order_by::OrderByOption;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .order_by(OrderByOption::default().index("age"))
+    ///         .skip(10)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [order_by](Self::order_by)
+    /// - [limit](Self::limit)
+    /// - [slice](Self::slice)
+    /// - [nth](Self::nth)
     pub fn skip(self, n: usize) -> Self {
         skip::new(n).with_parent(self)
     }
