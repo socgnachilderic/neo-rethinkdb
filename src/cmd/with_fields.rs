@@ -10,7 +10,7 @@ pub(crate) fn new(fields: impl Serialize) -> Command {
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
-    
+
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
     use crate::Result;

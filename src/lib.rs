@@ -70,10 +70,155 @@ impl r {
         cmd::table::new(args)
     }
 
-    pub fn map(self, args: impl cmd::map::MapArg) -> Command {
-        cmd::map::new(args)
+    /// Transform each element of one or more sequences
+    /// by applying a mapping function to them.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.map(func) → stream
+    /// sequence.map(sequence, func) → stream
+    /// sequence.map(sequences, func) → stream
+    /// r.map(sequence, func) → stream
+    /// r.map(sequence, sequence, func) → stream
+    /// r.map(sequence, sequences, func) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    /// - sequences: [...] | &[...] | vec![...]
+    ///
+    /// # Description
+    ///
+    /// If `map` is run with two or more sequences, it will iterate
+    /// for as many items as there are in the shortest sequence.
+    ///
+    /// Note that `map` can only be applied to sequences, not single values.
+    /// If you wish to apply a function to a single value/selection (including an array),
+    /// use the [do_](Self::do_) command.
+    ///
+    /// ## Examples
+    ///
+    /// Return the first five squares.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<u8> = r.expr([1, 2, 3, 4, 5])
+    ///         .map(func!(|val| val.clone() * val))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response, [1, 4, 9, 16, 25]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Sum the elements of three sequences.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let sequence1 = r.expr([100, 200, 300, 400]);
+    ///     let sequence2 = r.expr([10, 20, 30, 40]);
+    ///     let sequence3 = r.expr([1, 2, 3, 4]);
+    ///
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<u32> = r.map(sequence1, args!(
+    ///             [sequence2, sequence3],
+    ///             func!(|val1, val2, val3| val1 + val2 + val3)
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response, [111, 222, 333, 444]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Rename a field when retrieving documents
+    /// using `map` and [merge](crate::Command::merge).
+    ///
+    /// This example renames the field `id` to `user_id`
+    /// when retrieving documents from the table `users`.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .map(func!(|doc| {
+    ///             let mut user = HashMap::new();
+    ///             user.insert("user_id", doc.clone().g("id"));
+    ///             
+    ///             doc.merge(r.hash_map(user)).without("id")
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Assign every superhero an archenemy.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("heroes")
+    ///         .map(args!(r.table("villains"), func!(|hero, villain| {
+    ///             let mut villain_obj = HashMap::new();
+    ///             villain_obj.insert("villain", villain);
+    ///
+    ///             hero.merge(r.hash_map(villain_obj))
+    ///         })))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [concat_map](crate::Command::concat_map)
+    /// - [reduce](Self::reduce)
+    /// - [do_](Self::do_)
+    pub fn map(self, sequence: Command, args: impl cmd::map::MapArg) -> Command {
+        sequence.map(args)
     }
 
+    // TODO write Doc
     pub fn order_by(self, args: impl cmd::order_by::OrderByArg) -> Command {
         cmd::order_by::new(args)
     }
