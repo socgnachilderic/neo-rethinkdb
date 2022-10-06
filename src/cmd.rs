@@ -175,7 +175,7 @@ use regex::Regex;
 use serde::Serialize;
 use serde_json::Value;
 
-use crate::arguments::{AnyParam, Permission};
+use crate::arguments::Permission;
 use crate::prelude::Func;
 use crate::Command;
 use crate::Result;
@@ -320,14 +320,76 @@ impl<'a> Command {
         map::new(args).with_parent(self)
     }
 
-    pub fn with_fields(self, fields: AnyParam) -> Self {
+    /// Plucks one or more attributes from a sequence of objects, 
+    /// filtering out any objects in the sequence that do not have the specified fields.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.with_fields(selector) → stream
+    /// sequence.with_fields(selectors) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - selector: &str | String | Cow<'static, String>
+    /// - selectors: [...] | &[...] | vec![...]
+    ///
+    /// # Description
+    /// 
+    /// Functionally, this is identical to [has_fields](Self::has_fields) 
+    /// followed by [pluck](Self::pluck) on a sequence.
+    /// 
+    /// ## Examples
+    ///
+    /// Get a list of users and their posts, excluding any users who have not made any posts.
+    /// 
+    /// Existing table structure:
+    /// 
+    /// ```text
+    /// [
+    ///     { "id": 1, "user": "bob", "email": "bob@foo.com", "posts": [ 1, 4, 5 ] },
+    ///     { "id": 2, "user": "george", "email": "george@foo.com" },
+    ///     { "id": 3, "user": "jane", "email": "jane@foo.com", "posts": [ 2, 3, 6 ] }
+    /// ]
+    /// ```
+    /// 
+    /// Command and output:
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .with_fields(["id", "user", "posts"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    /// 
+    ///     // [
+    ///     //      { "id": 1, "user": "bob", "posts": [ 1, 4, 5 ] },
+    ///     //      { "id": 3, "user": "jane", "posts": [ 2, 3, 6 ] }
+    ///     // ]
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [has_fields](Self::has_fields)
+    /// - [pluck](Self::pluck)
+    /// - [without](Self::without)
+    pub fn with_fields(self, fields: impl Serialize) -> Self {
         with_fields::new(fields).with_parent(self)
     }
 
+    // TODO write Doc
     pub fn concat_map(self, func: Func) -> Command {
         concat_map::new(func).with_parent(self)
     }
 
+    // TODO write Doc
     pub fn order_by(self, args: impl order_by::OrderByArg) -> Self {
         order_by::new(args).with_parent(self)
     }
