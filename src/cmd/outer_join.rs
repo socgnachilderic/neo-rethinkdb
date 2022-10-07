@@ -19,7 +19,7 @@ mod tests {
     use crate::Result;
 
     #[tokio::test]
-    pub async fn test_eq_join_ops() -> Result<()> {
+    pub async fn test_outer_join_ops() -> Result<()> {
         let data = JoinResponse {
             left: Some(Comment {
                 id: 4,

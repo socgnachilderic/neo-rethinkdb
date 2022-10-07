@@ -300,6 +300,65 @@ impl<'a> Command {
         filter::new(args).with_parent(self)
     }
 
+    /// Returns an inner join of two sequences.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.inner_join(other_sequence, func) → response
+    /// ```
+    ///
+    /// Where:
+    /// - other_sequence: [Command](crate::Command)
+    /// - func: func!(...)
+    /// - response: [Vec<JoinResponse<Left, Right>>](crate::types::JoinResponse)
+    ///
+    /// # Description
+    ///
+    /// The returned sequence represents an intersection of the left-hand sequence
+    /// and the right-hand sequence: each row of the left-hand sequence will be
+    /// compared with each row of the right-hand sequence to find all pairs of rows
+    /// which satisfy the predicate. In most cases, you will want to follow the join
+    /// with [zip](Self::zip) to combine the left and right results.
+    ///
+    /// ```text
+    /// Note that `inner_join` is slower and much less efficient than using `concat_map`
+    /// with `get_all`. You should avoid using `inner_join` in commands when possible.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return a list of all matchups between Marvel and DC heroes
+    /// in which the DC hero could beat the Marvel hero in a fight.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .inner_join(
+    ///             r.table("dc"),
+    ///             func!(|marvel, dc| marvel.g("strength").lt(dc.g("strength")))
+    ///         )
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// (Compare this to an [outer_join](Self::outer_join) with
+    /// the same inputs and predicate, which would return a list
+    /// of **all** Marvel heroes along with any DC heroes with a higher strength.)
+    ///
+    /// # Related commands
+    /// - [eq_join](Self::eq_join)
+    /// - [outer_join](Self::outer_join)
+    /// - [zip](Self::zip)
     pub fn inner_join(self, other_sequence: Command, func: Func) -> Self {
         inner_join::new(other_sequence, func).with_parent(self)
     }
