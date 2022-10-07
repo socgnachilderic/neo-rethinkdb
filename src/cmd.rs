@@ -308,6 +308,150 @@ impl<'a> Command {
         outer_join::new(other_sequence, func).with_parent(self)
     }
 
+    /// Join tables using a field or function on the left-hand sequence
+    /// matching primary keys or secondary indexes on the right-hand table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.eq_join(args!(left_field, right_table)) → response
+    /// sequence.eq_join(args!(func, right_table)) → response
+    /// sequence.eq_join(args!(left_field, right_table, options)) → response
+    /// sequence.eq_join(args!(func, right_table, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - left_field, right_table: [Command](crate::Command)
+    /// - func: func!(...)
+    /// - options: [EqJoinOption](crate::cmd::eq_join::EqJoinOption)
+    /// - response: [Vec<JoinResponse<Left, Right>>](crate::types::JoinResponse)
+    ///
+    /// # Description
+    ///
+    /// `eq_join` is more efficient than other ReQL join types, and operates much faster.
+    /// Documents in the result set consist of pairs of left-hand and right-hand documents,
+    /// matched when the field on the left-hand side exists and is non-null and an entry
+    /// with that field’s value exists in the specified index on the right-hand side.
+    ///
+    /// The result set of `eq_join` is a stream or array of
+    /// [JoinResponse<LeftDocument, RightDocument>](crate::types::JoinResponse).
+    /// Each object in the returned set will be an object of the form
+    /// `{ left: <LeftDocument>, right: <RightDocument> }`, where the values of `left` and
+    /// `right` will be the joined documents.
+    /// Use the [zip](Self::zip) command to merge the `left` and `right` fields together.
+    ///
+    /// The results from `eq_join` are, by default, not ordered.
+    ///
+    /// Suppose the players table contains these documents:
+    ///
+    /// ```text
+    /// [
+    ///     { "id": 1, "player": "Moussa", "game_id": 1 },
+    ///     { "id": 2, "player": "Fatima", "game_id": 3 },
+    ///     { "id": 3, "player": "Abessolo", "game_id": 2 },
+    ///     { "id": 4, "player": "Kamga", "game_id": 2 },
+    ///     { "id": 5, "player": "Malika", "game_id": 1 },
+    ///     { "id": 6, "player": "Ibrahim", "game_id": 3 }
+    /// ]
+    /// ```
+    ///
+    /// The games table contains these documents:
+    ///
+    /// [
+    ///     { "id": 1, "field": "Aurion" },
+    ///     { "id": 2, "field": "Adventures of Nyangi" },
+    ///     { "id": 3, "field": "Gazkar" }
+    /// ]
+    ///
+    /// ## Examples
+    ///
+    /// Match players with the games they’ve played against one another.
+    ///
+    /// Join these tables using `game_id` on the player table and `id` on the games table:
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .eq_join(args!("game_id", r.table("games")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// For more information, see
+    /// [Table joins in RethinkDB](https://rethinkdb.com/docs/table-joins/).
+    ///
+    /// ## Examples
+    ///
+    /// Use a secondary index on the right table rather than the primary key.
+    /// If players have a secondary index on their cities, we can get a list
+    /// of arenas with players in the same area.
+    ///
+    /// ```
+    /// use reql_rust::cmd::eq_join::EqJoinOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .eq_join(args!(
+    ///             "city_id",
+    ///             r.table("arenas"),
+    ///             EqJoinOption::default().index("city_id")
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Use a function instead of a field to join on a more complicated expression.
+    /// Suppose the players have lists of favorite games ranked in order in a field
+    /// such as "favorites": [3, 2, 1]. Get a list of players and their top favorite:
+    ///
+    /// ```
+    /// use reql_rust::cmd::eq_join::EqJoinOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .eq_join(args!(
+    ///             func!(|player| player.g("favorites").nth(0)),
+    ///             r.table("games")
+    ///         ))
+    ///         .without(json!([
+    ///             { "left": ["favorites", "game_id", "id"] },
+    ///             { "right": "id" }
+    ///         ]))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [inner_join](Self::inner_join)
+    /// - [outer_join](Self::outer_join)
+    /// - [without](Self::without)
+    /// - [zip](Self::zip)
     pub fn eq_join(self, args: impl eq_join::EqJoinArg) -> Self {
         eq_join::new(args).with_parent(self)
     }

@@ -128,7 +128,7 @@ pub struct WaitResponse {
     pub ready: u8,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct JoinResponse<L, R> {
     pub left: Option<L>,
     pub right: Option<R>,
