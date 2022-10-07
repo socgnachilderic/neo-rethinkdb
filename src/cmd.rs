@@ -304,6 +304,65 @@ impl<'a> Command {
         inner_join::new(other_sequence, func).with_parent(self)
     }
 
+    /// Returns a left outer join of two sequences.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.outer_join(other_sequence, func) → response
+    /// ```
+    ///
+    /// Where:
+    /// - other_sequence: [Command](crate::Command)
+    /// - func: func!(...)
+    /// - response: [Vec<JoinResponse<Left, Right>>](crate::types::JoinResponse)
+    ///
+    /// # Description
+    ///
+    /// The returned sequence represents a union of the left-hand sequence and the
+    /// right-hand sequence: all documents in the left-hand sequence will be returned,
+    /// each matched with a document in the right-hand sequence if one satisfies the
+    /// predicate condition. In most cases, you will want to follow the join with
+    /// [zip](Self::zip) to combine the left and right results.
+    ///
+    /// ```text
+    /// Note that `outer_join` is slower and much less efficient than using `concat_map`
+    /// with `get_all`. You should avoid using `outer_join` in commands when possible.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return a list of all Marvel heroes, paired with
+    /// any DC heroes who could beat them in a fight.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .outer_join(
+    ///             r.table("dc"),
+    ///             func!(|marvel, dc| marvel.g("strength").lt(dc.g("strength")))
+    ///         )
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// (Compare this to an [inner_join](Self::inner_join) with
+    /// the same inputs and predicate, which would return a list
+    /// only of the matchups in which the DC hero has the higher strength.)
+    ///
+    /// # Related commands
+    /// - [eq_join](Self::eq_join)
+    /// - [inner_join](Self::inner_join)
+    /// - [zip](Self::zip)
     pub fn outer_join(self, other_sequence: Command, func: Func) -> Self {
         outer_join::new(other_sequence, func).with_parent(self)
     }
