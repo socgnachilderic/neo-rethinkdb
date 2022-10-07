@@ -4,7 +4,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::AnyParam;
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
@@ -21,43 +21,53 @@ pub trait EqJoinArg {
     fn into_eq_join_opts(self) -> (Command, Command, EqJoinOption);
 }
 
-impl EqJoinArg for (AnyParam, Command) {
+impl<T> EqJoinArg for Args<(T, Command)>
+where
+    T: Into<String>,
+{
     fn into_eq_join_opts(self) -> (Command, Command, EqJoinOption) {
-        (self.0.into(), self.1, Default::default())
+        (
+            Command::from_json(self.0 .0.into()),
+            self.0 .1,
+            Default::default(),
+        )
     }
 }
 
-impl EqJoinArg for (Func, Command) {
+impl EqJoinArg for Args<(Func, Command)> {
     fn into_eq_join_opts(self) -> (Command, Command, EqJoinOption) {
-        let Func(func) = self.0;
+        let Func(func) = self.0 .0;
 
-        (func, self.1, Default::default())
+        (func, self.0 .1, Default::default())
     }
 }
 
-impl EqJoinArg for (Command, Command) {
+impl EqJoinArg for Args<(Command, Command)> {
     fn into_eq_join_opts(self) -> (Command, Command, EqJoinOption) {
-        (self.0, self.1, Default::default())
+        (self.0 .0, self.0 .1, Default::default())
     }
 }
 
-impl EqJoinArg for (AnyParam, Command, EqJoinOption) {
+impl<T> EqJoinArg for Args<(T, Command, EqJoinOption)>
+where
+    T: Into<String>,
+{
     fn into_eq_join_opts(self) -> (Command, Command, EqJoinOption) {
-        (self.0.into(), self.1, self.2)
+        (Command::from_json(self.0 .0.into()), self.0 .1, self.0 .2)
     }
 }
 
-impl EqJoinArg for (Func, Command, EqJoinOption) {
+impl EqJoinArg for Args<(Func, Command, EqJoinOption)> {
     fn into_eq_join_opts(self) -> (Command, Command, EqJoinOption) {
-        let Func(func) = self.0;
+        let Func(func) = self.0 .0;
 
-        (func, self.1, self.2)
+        (func, self.0 .1, self.0 .2)
     }
 }
 
-impl EqJoinArg for (Command, Command, EqJoinOption) {
+impl EqJoinArg for Args<(Command, Command, EqJoinOption)> {
     fn into_eq_join_opts(self) -> (Command, Command, EqJoinOption) {
-        (self.0, self.1, self.2)
+        (self.0 .0, self.0 .1, self.0 .2)
     }
 }
 

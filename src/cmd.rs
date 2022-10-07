@@ -312,6 +312,40 @@ impl<'a> Command {
         eq_join::new(args).with_parent(self)
     }
 
+    /// Used to ‘zip’ up the result of a join by merging the ‘right’
+    /// fields into ‘left’ fields of each member of the sequence.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// stream.zip() → stream
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// ‘zips up’ the sequence by merging the left and right fields produced by a join.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .eq_join(args!("user_id", r.table("users")))
+    ///         .zip()
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [eq_join](Self::eq_join)
+    /// - [inner_join](Self::inner_join)
+    /// - [outer_join](Self::outer_join)
     pub fn zip(self) -> Self {
         zip::new().with_parent(self)
     }

@@ -30,7 +30,7 @@ pub async fn set_up(with_data: bool) -> Result<(Session, Command, String)> {
         table.clone().index_wait(()).run(&conn).await?;
         table
             .clone()
-            .insert(args!((data, insert_option)))
+            .insert(args!(data, insert_option))
             .run(&conn)
             .await?;
     }
@@ -67,7 +67,7 @@ impl Post {
         }
     }
 
-    pub fn get_many_data() -> Vec<Post> {
+    pub fn get_many_data() -> Vec<Self> {
         vec![
             Self::new(1, "title1", Some("content1"), 10),
             Self::new(2, "title2", Some("content2"), 2),
@@ -77,7 +77,76 @@ impl Post {
         ]
     }
 
-    pub fn get_one_data() -> Post {
+    pub fn get_one_data() -> Self {
         Self::new(1, "title1", Some("content1"), 0)
     }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct Comment {
+    pub id: u8,
+    pub text: String,
+    pub post_id: u8,
+}
+
+impl Comment {
+    pub fn new(id: u8, content: &str, post_id: u8) -> Self {
+        Self {
+            id,
+            post_id,
+            text: content.to_string(),
+        }
+    }
+
+    pub fn get_many_data() -> Vec<Self> {
+        vec![
+            Self::new(1, "comment1", 1),
+            Self::new(2, "comment2", 2),
+            Self::new(3, "comment3", 3),
+            Self::new(4, "comment4", 2),
+            Self::new(5, "comment4", 1),
+        ]
+    }
+
+    pub async fn own_set_up() -> Result<(Session, Command, Command, String, String)> {
+        let comment_tablename = Uuid::new_v4().to_string();
+        let (conn, post_table, post_tablename) = set_up(true).await?;
+        let comment_table = r.table(comment_tablename.as_ref());
+
+        r.table_create(comment_tablename.as_str())
+            .run(&conn)
+            .await?;
+        comment_table
+            .clone()
+            .insert(Self::get_many_data())
+            .run(&conn)
+            .await?;
+
+        Ok((
+            conn,
+            comment_table,
+            post_table,
+            comment_tablename,
+            post_tablename,
+        ))
+    }
+
+    pub async fn own_tear_down(
+        conn: Session,
+        comment_tablename: String,
+        post_tablename: String,
+    ) -> Result<()> {
+        r.table_drop(&comment_tablename).run(&conn).await?;
+        tear_down(conn, &post_tablename).await
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct CommentWithPost {
+    pub id: u8,
+    pub text: String,
+    pub post_id: u8,
+    pub title: String,
+    pub content: Option<String>,
+    pub view: u8,
 }
