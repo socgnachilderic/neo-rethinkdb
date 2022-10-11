@@ -285,7 +285,7 @@ impl<'a> Command {
     }
 
     /// Get a document by primary key.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -294,9 +294,9 @@ impl<'a> Command {
     ///
     /// Where:
     /// - keys: impl Serialize | [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
+    ///
     /// If no document exists with that primary key, `get` will return `None`.
     ///
     /// ## Examples

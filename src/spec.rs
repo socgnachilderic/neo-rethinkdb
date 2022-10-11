@@ -111,7 +111,7 @@ impl Comment {
     pub async fn own_set_up() -> Result<(Session, Command, Command, String, String)> {
         let comment_tablename = Uuid::new_v4().to_string();
         let (conn, post_table, post_tablename) = set_up(true).await?;
-        let comment_table = r.table(comment_tablename.as_ref());
+        let comment_table = r.table(&comment_tablename);
 
         r.table_create(comment_tablename.as_str())
             .run(&conn)

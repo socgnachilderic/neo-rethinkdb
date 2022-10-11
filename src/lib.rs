@@ -66,6 +66,80 @@ impl r {
         cmd::table_list::new()
     }
 
+    /// Return all documents in a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.get(keys) → singleRowSelection
+    /// ```
+    ///
+    /// Where:
+    /// - keys: impl Serialize | [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// Other commands may be chained after `table` to return a subset of documents
+    /// (such as [get](crate::Command::get) and [filter](crate::Command::filter))
+    /// or perform further processing.
+    ///
+    /// ## Examples
+    ///
+    /// Return all documents in the table ‘simbad’ of the default database.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all documents in the table ‘simbad’ of the database ‘heroes’.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Allow potentially out-of-date data in exchange for faster reads.
+    ///
+    /// ```
+    /// use reql_rust::cmd::table::TableOption;
+    /// use reql_rust::arguments::ReadMode;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let table_option = TableOption::default().read_mode(ReadMode::Outdated);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table(args!("simbad", table_option)).run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [filter](crate::Command::filter)
+    /// - [get](crate::Command::get)
     pub fn table(self, args: impl cmd::table::TableArg) -> Command {
         cmd::table::new(args)
     }
