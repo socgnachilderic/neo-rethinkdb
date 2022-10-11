@@ -346,6 +346,322 @@ impl<'a> Command {
         insert::new(args).with_parent(self)
     }
 
+    /// Update JSON documents in a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.replace(object) → response
+    /// table.replace(func) → response
+    /// table.replace(args!(object, options)) → response
+    /// table.replace(args!(func, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - object: impl Serialize | [Command](crate::Command)
+    /// - func: func!(...)
+    /// - options: [ReplaceOption](crate::cmd::replace::ReplaceOption)
+    /// - response: [MutationResponse](crate::types::MutationResponse)
+    ///
+    /// # Description
+    ///
+    /// Accepts a JSON document, a ReQL expression, or a combination of the two.
+    ///
+    /// ## Examples
+    ///
+    /// Update the status of the post with `id` of `1` to `published`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .update(json!({"status": "published"}))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Update the status of all posts to `published`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .update(json!({"status": "published"}))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 100);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Update the status of all the posts written by Moussa.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .filter(json!({"author": "Moussa"}))
+    ///         .update(json!({"status": "published"}))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 5);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ```text
+    /// Note that `filter`, `get_all` and similar operations
+    /// do **not** execute in an atomic fashion with `update`.
+    /// Read [Consistency guarantees](https://rethinkdb.com/docs/consistency) for more details.
+    /// Also, see the example for conditional updates
+    /// below for a solution using `branch` in an `update` clause.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Increment the field `view` of the post with `id` of `1`.
+    /// This query will throw an error if the field `views` doesn’t exist.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .update(func!(|post| post.g("views") + r.expr(1)))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Increment the field view of the post with id of 1.
+    /// If the field views does not exist, it will be set to 0.
+    ///
+    /// ```
+    /// use std::ops::Add;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .update(func!(|post| post.g("views").add(r.expr(1)).default(0)))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Perform a conditional update.
+    ///
+    /// If the post has more than 100 views,
+    /// set the `type` of a post to `hot`,
+    /// else set it to `normal`.
+    ///
+    /// ```
+    /// use std::ops::Add;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .update(func!(|post| r.branch(
+    ///             post.g("views").gt(100),
+    ///             args!(
+    ///                 r.expr(json!({"type": "hot"})),
+    ///                 r.expr(json!({"type": "normal"}))
+    ///             )
+    ///         )))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Update the field `num_comments` with the result of a sub-query.
+    /// Because this update is not atomic, you must pass the `non_atomic` flag.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::cmd::update::UpdateOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let update_option = UpdateOption::default().non_atomic(true);
+    ///     let conn = r.connection().connect().await?;
+    ///     let mut comments_filtered = HashMap::new();
+    ///     comments_filtered.insert(
+    ///         "num_comments",
+    ///         r.table("comments")
+    ///             .filter(json!({"id_post": 1}))
+    ///             .count(())
+    ///     );
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .update(args!(r.hash_map(comments_filtered), update_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// If you forget to specify the `non_atomic` flag,
+    /// you will get a `ReqlRuntimeError`:
+    ///
+    /// ```text
+    /// ReqlRuntimeError: Could not prove function deterministic.
+    /// Maybe you want to use the non_atomic flag?
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Update the field `num_comments` with a random value between 0 and 100.
+    /// This update cannot be proven deterministic because of `r.js` (and in fact is not),
+    /// so you must pass the `non_atomic` flag.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::cmd::update::UpdateOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let update_option = UpdateOption::default().non_atomic(true);
+    ///     let conn = r.connection().connect().await?;
+    ///     let mut comments_filtered = HashMap::new();
+    ///     comments_filtered.insert(
+    ///         "num_comments",
+    ///         r.js("Math.floor(Math.random()*100)")
+    ///     );
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .update(args!(r.hash_map(comments_filtered), update_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Update the status of the post with `id` of `1` using soft durability.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Durability;
+    /// use reql_rust::cmd::update::UpdateOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let update_option = UpdateOption::default().durability(Durability::Soft);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .update(args!(json!({"status": "published"}), update_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [insert](Self::insert)
+    /// - [replace](Self::replace)
+    /// - [delete](Self::delete)
     pub fn update(self, args: impl update::UpdateArg) -> Self {
         update::new(args).with_parent(self)
     }

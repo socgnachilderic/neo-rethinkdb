@@ -80,8 +80,6 @@ mod tests {
     use crate::types::MutationResponse;
     use crate::Result;
 
-    // use super::DeleteOption;
-
     #[tokio::test]
     async fn test_replace_docs() -> Result<()> {
         let data = Post::get_one_data();
