@@ -292,6 +292,182 @@ impl<'a> Command {
         get_all::new(values).with_parent(self)
     }
 
+    /// Get all documents between two keys.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.between(args!(lower_key, upper_key)) → table_slice
+    /// table.between(args!(lower_key, upper_key, options)) → table_slice
+    /// ```
+    ///
+    /// Where:
+    /// - lower_key, upper_key: [Command](crate::Command)
+    /// - options: [BetweenOption](crate::cmd::between::BetweenOption)
+    ///
+    /// # Description
+    ///
+    /// You may also use the special constants `r::min_val()` and `r::max_val()` for boundaries, 
+    /// which represent “less than any index key” and “more than any index key” respectively. 
+    /// For instance, if you use `r::min_val()` as the lower key, then `between` will return 
+    /// all documents whose primary keys (or indexes) are less than the specified upper key.
+    /// 
+    /// If you use arrays as indexes (compound indexes), 
+    /// they will be sorted using 
+    /// [lexicographical order](https://en.wikipedia.org/wiki/Lexicographical_order). 
+    /// Take the following range as an example:
+    ///
+    /// ```text
+    /// [[1, "c"] ... [5, "e"]]
+    /// ```
+    /// 
+    /// This range includes all compound keys:
+    /// - whose first item is 1 and second item is equal or greater than “c”;
+    /// - whose first item is between 1 and 5, 
+    /// **regardless of the value of the second item**;
+    /// - whose first item is 5 and second item is less than or equal to “e”.
+    ///
+    /// ## Examples
+    ///
+    /// Find all users with primary key >= 10 and < 20 (a normal half-open interval).
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .between(args!(r.expr(10), r.expr(20)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Find all users with primary key >= 10 and <= 20 (an interval closed on both sides).
+    ///
+    /// ```
+    /// use reql_rust::arguments::Status;
+    /// use reql_rust::cmd::between::BetweenOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let between_option = BetweenOption::default().right_bound(Status::Closed);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .between(args!(r.expr(10), r.expr(20), between_option))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Find all users with primary key < 20.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .between(args!(r::min_val(), r.expr(20)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Find all users with primary key > 10.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Status;
+    /// use reql_rust::cmd::between::BetweenOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let between_option = BetweenOption::default().right_bound(Status::Open);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .between(args!(r.expr(10), r::max_val(), between_option))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Between can be used on secondary indexes too. 
+    /// Just pass an optional index argument giving the secondary index to query.
+    ///
+    /// ```
+    /// use reql_rust::cmd::between::BetweenOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let between_option = BetweenOption::default().index("code_name");
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("dc")
+    ///         .between(args!(r.expr("dark_knight"), r.expr("man_of_steel"), between_option))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Get all users whose full name is between “John Smith” and “Wade Welles.”
+    ///
+    /// ```
+    /// use reql_rust::cmd::between::BetweenOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let between_option = BetweenOption::default().index("full_name");
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("dc")
+    ///         .between(args!(r.expr(["Smith", "John"]), r.expr(["Welles", "Wade"]), between_option))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get](Self::get)
+    /// - [get_all](Self::get_all)
+    /// - [filter](Self::filter)
     pub fn between(self, args: impl between::BetweenArg) -> Self {
         between::new(args).with_parent(self)
     }
