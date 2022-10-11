@@ -354,6 +354,167 @@ impl<'a> Command {
         replace::new(args).with_parent(self)
     }
 
+    /// Delete one or more documents from a table.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.delete(()) → response
+    /// table.delete(options) → response
+    /// ```
+    ///
+    /// Where:
+    /// - options: [DeleteOption](crate::cmd::delete::DeleteOption)
+    /// - response: [MutationResponse](crate::types::MutationResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Delete a single document from the table `comments`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("comments")
+    ///         .get("7eab9e63-73f1-4f33-8ce4-95cbea626f59")
+    ///         .delete(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.deleted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Delete all documents from the table comments.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("comments")
+    ///         .delete(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.deleted == 100);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Delete all comments where the field `id_post` is `3`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("comments")
+    ///         .filter(json!({"id_post": 3}))
+    ///         .delete(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.deleted == 5);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Delete a single document from the table `comments` and return its value.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::arguments::ReturnChanges;
+    /// use reql_rust::cmd::delete::DeleteOption;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let expected_data = json!({
+    ///         "id": "7eab9e63-73f1-4f33-8ce4-95cbea626f59",
+    ///         "author": "Moussa",
+    ///         "comment": "Great post",
+    ///         "id_post": 3
+    ///     });
+    ///     let delete_option = DeleteOption::default().return_changes(ReturnChanges::Bool(true));
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("comments")
+    ///         .get("7eab9e63-73f1-4f33-8ce4-95cbea626f59")
+    ///         .delete(delete_option)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    /// 
+    ///     let old_val = response
+    ///         .clone()
+    ///         .changes
+    ///         .unwrap()
+    ///         .first()
+    ///         .unwrap()
+    ///         .to_owned()
+    ///         .old_val;
+    ///
+    ///     assert!(response.deleted == 1);
+    ///     assert_eq!(old_val, Some(expected_data));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Delete all documents from the table `comments` without 
+    /// waiting for the operation to be flushed to disk.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Durability;
+    /// use reql_rust::cmd::delete::DeleteOption;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let delete_option = DeleteOption::default().durability(Durability::Soft);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("comments")
+    ///         .delete(delete_option)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [insert](Self::insert)
+    /// - [update](Self::update)
+    /// - [replace](Self::replace)
     pub fn delete(self, args: impl delete::DeleteArg) -> Self {
         delete::new(args).with_parent(self)
     }
