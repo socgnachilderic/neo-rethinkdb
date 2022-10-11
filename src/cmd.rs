@@ -288,12 +288,102 @@ impl<'a> Command {
         get::new(args).with_parent(self)
     }
 
+    /// Get all documents where the given value
+    /// matches the value of the requested index.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.get_all(keys) → selection
+    /// table.get_all(args!(keys, options)) → selection
+    /// ```
+    ///
+    /// Where:
+    /// - keys: impl IntoIterator | [Command](crate::Command)
+    /// - options: [GetAllOption](crate::cmd::get_all::GetAllOption)
+    ///
+    /// ## Examples
+    ///
+    /// Secondary index keys are not guaranteed to be unique so we cannot
+    /// query via [get](Self::get) when using a secondary index.
+    ///
+    /// ```
+    /// use reql_rust::cmd::get_all::GetAllOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let get_all_option = GetAllOption::default().index("code_name");
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .get_all(args!(["man_of_steel"], get_all_option))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Without an index argument, we default to the primary index.
+    /// While `get` will either return the document or `None` when no document
+    /// with such a primary key value exists, this will return either a one or zero length stream.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("dc")
+    ///         .get_all(["superman"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// You can get multiple documents in a single call to get_all.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("dc")
+    ///         .get_all(["superman", "ant man"])
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Note
+    ///
+    /// ```text
+    /// `get_all` does not perform any de-duplication.
+    /// If you pass the same key more than once, the same document will be returned multiple times.
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get](Self::get)
+    /// - [between](Self::between)
+    /// - [filter](Self::filter)
     pub fn get_all(self, values: impl get_all::GetAllArg) -> Self {
         get_all::new(values).with_parent(self)
     }
 
     /// Get all documents between two keys.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -307,23 +397,23 @@ impl<'a> Command {
     ///
     /// # Description
     ///
-    /// You may also use the special constants `r::min_val()` and `r::max_val()` for boundaries, 
-    /// which represent “less than any index key” and “more than any index key” respectively. 
-    /// For instance, if you use `r::min_val()` as the lower key, then `between` will return 
+    /// You may also use the special constants `r::min_val()` and `r::max_val()` for boundaries,
+    /// which represent “less than any index key” and “more than any index key” respectively.
+    /// For instance, if you use `r::min_val()` as the lower key, then `between` will return
     /// all documents whose primary keys (or indexes) are less than the specified upper key.
-    /// 
-    /// If you use arrays as indexes (compound indexes), 
-    /// they will be sorted using 
-    /// [lexicographical order](https://en.wikipedia.org/wiki/Lexicographical_order). 
+    ///
+    /// If you use arrays as indexes (compound indexes),
+    /// they will be sorted using
+    /// [lexicographical order](https://en.wikipedia.org/wiki/Lexicographical_order).
     /// Take the following range as an example:
     ///
     /// ```text
     /// [[1, "c"] ... [5, "e"]]
     /// ```
-    /// 
+    ///
     /// This range includes all compound keys:
     /// - whose first item is 1 and second item is equal or greater than “c”;
-    /// - whose first item is between 1 and 5, 
+    /// - whose first item is between 1 and 5,
     /// **regardless of the value of the second item**;
     /// - whose first item is 5 and second item is less than or equal to “e”.
     ///
@@ -332,7 +422,6 @@ impl<'a> Command {
     /// Find all users with primary key >= 10 and < 20 (a normal half-open interval).
     ///
     /// ```
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -355,7 +444,6 @@ impl<'a> Command {
     /// ```
     /// use reql_rust::arguments::Status;
     /// use reql_rust::cmd::between::BetweenOption;
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -371,13 +459,12 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
     /// Find all users with primary key < 20.
     ///
     /// ```
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -392,7 +479,7 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
     /// Find all users with primary key > 10.
@@ -400,7 +487,6 @@ impl<'a> Command {
     /// ```
     /// use reql_rust::arguments::Status;
     /// use reql_rust::cmd::between::BetweenOption;
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -416,15 +502,14 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
-    /// Between can be used on secondary indexes too. 
+    /// Between can be used on secondary indexes too.
     /// Just pass an optional index argument giving the secondary index to query.
     ///
     /// ```
     /// use reql_rust::cmd::between::BetweenOption;
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
@@ -440,14 +525,13 @@ impl<'a> Command {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
     /// Get all users whose full name is between “John Smith” and “Wade Welles.”
     ///
     /// ```
     /// use reql_rust::cmd::between::BetweenOption;
-    /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {

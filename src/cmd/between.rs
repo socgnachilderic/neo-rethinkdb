@@ -44,11 +44,11 @@ impl BetweenArg for Args<(Command, Command, BetweenOption)> {
     }
 }
 
-///  If `index` is set to the name of a secondary index, 
-/// `between` will return all documents where that index’s 
-/// value is in the specified range (it uses the primary key by default). 
-/// `left_bound` or `right_bound` may be set to `Status::Open` or `Status::Closed` 
-/// to indicate whether or not to include that endpoint of the range 
+///  If `index` is set to the name of a secondary index,
+/// `between` will return all documents where that index’s
+/// value is in the specified range (it uses the primary key by default).
+/// `left_bound` or `right_bound` may be set to `Status::Open` or `Status::Closed`
+/// to indicate whether or not to include that endpoint of the range
 /// (by default, `left_bound` is closed and `right_bound` is open).
 #[derive(
     Debug, Clone, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash, CommandOptions,
