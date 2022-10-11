@@ -358,6 +358,51 @@ impl<'a> Command {
         delete::new(args).with_parent(self)
     }
 
+    /// `sync` ensures that writes on a given
+    /// table are written to permanent storage.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.sync() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: [SyncResponse](crate::types::SyncResponse)
+    ///
+    /// # Description
+    ///
+    /// Queries that specify soft durability (`durability=Durability::Soft`)
+    /// do not give such guarantees, so `sync` can be used to ensure the state of these queries.
+    /// A call to `sync` does not return until all previous writes to the table are persisted.
+    ///
+    /// ## Examples
+    ///
+    /// After having updated multiple heroes with soft durability,
+    /// we now want to wait until these changes are persisted.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::SyncResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: SyncResponse = r.table("simbad")
+    ///         .sync()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.synced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [noreply_wait](crate::connection::Session::noreply_wait)
     pub fn sync(self) -> Self {
         sync::new().with_parent(self)
     }
