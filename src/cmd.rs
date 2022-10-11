@@ -296,6 +296,373 @@ impl<'a> Command {
         between::new(args).with_parent(self)
     }
 
+    /// Return all the elements in a sequence for which the given predicate is true.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// selection.filter(func) → selection
+    /// selection.filter(predicate) → selection
+    /// selection.filter(args!(func, options)) → selection
+    /// selection.filter(args!(predicate, options)) → selection
+    /// ```
+    ///
+    /// Where:
+    /// - predicate: [Command](crate::Command) | impl Serialize
+    /// - func: func!(...)
+    /// - options: [FilterOption](crate::cmd::filter::FilterOption)
+    ///
+    /// # Description
+    ///
+    /// Return all the elements in a sequence for which the given predicate is true.
+    /// The return value of `filter` will be the same as the input (sequence, stream, or array).
+    /// Documents can be filtered in a variety of ways—ranges, nested values, boolean conditions,
+    /// and the results of anonymous functions.
+    ///
+    /// By default, `filter` will silently skip documents with missing fields:
+    /// if the predicate tries to access a field that doesn’t exist
+    /// (for instance, the predicate `{"age": 30}` applied to a document with no `age` field),
+    /// that document will not be returned in the result set, and no error will be generated.
+    /// This behavior can be changed with the default optional argument
+    /// [FilterOption](crate::cmd::filter::FilterOption).
+    ///
+    /// ## Note
+    ///
+    /// `filter` does not use secondary indexes.
+    /// For retrieving documents via secondary indexes, consider
+    /// [get_all](Self::get_all), [between](Self::between) and [eq_join](Self::eq_join).
+    ///
+    /// # Basic predicates
+    ///
+    /// ## Examples
+    ///
+    /// Get all users who are 30 years old.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(json!({"age": 30}))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// The predicate `{"age": 30}` selects documents in the `users` table
+    /// with an `age` field whose value is 30. Documents with an `age` field
+    /// set to any other value or with no `age` field present are skipped.
+    ///
+    /// While the `{"field": value}` style of predicate is useful for exact matches,
+    /// a more general way to write a predicate is to use an anonymous function that
+    /// returns `true` or `false`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("age").eq(30)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// In this case, the function returns `true` if the field `age` is equal to 30.
+    ///
+    /// Predicates to filter are evaluated on the server, and must use ReQL expressions.
+    /// You cannot use standard Java comparison operators such as `==`, `<` / `>` and `||` / `&&`.
+    ///
+    /// ## Examples
+    ///
+    /// Get all users who are more than 18 years old.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("age").gt(18)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get all users who are less than 18 years old and more than 13 years old.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.clone().g("age").lt(18).and(
+    ///             user.g("age").gt(13)
+    ///         )))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get all users who are more than 18 years old or have their parental consent.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user
+    ///             .clone()
+    ///             .g("age")
+    ///             .ge(18)
+    ///             .or(user.g("hasParentalConsent"))
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get all users who are more than 18 years old or have their parental consent.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user
+    ///             .clone()
+    ///             .g("age")
+    ///             .ge(18)
+    ///             .or(user.g("hasParentalConsent"))
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # More complex predicates
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all users who subscribed between January
+    /// 1st, 2012 (included) and January 1st, 2013 (excluded).
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use time::macros::{date, offset};
+    /// use time::UtcOffset;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let timezone = UtcOffset::UTC;
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("subscription_date").during(args!(
+    ///             r.time(args!(date!(2012 - 1 - 1), timezone)),
+    ///             r.time(args!(date!(2015 - 1 - 1), timezone))
+    ///         ))))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Retrieve all users who have a gmail account (whose field email ends with @gmail.com).
+    ///
+    /// ```
+    /// use regex::Regex;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let regexpr = Regex::new("@gmail.com$")?;
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("email").match_(regexpr)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Filter based on the presence of a value in an array.
+    ///
+    /// Given this schema for the `users` table.
+    ///
+    /// ```text
+    /// {
+    ///     "name": String,
+    ///     "places_visited": Vec<String>,
+    /// }
+    /// ```
+    ///
+    /// Retrieve all users whose field `places_visited` contains `Cameroon`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user.g("places_visited").contains("Cameroon")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Filter based on nested fields.
+    ///
+    /// Given this schema for the `users` table.
+    ///
+    /// ```text
+    /// {
+    ///     "id": String,
+    ///     "name": {
+    ///         "first": String,
+    ///         "middle": String,
+    ///         "last": String,
+    ///     },
+    /// }
+    /// ```
+    ///
+    /// Retrieve all users named “Moussa Ibrahim
+    /// (first name “Moussa”, last name “Ibrahim”),
+    /// with any middle name.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(json!({
+    ///             "name": {
+    ///                 "first": "Moussa",
+    ///                 "last": "Ibrahim",
+    ///             }
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// If you want an exact match for a field that is an object,
+    /// you will have to use anonymous functions.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user
+    ///             .clone()
+    ///             .g("name")
+    ///             .g("first")
+    ///             .eq("Moussa")
+    ///             .and(user.g("name").g("last").eq("Ibrahim"))
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .filter(func!(|user| user
+    ///             .g("name")
+    ///             .eq(r.expr(json!({
+    ///                 "first": "Moussa",
+    ///                 "last": "Ibrahim",
+    ///             })))
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get](Self::get)
+    /// - [get_all](Self::get_all)
+    /// - [between](Self::between)
     pub fn filter(self, args: impl filter::FilterArg) -> Self {
         filter::new(args).with_parent(self)
     }
@@ -971,7 +1338,7 @@ impl<'a> Command {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("players")
-    ///         .filter(r.expr(json!({"flag": "red"})))
+    ///         .filter(json!({"flag": "red"}))
     ///         .slice(3)
     ///         .run(&conn)
     ///         .await?;
