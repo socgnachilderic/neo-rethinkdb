@@ -284,6 +284,69 @@ impl<'a> Command {
         sync::new().with_parent(self)
     }
 
+    /// Get a document by primary key.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.get(keys) → singleRowSelection
+    /// ```
+    ///
+    /// Where:
+    /// - keys: impl Serialize | [Command](crate::Command)
+    /// 
+    /// # Description
+    /// 
+    /// If no document exists with that primary key, `get` will return `None`.
+    ///
+    /// ## Examples
+    ///
+    /// Find a document by UUID.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .get("a9849eef-7176-4411-935b-79a6e3c56a74")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Find a document and merge another document with it.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("heroes")
+    ///         .get(3)
+    ///         .merge(json!({
+    ///             "powers": ["invisibility", "speed"]
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get_all](Self::get_all)
+    /// - [between](Self::between)
+    /// - [filter](Self::filter)
     pub fn get(self, args: impl get::GetArg) -> Self {
         get::new(args).with_parent(self)
     }
