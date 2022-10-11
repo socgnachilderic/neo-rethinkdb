@@ -350,12 +350,190 @@ impl<'a> Command {
         update::new(args).with_parent(self)
     }
 
+    /// Replace documents in a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.replace(object) → response
+    /// table.replace(func) → response
+    /// table.replace(args!(object, options)) → response
+    /// table.replace(args!(func, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - object: impl Serialize | [Command](crate::Command)
+    /// - func: func!(...)
+    /// - options: [ReplaceOption](crate::cmd::replace::ReplaceOption)
+    /// - response: [MutationResponse](crate::types::MutationResponse)
+    ///
+    /// # Description
+    ///
+    /// Accepts a JSON document or a ReQL expression, and replaces
+    /// the original document with the new one.
+    /// The new document must have the same primary key as the original document.
+    ///
+    /// The `replace` command can be used to both insert and delete documents.
+    /// If the “replaced” document has a primary key that doesn’t exist in the table,
+    /// the document will be inserted; if an existing document is replaced with `None`,
+    /// the document will be deleted.
+    /// Since `update` and `replace` operations are performed atomically,
+    /// this allows atomic inserts and deletes as well.
+    ///
+    /// ## Examples
+    ///
+    /// Replace the document with the primary key `1`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .replace(json!({
+    ///             "id": 1,
+    ///             "title": "Lorem ipsum",
+    ///             "content": "Aleas jacta est",
+    ///             "status": "draft"
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Remove the field `status` from all posts.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .replace(func!(|post| post.without("status")))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 5);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Remove all the fields that are not `id`, `title` or `content`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .replace(func!(|post| post.pluck(["id", "title", "content"])))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 5);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Replace the document with the primary key `1` using soft durability.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Durability;
+    /// use reql_rust::cmd::replace::ReplaceOption;
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let replace_option = ReplaceOption::default().durability(Durability::Soft);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .get(1)
+    ///         .replace(args!(json!({
+    ///             "id": 1,
+    ///             "title": "Lorem ipsum",
+    ///             "content": "Aleas jacta est",
+    ///             "status": "draft"
+    ///         }), replace_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.replaced == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Replace the document with the primary key `1` and return the
+    /// values of the document before and after the replace operation.
+    ///
+    /// ```
+    /// use reql_rust::arguments::ReturnChanges;
+    /// use reql_rust::cmd::replace::ReplaceOption;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let replace_option = ReplaceOption::default().return_changes(ReturnChanges::Bool(true));
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .get(1)
+    ///         .replace(args!(json!({
+    ///             "id": 1,
+    ///             "title": "Lorem ipsum",
+    ///             "content": "Aleas jacta est",
+    ///             "status": "draft"
+    ///         }), replace_option))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [insert](Self::insert)
+    /// - [update](Self::update)
+    /// - [delete](Self::delete)
     pub fn replace(self, args: impl replace::ReplaceArg) -> Self {
         replace::new(args).with_parent(self)
     }
 
     /// Delete one or more documents from a table.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -470,7 +648,7 @@ impl<'a> Command {
     ///         .await?
     ///         .unwrap()
     ///         .parse()?;
-    /// 
+    ///
     ///     let old_val = response
     ///         .clone()
     ///         .changes
@@ -489,7 +667,7 @@ impl<'a> Command {
     ///
     /// ## Examples
     ///
-    /// Delete all documents from the table `comments` without 
+    /// Delete all documents from the table `comments` without
     /// waiting for the operation to be flushed to disk.
     ///
     /// ```
