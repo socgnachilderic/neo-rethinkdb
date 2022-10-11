@@ -228,6 +228,84 @@ impl<'a> Command {
         table_list::new().with_parent(self)
     }
 
+    /// Return all documents in a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table(name) → table
+    /// db.table(args!(name, options)) → table
+    /// r.table(name) → table
+    /// r.table(args!(name, options)) → table
+    /// ```
+    ///
+    /// Where:
+    /// - name: impl Into<String> | [Command](crate::Command)
+    /// - options: [TableOption](crate::cmd::table::TableOption)
+    ///
+    /// # Description
+    ///
+    /// Other commands may be chained after `table` to return a subset of documents
+    /// (such as [get](crate::Command::get) and [filter](crate::Command::filter))
+    /// or perform further processing.
+    ///
+    /// ## Examples
+    ///
+    /// Return all documents in the table ‘simbad’ of the default database.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all documents in the table ‘simbad’ of the database ‘heroes’.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Allow potentially out-of-date data in exchange for faster reads.
+    ///
+    /// ```
+    /// use reql_rust::cmd::table::TableOption;
+    /// use reql_rust::arguments::ReadMode;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let table_option = TableOption::default().read_mode(ReadMode::Outdated);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table(args!("simbad", table_option)).run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [filter](Self::filter)
+    /// - [get](Self::get)
     pub fn table(self, args: impl table::TableArg) -> Self {
         table::new(args).with_parent(self)
     }

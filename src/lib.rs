@@ -50,7 +50,46 @@ impl r {
         cmd::db_list::new()
     }
 
-    pub fn db(self, db_name: &str) -> Command {
+    /// Reference a database.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.db(db_name) → db
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: impl Into<String>
+    ///
+    /// # Description
+    ///
+    /// The `db` command is optional. If it is not present in a query,
+    /// the query will run against the database specified in the `db`
+    /// argument given to [run](crate::Command::run) if one was specified.
+    /// Otherwise, the query will run against the default database for the connection,
+    /// specified in the `db` argument to [connection](Self::connection).
+    ///
+    /// ## Examples
+    ///
+    /// Explicitly specify a database for a query.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [table](crate::Command::table)
+    /// - [db_list](Self::db_list)
+    pub fn db(self, db_name: impl Into<String>) -> Command {
         cmd::db::new(db_name)
     }
 
@@ -71,11 +110,15 @@ impl r {
     /// # Command syntax
     ///
     /// ```text
-    /// table.get(keys) → singleRowSelection
+    /// db.table(name) → table
+    /// db.table(args!(name, options)) → table
+    /// r.table(name) → table
+    /// r.table(args!(name, options)) → table
     /// ```
     ///
     /// Where:
-    /// - keys: impl Serialize | [Command](crate::Command)
+    /// - name: impl Into<String> | [Command](crate::Command)
+    /// - options: [TableOption](crate::cmd::table::TableOption)
     ///
     /// # Description
     ///
