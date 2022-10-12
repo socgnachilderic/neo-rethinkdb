@@ -86,6 +86,13 @@ pub struct IndexResponse {
     pub renamed: Option<usize>,
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct SetWriteHookResponse {
+    pub created: Option<usize>,
+    pub deleted: Option<usize>,
+    pub replaced: Option<usize>,
+}
+
 /// Structure of return data in `index_status` table
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
@@ -103,7 +110,7 @@ pub struct IndexStatusResponse {
 /// Structure of return data in `index_status` table
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
-pub struct WriteHookResponse {
+pub struct GetWriteHookResponse {
     pub function: Binary,
     pub query: Cow<'static, str>,
 }

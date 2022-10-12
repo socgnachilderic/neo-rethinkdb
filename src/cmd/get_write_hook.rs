@@ -10,7 +10,7 @@ pub(crate) fn new() -> Command {
 mod tests {
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down};
-    use crate::types::WriteHookResponse;
+    use crate::types::GetWriteHookResponse;
     use crate::Result;
 
     #[tokio::test]
@@ -22,7 +22,7 @@ mod tests {
             .run(&conn)
             .await?;
 
-        let response: WriteHookResponse =
+        let response: GetWriteHookResponse =
             table.get_write_hook().run(&conn).await?.unwrap().parse()?;
 
         assert_eq!(

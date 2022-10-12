@@ -334,6 +334,94 @@ impl<'a> Command {
         index_wait::new(args).with_parent(self)
     }
 
+    /// Sets the write hook on a table or overwrites it if one already exists.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.set_write_hook(params) → response
+    /// ```
+    ///
+    /// Where:
+    /// - params: func!(...) | None |
+    /// [Binary](crate::types::Binary) | [Command](crate::Command)
+    /// - response: [SetWriteHookResponse](crate::types::SetWriteHookResponse)
+    ///
+    /// # Description
+    ///
+    /// The `function` can be an anonymous function with the signature
+    /// `(context: object, old_val: object, new_val: object) -> object`
+    /// or a binary representation obtained from the `function` field
+    /// of [get_write_hook](Self::get_write_hook).
+    /// The function must be deterministic,
+    /// and so cannot use a subquery or the `r.js` command.
+    ///
+    /// The first argument, `context`,
+    /// is a ReQL object containing the following properties:
+    /// - `primary_key`: primary key of the document being deleted, inserted, or modified
+    /// - `timestamp`: a ReQL `time` object representing the current query execution time
+    ///
+    /// Whenever a write operation on the table inserts, deletes or modifies a given document,
+    /// the write hook function will be called with the context parameter, the old value of
+    /// the document (or `null` on inserts) and the new value of the document (or `null` on deletes).
+    /// It then returns the value that should actually be inserted and/or replaced instead of `newVal`.
+    /// It can also return `r.error(...)` to abort the write.
+    ///
+    /// For simplicity, the write hook function is allowed
+    /// to return `null` exactly if and only if `newVal` is `null`.
+    /// This is just a safeguard to ensure you don’t accidentally
+    /// turn an insert/update into a deletion, or a deletion into an update.
+    ///
+    /// ## Examples
+    ///
+    /// Create a write hook
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::SetWriteHookResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: SetWriteHookResponse = r.table("comments")
+    ///         .set_write_hook(func!(|_, _, new_val| new_val))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response.created, Some(1));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Delete the write hook associated with the comments table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::SetWriteHookResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: SetWriteHookResponse = r.table("comments")
+    ///         .set_write_hook(None)
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response.deleted, Some(1));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [get_write_hook](Self::get_write_hook)
     pub fn set_write_hook(self, args: impl set_write_hook::SetWriteHookArg) -> Self {
         set_write_hook::new(args).with_parent(self)
     }
@@ -347,7 +435,7 @@ impl<'a> Command {
     /// ```
     ///
     /// Where:
-    /// - response: [WriteHookResponse](crate::types::WriteHookResponse)
+    /// - response: [GetWriteHookResponse](crate::types::GetWriteHookResponse)
     ///
     /// # Description
     ///
@@ -366,12 +454,12 @@ impl<'a> Command {
     ///
     /// ```
     /// use reql_rust::prelude::Converter;
-    /// use reql_rust::types::WriteHookResponse;
+    /// use reql_rust::types::GetWriteHookResponse;
     /// use reql_rust::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
-    ///     let response: WriteHookResponse = r.table("comments")
+    ///     let response: GetWriteHookResponse = r.table("comments")
     ///         .get_write_hook()
     ///         .run(&conn)
     ///         .await?

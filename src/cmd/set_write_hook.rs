@@ -35,5 +35,26 @@ impl SetWriteHookArg for Binary {
     }
 }
 
-// WriteHookResponse
-// TODO Write test
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::spec::{set_up, tear_down};
+    use crate::types::SetWriteHookResponse;
+    use crate::Result;
+
+    #[tokio::test]
+    async fn test_set_write_hook_ops() -> Result<()> {
+        let (conn, table, table_name) = set_up(false).await?;
+
+        let response: SetWriteHookResponse = table
+            .set_write_hook(func!(|_, _, new_val| new_val))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert_eq!(response.created, Some(1));
+
+        tear_down(conn, &table_name).await
+    }
+}
