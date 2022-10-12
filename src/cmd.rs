@@ -342,6 +342,202 @@ impl<'a> Command {
         get_write_hook::new().with_parent(self)
     }
 
+    /// Insert documents into a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.insert(object) → response
+    /// table.insert(args!(object, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - object: impl Serialize | [Command](crate::Command)
+    /// - options: [InsertOption](crate::cmd::insert::InsertOption)
+    /// - response: [MutationResponse](crate::types::MutationResponse)
+    ///
+    /// # Description
+    ///
+    /// Accepts a single document or an array of documents.
+    ///
+    /// ## Examples
+    ///
+    /// Insert a document into the table `posts`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .insert(json!({
+    ///             "id": 1,
+    ///             "title": "Lorem ipsum",
+    ///             "content": "Dolor sit amet",
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.inserted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Insert a document without a defined primary key into
+    /// the table `posts` where the primary key is `id`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .insert(json!({
+    ///             "title": "Lorem ipsum",
+    ///             "content": "Dolor sit amet",
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.inserted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Insert multiple documents into the table `users`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("users")
+    ///         .insert(json!([
+    ///             {"id": "malika", "email": "malika@rethinkdb.com"},
+    ///             {"id": "moussa", "email": "moussa@rethinkdb.com"}
+    ///         ]))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.inserted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Insert a document into the table `users`,
+    /// replacing the document if the document already exists.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Conflict;
+    /// use reql_rust::cmd::insert::InsertOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let insert_option = InsertOption::default().conflict(Conflict::Replace);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("users")
+    ///         .insert(args!(
+    ///             json!({"id": "malika", "email": "malika@rethinkdb.com"}),
+    ///             insert_option
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.inserted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Copy the documents from `posts` to `posts_backup`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts_backup")
+    ///         .insert(r.table("posts"))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.inserted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get back a copy of the inserted document (with its generated primary key).
+    ///
+    /// ```
+    /// use reql_rust::arguments::ReturnChanges;
+    /// use reql_rust::cmd::insert::InsertOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::MutationResponse;
+    /// use reql_rust::{args, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let insert_option = InsertOption::default().return_changes(ReturnChanges::Bool(true));
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: MutationResponse = r.table("posts")
+    ///         .insert(args!(
+    ///             json!({"title": "Lorem ipsum", "content": "Dolor sit amet"}),
+    ///             insert_option
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.inserted == 1);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [update](Self::update)
+    /// - [replace](Self::replace)
+    /// - [delete](Self::delete)
     pub fn insert(self, args: impl insert::InsertArg) -> Self {
         insert::new(args).with_parent(self)
     }

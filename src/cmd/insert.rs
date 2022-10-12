@@ -5,28 +5,28 @@ use serde::Serialize;
 use crate::arguments::{Args, Conflict, Durability, ReturnChanges};
 use crate::Command;
 
-use super::CmdOpts;
-
 pub(crate) fn new(args: impl InsertArg) -> Command {
-    let (args, opts) = args.into_insert_opts();
+    let (arg, opts) = args.into_insert_opts();
 
-    args.add_to_cmd(Command::new(TermType::Insert))
-        .with_opts(opts)
+    Command::new(TermType::Insert).with_arg(arg).with_opts(opts)
 }
 
 pub trait InsertArg {
-    fn into_insert_opts(self) -> (CmdOpts, InsertOption);
+    fn into_insert_opts(self) -> (Command, InsertOption);
 }
 
 impl<T> InsertArg for T
 where
     T: Serialize,
 {
-    fn into_insert_opts(self) -> (CmdOpts, InsertOption) {
-        (
-            CmdOpts::Single(Command::from_json(self)),
-            Default::default(),
-        )
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        (Command::from_json(self), Default::default())
+    }
+}
+
+impl InsertArg for Command {
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        (self, Default::default())
     }
 }
 
@@ -34,20 +34,14 @@ impl<T> InsertArg for Args<(T, InsertOption)>
 where
     T: Serialize,
 {
-    fn into_insert_opts(self) -> (CmdOpts, InsertOption) {
-        (CmdOpts::Single(Command::from_json(self.0 .0)), self.0 .1)
-    }
-}
-
-impl InsertArg for Command {
-    fn into_insert_opts(self) -> (CmdOpts, InsertOption) {
-        (CmdOpts::Single(self), Default::default())
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        (Command::from_json(self.0 .0), self.0 .1)
     }
 }
 
 impl InsertArg for Args<(Command, InsertOption)> {
-    fn into_insert_opts(self) -> (CmdOpts, InsertOption) {
-        (CmdOpts::Single(self.0 .0), self.0 .1)
+    fn into_insert_opts(self) -> (Command, InsertOption) {
+        (self.0 .0, self.0 .1)
     }
 }
 
