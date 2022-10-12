@@ -334,10 +334,61 @@ impl<'a> Command {
         index_wait::new(args).with_parent(self)
     }
 
-    pub fn set_write_hook(self, args: Option<impl set_write_hook::SetWriteHookArg>) -> Self {
+    pub fn set_write_hook(self, args: impl set_write_hook::SetWriteHookArg) -> Self {
         set_write_hook::new(args).with_parent(self)
     }
 
+    /// Gets the write hook of this table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.get_write_hook() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: [WriteHookResponse](crate::types::WriteHookResponse)
+    ///
+    /// # Description
+    ///
+    /// If a write hook exists, the result is an object of the following form:
+    ///
+    /// ```text
+    /// {
+    ///     "function": <binary>,
+    ///     "query": "setWriteHook(function(_var1, _var2, _var3) { return ...; })",
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get the write hook for the `comments` table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::WriteHookResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: WriteHookResponse = r.table("comments")
+    ///         .get_write_hook()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(
+    ///         response.query,
+    ///         "setWriteHook(function(var1, var2, var3) { return var3; })"
+    ///     );
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [set_write_hook](Self::set_write_hook)
     pub fn get_write_hook(self) -> Self {
         get_write_hook::new().with_parent(self)
     }
