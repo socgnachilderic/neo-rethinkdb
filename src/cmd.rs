@@ -224,6 +224,43 @@ impl<'a> Command {
         table_drop::new(table_name).with_parent(self)
     }
 
+    /// List all table names in a database.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table_list() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: Vec<String>
+    ///
+    /// ## Examples
+    ///
+    /// List all tables of the ‘test’ database.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<String> = r.db("test")
+    ///         .table_list()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [table_create](Self::table_create)
+    /// - [table_drop](Self::table_drop)
     pub fn table_list(self) -> Self {
         table_list::new().with_parent(self)
     }
