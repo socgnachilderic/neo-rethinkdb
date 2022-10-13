@@ -220,12 +220,58 @@ impl<'a> Command {
         table_create::new(args).with_parent(self)
     }
 
-    pub fn table_drop(self, table_name: &str) -> Self {
+    /// Drop a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table_drop(table_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - table_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// The table and all its data will be deleted.
+    ///
+    /// If the given table does not exist in the database,
+    /// the command throws `ReqlRuntimeError`.
+    ///
+    /// ## Examples
+    ///
+    /// Drop a table named ‘simbad’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_drop("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_dropped > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [table_create](Self::table_create)
+    /// - [table_list](Self::table_list)
+    pub fn table_drop(self, table_name: impl Into<String>) -> Self {
         table_drop::new(table_name).with_parent(self)
     }
 
     /// List all table names in a database.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
