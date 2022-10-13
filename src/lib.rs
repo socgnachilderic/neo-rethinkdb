@@ -28,8 +28,6 @@ macro_rules! args {
     ( $($a:expr),* ) => {{ $crate::arguments::Args(($($a),*)) }};
 }
 
-// TODO Put Clone Copy in all derive macro as possible
-
 #[allow(non_camel_case_types)]
 pub struct r;
 
@@ -46,6 +44,38 @@ impl r {
         cmd::db_drop::new(db_name)
     }
 
+    /// List all database names in the system.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_list() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: Vec<String>
+    ///
+    /// ## Examples
+    ///
+    /// List all databases.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<String> = r.db_list().run(&conn).await?.unwrap().parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [db_create](Self::db_create)
+    /// - [db_drop](Self::db_drop)
     pub fn db_list(self) -> Command {
         cmd::db_list::new()
     }
