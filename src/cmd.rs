@@ -326,13 +326,117 @@ impl<'a> Command {
         index_rename::new(args).with_parent(self)
     }
 
+    /// Get the status of the specified indexes on this table,
+    /// or the status of all indexes on this table if no indexes are specified.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.index_status(()) → response
+    /// table.index_status(index) → response
+    /// ```
+    ///
+    /// Where:
+    /// - index: &str | [&str; N]
+    /// - response: [IndexStatusResponse](crate::types::IndexStatusResponse)
+    ///
+    /// # Description
+    ///
+    /// The `multi` field will be `true` or `false` depending on whether
+    /// this index was created as a multi index
+    /// (see [index_create](Self::index_create) for details).
+    /// The `outdated` field will be true if the index is outdated in
+    /// the current version of RethinkDB and needs to be rebuilt.
+    /// The `progress` field is a float between `0` and `1`,
+    /// indicating how far along the server is in constructing indexes after
+    /// the most recent change to the table that would affect them.
+    /// (`0` indicates no such indexes have been constructed; `1` indicates all of them have.)
+    ///
+    /// The `function` field is a binary object containing an opaque representation
+    /// of the secondary index (including the `multi` argument if specified).
+    /// It can be passed as the second argument to [index_create](Self::index_create) to create
+    /// a new index with the same function; see `index_create` for more information.
+    ///
+    /// ## Examples
+    ///
+    /// Get the status of all the indexes on `test`:
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexStatusResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<IndexStatusResponse> = r.table("test")
+    ///         .index_status(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Get the status of the `timestamp` index:
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexStatusResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<IndexStatusResponse> = r.table("test")
+    ///         .index_status("timestamp")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Save the binary representation of the index:
+    ///
+    /// ```
+    /// use reql_rust::types::IndexStatusResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("test")
+    ///         .index_status("timestamp")
+    ///         .nth(0)
+    ///         .g("function")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [index_wait](Self::index_wait)
     pub fn index_status(self, args: impl index_status::IndexStatusArg) -> Self {
         index_status::new(args).with_parent(self)
     }
 
-    /// Wait for the specified indexes on this table to be ready, 
+    /// Wait for the specified indexes on this table to be ready,
     /// or for all indexes on this table to be ready if no indexes are specified.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
