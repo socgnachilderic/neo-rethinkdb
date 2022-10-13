@@ -40,7 +40,52 @@ impl r {
         cmd::db_create::new(db_name)
     }
 
-    pub fn db_drop(self, db_name: &str) -> Command {
+    /// Drop a database.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_drop(db_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// The database, all its tables, and corresponding data will be deleted.
+    ///
+    /// If the given database does not exist, the command throws `ReqlRuntimeError`.
+    ///
+    /// ## Examples
+    ///
+    /// Drop a database named ‘simbad’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db_drop("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response.dbs_dropped, Some(1));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [db_create](Self::db_create)
+    /// - [db_list](Self::db_list)
+    /// - [table_create](Self::table_create)
+    pub fn db_drop(self, db_name: impl Into<String>) -> Command {
         cmd::db_drop::new(db_name)
     }
 
