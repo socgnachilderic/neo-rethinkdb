@@ -114,6 +114,40 @@ impl Session {
         *self.inner.db.lock().await = db_name.static_string();
     }
 
+    /// `noreply_wait` ensures that previous queries with
+    /// the `noreply` flag have been processed by the server.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// result.close()
+    /// ```
+    ///
+    /// ## Note
+    ///
+    /// Note that this guarantee only applies to queries run on the given connection.
+    ///
+    /// ## Examples
+    ///
+    /// We have previously run queries with the `noreply` argument set to `true`.
+    /// Now wait until the server has processed them.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     
+    ///     conn.noreply_wait().await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [run](crate::Command::run)
+    /// - [sync](crate::Command::sync)
     pub async fn noreply_wait(&self) -> Result<()> {
         let mut conn = self.connection()?;
         let payload = Payload(QueryType::NoreplyWait, None, Default::default());
