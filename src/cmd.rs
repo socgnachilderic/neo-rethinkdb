@@ -318,6 +318,43 @@ impl<'a> Command {
         index_drop::new(index_name).with_parent(self)
     }
 
+    /// List all the secondary indexes of this table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.index_list() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: Vec<String>
+    ///
+    /// ## Examples
+    ///
+    /// List the available secondary indexes for this table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<String> = r.table("comments")
+    ///         .index_list()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [index_create](Self::index_create)
+    /// - [index_drop](Self::index_drop)
     pub fn index_list(self) -> Self {
         index_list::new().with_parent(self)
     }
@@ -395,7 +432,7 @@ impl<'a> Command {
     ///
     /// Where:
     /// - index: &str | [&str; N]
-    /// - response: [IndexStatusResponse](crate::types::IndexStatusResponse)
+    /// - response: Vec<[IndexStatusResponse](crate::types::IndexStatusResponse)>
     ///
     /// # Description
     ///
