@@ -322,6 +322,63 @@ impl<'a> Command {
         index_list::new().with_parent(self)
     }
 
+    /// Rename an existing secondary index on a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.index_rename(args!(old_index_name, new_index_name)) → response
+    /// table.index_rename(args!(old_index_name, new_index_name, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - old_index_name, new_index_name: &str | String | Cow<'static, str>
+    /// - options: [IndexRenameOption](crate::cmd::index_rename::IndexRenameOption)
+    /// - response: [IndexResponse](crate::types::IndexResponse)
+    ///
+    /// # Description
+    ///
+    /// If the optional argument `overwrite` is specified as `true`,
+    /// a previously existing index with the new name will be deleted
+    /// and the index will be renamed. If `overwrite` is `false` (the default)
+    /// an error will be raised if the new index name already exists.
+    ///
+    /// The return value on success will be an object of the format `{'renamed': 1}`,
+    /// or `{'renamed': 0}` if the old and new names are the same.
+    ///
+    /// An error will be raised if the old index name does not exist,
+    /// if the new index name is already in use and `overwrite` is `false`,
+    /// or if either the old or new index name are the same as the primary key field name.
+    ///
+    /// ## Examples
+    ///
+    /// Rename an index on the comments table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexResponse = r.table("comments")
+    ///         .index_rename(args!("post_id", "message_id"))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.renamed > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [index_create](Self::index_create)
+    /// - [index_status](Self::index_status)
+    /// - [index_list](Self::index_list)
+    /// - [index_drop](Self::index_drop)
     pub fn index_rename(self, args: impl index_rename::IndexRenameArg) -> Self {
         index_rename::new(args).with_parent(self)
     }
