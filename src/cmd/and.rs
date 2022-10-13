@@ -18,6 +18,12 @@ impl AndArg for bool {
     }
 }
 
+impl AndArg for Command {
+    fn into_and_opts(self) -> CmdOpts {
+        CmdOpts::Single(self)
+    }
+}
+
 impl<T> AndArg for Args<T>
 where
     T: IntoIterator<Item = bool>,

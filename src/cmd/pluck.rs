@@ -1,12 +1,42 @@
 use ql2::term::TermType;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::Command;
 
-pub(crate) fn new(selector: impl Serialize) -> Command {
-    let arg = Command::from_json(selector);
+use super::CmdOpts;
 
-    Command::new(TermType::Pluck).with_arg(arg)
+pub(crate) fn new(args: impl PluckArg) -> Command {
+    args.into_pluck_opts()
+        .add_to_cmd(Command::new(TermType::Pluck))
+}
+
+pub trait PluckArg {
+    fn into_pluck_opts(self) -> CmdOpts;
+}
+
+impl<T> PluckArg for T
+where
+    T: Serialize,
+{
+    fn into_pluck_opts(self) -> CmdOpts {
+        CmdOpts::Single(Command::from_json(self))
+    }
+}
+
+impl PluckArg for Command {
+    fn into_pluck_opts(self) -> CmdOpts {
+        CmdOpts::Single(self)
+    }
+}
+
+impl<T> PluckArg for Args<T>
+where
+    T: IntoIterator<Item = Command>,
+{
+    fn into_pluck_opts(self) -> CmdOpts {
+        CmdOpts::Many(self.0.into_iter().collect())
+    }
 }
 
 #[cfg(test)]

@@ -2,49 +2,51 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::Command;
-
-use super::CmdOpts;
 
 pub(crate) fn new(args: impl IndexRenameArg) -> Command {
     let (old_index_arg, new_index_arg, opts) = args.into_index_rename_opts();
-    let arg_1: Option<Command> = old_index_arg.into();
-    let arg_2: Option<Command> = new_index_arg.into();
 
     Command::new(TermType::IndexRename)
-        .with_arg(arg_1.unwrap())
-        .with_arg(arg_2.unwrap())
+        .with_arg(old_index_arg)
+        .with_arg(new_index_arg)
         .with_opts(opts)
 }
 
 pub trait IndexRenameArg {
-    fn into_index_rename_opts(self) -> (CmdOpts, CmdOpts, IndexRenameOption);
+    fn into_index_rename_opts(self) -> (Command, Command, IndexRenameOption);
 }
 
-impl IndexRenameArg for (&str, &str) {
-    fn into_index_rename_opts(self) -> (CmdOpts, CmdOpts, IndexRenameOption) {
-        let old_arg = Command::from_json(self.0);
-        let new_arg = Command::from_json(self.1);
-
+impl<O, N> IndexRenameArg for Args<(O, N)>
+where
+    O: Into<String>,
+    N: Into<String>,
+{
+    fn into_index_rename_opts(self) -> (Command, Command, IndexRenameOption) {
         (
-            CmdOpts::Single(old_arg),
-            CmdOpts::Single(new_arg),
+            Command::from_json(self.0 .0.into()),
+            Command::from_json(self.0 .1.into()),
             Default::default(),
         )
     }
 }
 
-impl IndexRenameArg for (&str, &str, IndexRenameOption) {
-    fn into_index_rename_opts(self) -> (CmdOpts, CmdOpts, IndexRenameOption) {
-        let old_arg = Command::from_json(self.0);
-        let new_arg = Command::from_json(self.1);
-
-        (CmdOpts::Single(old_arg), CmdOpts::Single(new_arg), self.2)
+impl<O, N> IndexRenameArg for Args<(O, N, IndexRenameOption)>
+where
+    O: Into<String>,
+    N: Into<String>,
+{
+    fn into_index_rename_opts(self) -> (Command, Command, IndexRenameOption) {
+        (
+            Command::from_json(self.0 .0.into()),
+            Command::from_json(self.0 .1.into()),
+            self.0 .2,
+        )
     }
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Serialize, CommandOptions)]
-#[non_exhaustive]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Serialize, CommandOptions)]
 pub struct IndexRenameOption {
     pub overwrite: Option<bool>,
 }
@@ -54,7 +56,7 @@ mod tests {
     use crate::prelude::*;
     use crate::spec::{set_up, tear_down};
     use crate::types::IndexResponse;
-    use crate::Result;
+    use crate::{args, Result};
 
     use super::IndexRenameOption;
 
@@ -64,7 +66,7 @@ mod tests {
         table.clone().index_create("author").run(&conn).await?;
         let index_renamed: IndexResponse = table
             .clone()
-            .index_rename(("author", "author_name"))
+            .index_rename(args!("author", "author_name"))
             .run(&conn)
             .await?
             .unwrap()
@@ -83,10 +85,10 @@ mod tests {
 
         let index_renamed: IndexResponse = table
             .clone()
-            .index_rename((
+            .index_rename(args!(
                 "author",
                 "author_name",
-                IndexRenameOption::default().overwrite(true),
+                IndexRenameOption::default().overwrite(true)
             ))
             .run(&conn)
             .await?

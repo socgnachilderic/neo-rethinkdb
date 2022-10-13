@@ -35,12 +35,35 @@ impl MapArg for Args<(Command, Func)> {
     }
 }
 
-impl MapArg for Args<(Vec<Command>, Func)> {
+impl<T> MapArg for Args<(T, Func)>
+where
+    T: AsRef<[Command]>,
+{
     fn into_map_opts(self) -> (Option<CmdOpts>, Command) {
         let Func(func) = self.0 .1;
 
-        (Some(CmdOpts::Many(self.0 .0)), func)
+        (Some(CmdOpts::Many(self.0 .0.as_ref().to_vec())), func)
     }
 }
 
-// TODO write test
+#[cfg(test)]
+mod tests {
+    use crate::prelude::*;
+    use crate::{r, Result};
+
+    #[tokio::test]
+    async fn test_map_ops() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let data_obtained: Vec<u8> = r
+            .expr([1, 2, 3, 4, 5])
+            .map(func!(|val| val.clone() * val))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(data_obtained == vec![1, 4, 9, 16, 25]);
+
+        Ok(())
+    }
+}

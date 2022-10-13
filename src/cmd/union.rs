@@ -2,8 +2,7 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::AnyParam;
-use crate::types::Interleave;
+use crate::arguments::{Args, Interleave};
 use crate::Command;
 
 use super::CmdOpts;
@@ -31,32 +30,28 @@ impl UnionArg for Vec<Command> {
     }
 }
 
-impl UnionArg for AnyParam {
+impl UnionArg for Args<(Command, UnionOption)> {
     fn into_union_opts(self) -> (CmdOpts, UnionOption) {
-        (CmdOpts::Single(self.into()), Default::default())
+        (CmdOpts::Single(self.0 .0), self.0 .1)
     }
 }
 
-impl UnionArg for (Command, UnionOption) {
+impl UnionArg for Args<(Vec<Command>, UnionOption)> {
     fn into_union_opts(self) -> (CmdOpts, UnionOption) {
-        (CmdOpts::Single(self.0), self.1)
-    }
-}
-
-impl UnionArg for (Vec<Command>, UnionOption) {
-    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
-        (CmdOpts::Many(self.0), self.1)
-    }
-}
-
-impl UnionArg for (AnyParam, UnionOption) {
-    fn into_union_opts(self) -> (CmdOpts, UnionOption) {
-        (CmdOpts::Single(self.0.into()), self.1)
+        (CmdOpts::Many(self.0 .0), self.0 .1)
     }
 }
 
 #[derive(Debug, Clone, Serialize, Default, PartialEq, PartialOrd, CommandOptions)]
 pub struct UnionOption {
+    /// The optional `interleave` argument controls
+    /// how the sequences will be merged:
+    /// - `Interleave::Bool(true)`: results will be mixed together;
+    /// this is the fastest setting, but ordering of elements is not guaranteed.
+    /// (This is the default.)
+    /// - `Interleave::Bool(false)`: input sequences will be appended to one another, left to right.
+    /// - `Interleave::FieldName(field_name)`: a string will be taken as the name of a field
+    /// to perform a merge-sort on. The input sequences must be ordered **before** being passed to `union`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub interleave: Option<Interleave>,
 }

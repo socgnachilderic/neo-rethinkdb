@@ -11,7 +11,7 @@ pub use crate::cmd::point::Point;
 pub use crate::cmd::polygon::Polygon;
 pub use binary::Binary;
 pub use datetime::DateTime;
-pub use group_stream::{GroupItem, GroupStream};
+pub use group_stream::{GroupedItem, GroupedStream};
 pub use time_::Time;
 
 pub(crate) use datetime::timezone_to_string;
@@ -26,10 +26,11 @@ mod time_;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd, Eq, Ord)]
 #[non_exhaustive]
-#[serde(rename_all = "UPPERCASE")]
+#[serde(rename_all = "SCREAMING_SNAKE_CASE")]
 pub enum ReqlType {
     Geometry,
-    GroupStream,
+    GroupedStream,
+    GroupedData,
     Binary,
     Time,
 }
@@ -42,10 +43,13 @@ pub enum GeoType {
 }
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub struct ServerInfo {
+pub struct ServerInfoResponse {
+    /// the UUID of the server the client is connected to.
     pub id: Uuid,
+    /// a boolean indicating whether the server is a
+    /// [RethinkDB proxy node](https://rethinkdb.com/docs/sharding-and-replication/#running-a-proxy-node).
     pub proxy: bool,
+    /// the server name. If `proxy` is `true`, this field will not be returned.
     pub name: Option<String>,
 }
 
@@ -85,6 +89,13 @@ pub struct IndexResponse {
     pub renamed: Option<usize>,
 }
 
+#[derive(Debug, Clone, Copy, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct SetWriteHookResponse {
+    pub created: Option<usize>,
+    pub deleted: Option<usize>,
+    pub replaced: Option<usize>,
+}
+
 /// Structure of return data in `index_status` table
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
@@ -102,7 +113,7 @@ pub struct IndexStatusResponse {
 /// Structure of return data in `index_status` table
 #[derive(Debug, Clone, Deserialize, Serialize)]
 #[non_exhaustive]
-pub struct WriteHookResponse {
+pub struct GetWriteHookResponse {
     pub function: Binary,
     pub query: Cow<'static, str>,
 }
@@ -127,7 +138,7 @@ pub struct WaitResponse {
     pub ready: u8,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
 pub struct JoinResponse<L, R> {
     pub left: Option<L>,
     pub right: Option<R>,
@@ -304,14 +315,6 @@ pub struct MatchItem {
 pub enum Squash {
     Bool(bool),
     Float(f32),
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-#[serde(untagged)]
-pub enum Interleave {
-    Bool(bool),
-    FieldName(&'static str),
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]

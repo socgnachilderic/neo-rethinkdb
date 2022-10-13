@@ -2,10 +2,8 @@ use ql2::term::TermType;
 
 use crate::Command;
 
-pub(crate) fn new(table_name: &str) -> Command {
-    let args = Command::from_json(table_name);
-
-    Command::new(TermType::TableDrop).with_arg(args)
+pub(crate) fn new(table_name: impl Into<String>) -> Command {
+    Command::new(TermType::TableDrop).with_arg(Command::from_json(table_name.into()))
 }
 
 #[cfg(test)]

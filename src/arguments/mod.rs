@@ -50,6 +50,10 @@ pub enum Durability {
 #[derive(Debug, Clone, Copy, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum ReadMode {
+    /// returns values that are in memory
+    /// (but not necessarily written to disk)
+    /// on the primary replica.
+    /// This is the default.
     Single,
     /// will only return values that are safely committed on disk on a majority of replicas.
     /// This requires sending a message to every replica on each read,
@@ -121,4 +125,13 @@ pub enum Unit {
     NauticalMile,
     #[serde(rename = "ft")]
     InternationalFoot,
+}
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, PartialOrd)]
+#[serde(untagged)]
+#[non_exhaustive]
+pub enum Interleave {
+    Bool(bool),
+    FieldName(&'static str),
+    // Function
 }

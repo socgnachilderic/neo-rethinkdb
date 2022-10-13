@@ -2,58 +2,66 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
-use super::CmdOpts;
-
 pub(crate) fn new(args: impl IndexCreateArg) -> Command {
-    let (args, func, opts) = args.into_table_create_opts();
-
-    let mut command = args
-        .add_to_cmd(Command::new(TermType::IndexCreate))
-        .with_opts(opts);
+    let (arg, func, opts) = args.into_table_create_opts();
+    let mut command = Command::new(TermType::IndexCreate).with_arg(arg);
 
     if let Some(Func(func)) = func {
         command = command.with_arg(func);
     }
 
-    command
+    command.with_opts(opts)
 }
 
 pub trait IndexCreateArg {
-    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption);
+    fn into_table_create_opts(self) -> (Command, Option<Func>, IndexCreateOption);
 }
 
-impl IndexCreateArg for &str {
-    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
-        let arg = Command::from_json(self);
-
-        (CmdOpts::Single(arg), None, Default::default())
+impl<T> IndexCreateArg for T
+where
+    T: Into<String>,
+{
+    fn into_table_create_opts(self) -> (Command, Option<Func>, IndexCreateOption) {
+        (Command::from_json(self.into()), None, Default::default())
     }
 }
 
-impl IndexCreateArg for (&str, Func) {
-    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
-        let arg = Command::from_json(self.0);
-
-        (CmdOpts::Single(arg), Some(self.1), Default::default())
+impl<T> IndexCreateArg for Args<(T, Func)>
+where
+    T: Into<String>,
+{
+    fn into_table_create_opts(self) -> (Command, Option<Func>, IndexCreateOption) {
+        (
+            Command::from_json(self.0 .0.into()),
+            Some(self.0 .1),
+            Default::default(),
+        )
     }
 }
 
-impl IndexCreateArg for (&str, IndexCreateOption) {
-    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
-        let arg = Command::from_json(self.0);
-
-        (CmdOpts::Single(arg), None, self.1)
+impl<T> IndexCreateArg for Args<(T, IndexCreateOption)>
+where
+    T: Into<String>,
+{
+    fn into_table_create_opts(self) -> (Command, Option<Func>, IndexCreateOption) {
+        (Command::from_json(self.0 .0.into()), None, self.0 .1)
     }
 }
 
-impl IndexCreateArg for (&str, Func, IndexCreateOption) {
-    fn into_table_create_opts(self) -> (CmdOpts, Option<Func>, IndexCreateOption) {
-        let arg = Command::from_json(self.0);
-
-        (CmdOpts::Single(arg), Some(self.1), self.2)
+impl<T> IndexCreateArg for Args<(T, Func, IndexCreateOption)>
+where
+    T: Into<String>,
+{
+    fn into_table_create_opts(self) -> (Command, Option<Func>, IndexCreateOption) {
+        (
+            Command::from_json(self.0 .0.into()),
+            Some(self.0 .1),
+            self.0 .2,
+        )
     }
 }
 
@@ -71,7 +79,7 @@ mod tests {
 
     use crate::prelude::*;
     use crate::types::IndexResponse;
-    use crate::{r, Command, Result, Session};
+    use crate::{args, r, Command, Result, Session};
 
     use super::IndexCreateOption;
 
@@ -91,7 +99,7 @@ mod tests {
         let index_option = IndexCreateOption::default().multi(true);
         let index_created = r
             .table(table_name.as_str())
-            .index_create(("author", index_option));
+            .index_create(args!("author", index_option));
 
         setup(&table_name, index_created, &conn).await
     }

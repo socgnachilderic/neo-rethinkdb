@@ -110,7 +110,7 @@ mod tests {
         r.table_create(table_name.as_str()).run(&conn).await?;
         table
             .clone()
-            .index_create(("area", IndexCreateOption::default().geo(true)))
+            .index_create(args!("area", IndexCreateOption::default().geo(true)))
             .run(&conn)
             .await?;
         table.clone().index_wait(()).run(&conn).await?;

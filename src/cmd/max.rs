@@ -4,18 +4,15 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
 pub(crate) fn new(args: impl MaxArg) -> Command {
-    let (arg1, arg2, opts) = args.into_max_opts();
+    let (arg, opts) = args.into_max_opts();
     let mut command = Command::new(TermType::Max);
 
-    if let Some(arg) = arg1 {
-        command = command.with_arg(arg)
-    }
-
-    if let Some(arg) = arg2 {
+    if let Some(arg) = arg {
         command = command.with_arg(arg)
     }
 
@@ -23,46 +20,41 @@ pub(crate) fn new(args: impl MaxArg) -> Command {
 }
 
 pub trait MaxArg {
-    fn into_max_opts(self) -> (Option<Command>, Option<Command>, MaxOption);
+    fn into_max_opts(self) -> (Option<Command>, MaxOption);
 }
 
-impl MaxArg for &str {
-    fn into_max_opts(self) -> (Option<Command>, Option<Command>, MaxOption) {
-        let arg = Command::from_json(self);
+impl MaxArg for () {
+    fn into_max_opts(self) -> (Option<Command>, MaxOption) {
+        (None, Default::default())
+    }
+}
 
-        (None, Some(arg), Default::default())
+impl<T> MaxArg for Args<T>
+where
+    T: Into<String>,
+{
+    fn into_max_opts(self) -> (Option<Command>, MaxOption) {
+        let arg = Command::from_json(self.0.into());
+
+        (Some(arg), Default::default())
     }
 }
 
 impl MaxArg for Func {
-    fn into_max_opts(self) -> (Option<Command>, Option<Command>, MaxOption) {
-        (None, Some(self.0), Default::default())
+    fn into_max_opts(self) -> (Option<Command>, MaxOption) {
+        (Some(self.0), Default::default())
     }
 }
 
 impl MaxArg for MaxOption {
-    fn into_max_opts(self) -> (Option<Command>, Option<Command>, MaxOption) {
-        (None, None, self)
+    fn into_max_opts(self) -> (Option<Command>, MaxOption) {
+        (None, self)
     }
 }
 
-impl MaxArg for (Command, &str) {
-    fn into_max_opts(self) -> (Option<Command>, Option<Command>, MaxOption) {
-        let arg = Command::from_json(self.1);
-
-        (Some(self.0), Some(arg), Default::default())
-    }
-}
-
-impl MaxArg for (Command, Func) {
-    fn into_max_opts(self) -> (Option<Command>, Option<Command>, MaxOption) {
-        (Some(self.0), None, Default::default())
-    }
-}
-
-impl MaxArg for (Command, MaxOption) {
-    fn into_max_opts(self) -> (Option<Command>, Option<Command>, MaxOption) {
-        (Some(self.0), None, self.1)
+impl MaxArg for Command {
+    fn into_max_opts(self) -> (Option<Command>, MaxOption) {
+        (Some(self), Default::default())
     }
 }
 
@@ -76,13 +68,18 @@ pub struct MaxOption {
 mod tests {
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::Result;
+    use crate::{args, Result};
 
     #[tokio::test]
     async fn test_max_data() -> Result<()> {
         let data = Post::get_many_data();
         let (conn, table, table_name) = set_up(true).await?;
-        let data_obtained: Post = table.max("view").run(&conn).await?.unwrap().parse()?;
+        let data_obtained: Post = table
+            .max(args!("view"))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
 
         assert!(Some(&data_obtained) == data.first());
 

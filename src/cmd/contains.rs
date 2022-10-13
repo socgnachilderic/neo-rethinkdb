@@ -1,48 +1,70 @@
 use ql2::term::TermType;
+use serde::Serialize;
 
-use crate::arguments::AnyParam;
+use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
+use super::CmdOpts;
+
 pub(crate) fn new(args: impl ContainsArg) -> Command {
-    let (sequence, arg) = args.into_contains_opts();
-    let mut command = Command::new(TermType::Contains);
-
-    if let Some(seq) = sequence {
-        command = command.with_arg(seq)
-    }
-
-    command.with_arg(arg)
+    args.into_contains_opts()
+        .add_to_cmd(Command::new(TermType::Contains))
 }
 
 pub trait ContainsArg {
-    fn into_contains_opts(self) -> (Option<Command>, Command);
+    fn into_contains_opts(self) -> CmdOpts;
 }
 
-impl ContainsArg for AnyParam {
-    fn into_contains_opts(self) -> (Option<Command>, Command) {
-        (None, self.into())
+impl<T> ContainsArg for T
+where
+    T: Serialize,
+{
+    fn into_contains_opts(self) -> CmdOpts {
+        CmdOpts::Single(Command::from_json(self))
     }
 }
 
 impl ContainsArg for Func {
-    fn into_contains_opts(self) -> (Option<Command>, Command) {
-        (None, self.0)
+    fn into_contains_opts(self) -> CmdOpts {
+        CmdOpts::Single(self.0)
     }
 }
 
-impl ContainsArg for (Command, AnyParam) {
-    fn into_contains_opts(self) -> (Option<Command>, Command) {
-        (Some(self.0), self.1.into())
+impl ContainsArg for Command {
+    fn into_contains_opts(self) -> CmdOpts {
+        CmdOpts::Single(self)
     }
 }
 
-impl ContainsArg for (Command, Func) {
-    fn into_contains_opts(self) -> (Option<Command>, Command) {
-        let Func(func) = self.1;
-
-        (Some(self.0), func)
+impl<S, T> ContainsArg for Args<T>
+where
+    S: Into<Command>,
+    T: IntoIterator<Item = S>,
+{
+    fn into_contains_opts(self) -> CmdOpts {
+        CmdOpts::Many(self.0.into_iter().map(|cmd| cmd.into()).collect())
     }
 }
 
-// TODO write test
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::{r, Result};
+
+    #[tokio::test]
+    async fn test_contains_ops() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response: bool = r
+            .expr(["red", "green", "blue"])
+            .contains("green")
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(response);
+
+        Ok(())
+    }
+}

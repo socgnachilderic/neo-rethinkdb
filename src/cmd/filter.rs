@@ -5,47 +5,68 @@ use crate::arguments::Args;
 use crate::prelude::Func;
 use crate::Command;
 
-use super::CmdOpts;
-
 pub(crate) fn new(args: impl FilterArg) -> Command {
-    let (args, opts) = args.into_filter_opts();
+    let (arg, opts) = args.into_filter_opts();
 
-    args.add_to_cmd(Command::new(TermType::Filter))
-        .with_opts(opts)
+    Command::new(TermType::Filter).with_arg(arg).with_opts(opts)
 }
 
 pub trait FilterArg {
-    fn into_filter_opts(self) -> (CmdOpts, FilterOption);
+    fn into_filter_opts(self) -> (Command, FilterOption);
+}
+
+impl<T> FilterArg for T
+where
+    T: Serialize,
+{
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (Command::from_json(self), Default::default())
+    }
 }
 
 impl FilterArg for Func {
-    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
-        (CmdOpts::Single(self.0), Default::default())
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self.0, Default::default())
     }
 }
 
 impl FilterArg for Command {
-    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
-        (CmdOpts::Single(self), Default::default())
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self, Default::default())
+    }
+}
+
+impl<T> FilterArg for Args<(T, FilterOption)>
+where
+    T: Serialize,
+{
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (Command::from_json(self.0 .0), self.0 .1)
     }
 }
 
 impl FilterArg for Args<(Func, FilterOption)> {
-    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
+    fn into_filter_opts(self) -> (Command, FilterOption) {
         let Func(func) = self.0 .0;
 
-        (CmdOpts::Single(func), self.0 .1)
+        (func, self.0 .1)
     }
 }
 
 impl FilterArg for Args<(Command, FilterOption)> {
-    fn into_filter_opts(self) -> (CmdOpts, FilterOption) {
-        (CmdOpts::Single(self.0 .0), self.0 .1)
+    fn into_filter_opts(self) -> (Command, FilterOption) {
+        (self.0 .0, self.0 .1)
     }
 }
 
 #[derive(Debug, Clone, Copy, Serialize, Default, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct FilterOption {
+    /// - If `default` is set to `true`, documents with missing
+    /// fields will be returned rather than skipped.
+    /// - If `default` is set to `r.error()`, an `ReqlRuntimeError` will
+    /// be thrown when a document with a missing field is tested.
+    /// - If `default` is set to `false` (the default),
+    /// documents with missing fields will be skipped.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub default: Option<bool>,
 }
@@ -71,7 +92,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let data_filtered: Vec<Post> = table
             .clone()
-            .filter(r.expr(json!({"view": 2})))
+            .filter(json!({"view": 2}))
             .run(&conn)
             .await?
             .unwrap()

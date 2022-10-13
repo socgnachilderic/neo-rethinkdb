@@ -2,50 +2,60 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::{AnyParam, Durability, ReturnChanges};
+use crate::arguments::{Args, Durability, ReturnChanges};
 use crate::Command;
 
-use super::CmdOpts;
 use super::func::Func;
 
 pub(crate) fn new(args: impl UpdateArg) -> Command {
-    let (args, opts) = args.into_update_opts();
+    let (arg, opts) = args.into_update_opts();
 
-    args.add_to_cmd(Command::new(TermType::Update))
-        .with_opts(opts)
+    Command::new(TermType::Update).with_arg(arg).with_opts(opts)
 }
 
 pub trait UpdateArg {
-    fn into_update_opts(self) -> (CmdOpts, UpdateOption);
+    fn into_update_opts(self) -> (Command, UpdateOption);
 }
 
-impl UpdateArg for AnyParam {
-    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
-        (CmdOpts::Single(self.into()), Default::default())
+impl<T> UpdateArg for T
+where
+    T: Serialize,
+{
+    fn into_update_opts(self) -> (Command, UpdateOption) {
+        (Command::from_json(self), Default::default())
     }
 }
 
 impl UpdateArg for Command {
-    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
-        (CmdOpts::Single(self), Default::default())
+    fn into_update_opts(self) -> (Command, UpdateOption) {
+        (self, Default::default())
     }
 }
 
 impl UpdateArg for Func {
-    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
-        (CmdOpts::Single(self.0), Default::default())
+    fn into_update_opts(self) -> (Command, UpdateOption) {
+        (self.0, Default::default())
     }
 }
 
-impl UpdateArg for (AnyParam, UpdateOption) {
-    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
-        (CmdOpts::Single(self.0.into()), self.1)
+impl<T> UpdateArg for Args<(T, UpdateOption)>
+where
+    T: Serialize,
+{
+    fn into_update_opts(self) -> (Command, UpdateOption) {
+        (Command::from_json(self.0 .0), self.0 .1)
     }
 }
 
-impl UpdateArg for (Command, UpdateOption) {
-    fn into_update_opts(self) -> (CmdOpts, UpdateOption) {
-        (CmdOpts::Single(self.0), self.1)
+impl UpdateArg for Args<(Command, UpdateOption)> {
+    fn into_update_opts(self) -> (Command, UpdateOption) {
+        (self.0 .0, self.0 .1)
+    }
+}
+
+impl UpdateArg for Args<(Func, UpdateOption)> {
+    fn into_update_opts(self) -> (Command, UpdateOption) {
+        (self.0 .0 .0, self.0 .1)
     }
 }
 
@@ -61,4 +71,28 @@ pub struct UpdateOption {
     pub ignore_write_hook: Option<bool>,
 }
 
-// TODO write test
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use crate::prelude::*;
+    use crate::spec::*;
+    use crate::types::MutationResponse;
+    use crate::Result;
+
+    #[tokio::test]
+    async fn test_update_docs() -> Result<()> {
+        let (conn, table, table_name) = set_up(true).await?;
+        let response: MutationResponse = table
+            .get(1)
+            .update(json!({"view": 0}))
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(response.replaced == 1);
+
+        tear_down(conn, &table_name).await
+    }
+}

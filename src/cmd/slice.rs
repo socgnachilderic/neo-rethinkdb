@@ -2,7 +2,10 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::{arguments::Status, Command};
+use crate::{
+    arguments::{Args, Status},
+    Command,
+};
 
 pub(crate) fn new(args: impl SliceArg) -> Command {
     let (start_offset, end_offset, opts) = args.into_slice_opts();
@@ -25,28 +28,28 @@ impl SliceArg for isize {
     }
 }
 
-impl SliceArg for (isize, isize) {
+impl SliceArg for Args<(isize, isize)> {
     fn into_slice_opts(self) -> (Command, Option<Command>, SliceOption) {
         (
-            Command::from_json(self.0),
-            Some(Command::from_json(self.1)),
+            Command::from_json(self.0 .0),
+            Some(Command::from_json(self.0 .1)),
             Default::default(),
         )
     }
 }
 
-impl SliceArg for (isize, SliceOption) {
+impl SliceArg for Args<(isize, SliceOption)> {
     fn into_slice_opts(self) -> (Command, Option<Command>, SliceOption) {
-        (Command::from_json(self), None, self.1)
+        (Command::from_json(self.0 .0), None, self.0 .1)
     }
 }
 
-impl SliceArg for (isize, isize, SliceOption) {
+impl SliceArg for Args<(isize, isize, SliceOption)> {
     fn into_slice_opts(self) -> (Command, Option<Command>, SliceOption) {
         (
-            Command::from_json(self.0),
-            Some(Command::from_json(self.1)),
-            self.2,
+            Command::from_json(self.0 .0),
+            Some(Command::from_json(self.0 .1)),
+            self.0 .2,
         )
     }
 }
@@ -64,7 +67,7 @@ mod tests {
     use crate::cmd::order_by::OrderByOption;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
-    use crate::Result;
+    use crate::{args, Result};
 
     #[tokio::test]
     async fn test_slice_data() -> Result<()> {
@@ -72,7 +75,7 @@ mod tests {
         let (conn, table, table_name) = set_up(true).await?;
         let data_obtained: Vec<Post> = table
             .order_by(OrderByOption::default().index("id"))
-            .slice((4, 5))
+            .slice(args!(4, 5))
             .run(&conn)
             .await?
             .unwrap()

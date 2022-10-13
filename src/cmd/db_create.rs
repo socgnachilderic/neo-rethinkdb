@@ -2,10 +2,8 @@ use ql2::term::TermType;
 
 use crate::Command;
 
-pub(crate) fn new(db_name: &str) -> Command {
-    let arg = Command::from_json(db_name);
-
-    Command::new(TermType::DbCreate).with_arg(arg)
+pub(crate) fn new(db_name: impl Into<String>) -> Command {
+    Command::new(TermType::DbCreate).with_arg(Command::from_json(db_name.into()))
 }
 
 #[cfg(test)]

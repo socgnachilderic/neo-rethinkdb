@@ -2,35 +2,34 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::Serialize;
 
-use crate::arguments::{IdentifierFormat, ReadMode};
+use crate::arguments::{Args, IdentifierFormat, ReadMode};
 use crate::Command;
 
-use super::CmdOpts;
-
 pub(crate) fn new(args: impl TableArg) -> Command {
-    let (args, opts) = args.into_table_opts();
+    let (arg, opts) = args.into_table_opts();
 
-    args.add_to_cmd(Command::new(TermType::Table))
-        .with_opts(opts)
+    Command::new(TermType::Table).with_arg(arg).with_opts(opts)
 }
 
 pub trait TableArg {
-    fn into_table_opts(self) -> (CmdOpts, TableOption);
+    fn into_table_opts(self) -> (Command, TableOption);
 }
 
-impl TableArg for &str {
-    fn into_table_opts(self) -> (CmdOpts, TableOption) {
-        let arg = Command::from_json(self);
-
-        (CmdOpts::Single(arg), Default::default())
+impl<T> TableArg for T
+where
+    T: Into<String>,
+{
+    fn into_table_opts(self) -> (Command, TableOption) {
+        (Command::from_json(self.into()), Default::default())
     }
 }
 
-impl TableArg for (&str, TableOption) {
-    fn into_table_opts(self) -> (CmdOpts, TableOption) {
-        let arg = Command::from_json(self.0);
-
-        (CmdOpts::Single(arg), self.1)
+impl<T> TableArg for Args<(T, TableOption)>
+where
+    T: Into<String>,
+{
+    fn into_table_opts(self) -> (Command, TableOption) {
+        (Command::from_json(self.0 .0.into()), self.0 .1)
     }
 }
 
@@ -43,7 +42,6 @@ pub struct TableOption {
     pub identifier_format: Option<IdentifierFormat>,
 }
 
-// Sequence<Document<T>>
 #[cfg(test)]
 mod tests {
     use serde_json::Value;
@@ -51,7 +49,7 @@ mod tests {
     use crate::arguments::ReadMode;
     use crate::cmd::table::TableOption;
     use crate::prelude::*;
-    use crate::{r, Result};
+    use crate::{args, r, Result};
 
     #[tokio::test]
     async fn test_table() -> Result<()> {
@@ -74,7 +72,7 @@ mod tests {
         let table_options = TableOption::default().read_mode(ReadMode::Outdated);
         let table: Vec<Value> = r
             .db("todo_app")
-            .table(("geo", table_options))
+            .table(args!("geo", table_options))
             .run(&conn)
             .await?
             .unwrap()

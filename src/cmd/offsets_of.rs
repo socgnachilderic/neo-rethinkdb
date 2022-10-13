@@ -1,36 +1,56 @@
 use ql2::term::TermType;
+use serde::Serialize;
 
-use crate::arguments::AnyParam;
 use crate::prelude::Func;
 use crate::Command;
 
-use super::CmdOpts;
-
 pub(crate) fn new(args: impl OffsetsOfArg) -> Command {
-    args.into_offsets_of_opts()
-        .add_to_cmd(Command::new(TermType::OffsetsOf))
+    Command::new(TermType::OffsetsOf).with_arg(args.into_offsets_of_opts())
 }
 
 pub trait OffsetsOfArg {
-    fn into_offsets_of_opts(self) -> CmdOpts;
+    fn into_offsets_of_opts(self) -> Command;
 }
 
-impl OffsetsOfArg for AnyParam {
-    fn into_offsets_of_opts(self) -> CmdOpts {
-        CmdOpts::Single(self.into())
+impl<T> OffsetsOfArg for T
+where
+    T: Serialize,
+{
+    fn into_offsets_of_opts(self) -> Command {
+        Command::from_json(self)
     }
 }
 
 impl OffsetsOfArg for Func {
-    fn into_offsets_of_opts(self) -> CmdOpts {
-        CmdOpts::Single(self.0)
+    fn into_offsets_of_opts(self) -> Command {
+        self.0
     }
 }
 
 impl OffsetsOfArg for Command {
-    fn into_offsets_of_opts(self) -> CmdOpts {
-        CmdOpts::Single(self)
+    fn into_offsets_of_opts(self) -> Command {
+        self
     }
 }
 
-// TODO write test
+#[cfg(test)]
+mod tests {
+    use crate::prelude::Converter;
+    use crate::{r, Result};
+
+    #[tokio::test]
+    async fn test_offset_of_ops() -> Result<()> {
+        let conn = r.connection().connect().await?;
+        let response: Vec<usize> = r
+            .expr(['a', 'b', 'c'])
+            .offsets_of('c')
+            .run(&conn)
+            .await?
+            .unwrap()
+            .parse()?;
+
+        assert!(response.first() == Some(&2));
+
+        Ok(())
+    }
+}

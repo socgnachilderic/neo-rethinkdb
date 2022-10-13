@@ -32,7 +32,7 @@ impl IndexStatusArg for &str {
     }
 }
 
-impl IndexStatusArg for Vec<&str> {
+impl<const N: usize> IndexStatusArg for [&str; N] {
     fn into_index_status_opts(self) -> Option<CmdOpts> {
         let args = self.into_iter().map(Command::from_json).collect();
 
@@ -91,7 +91,7 @@ mod tests {
 
         let index_status: Vec<IndexStatusResponse> = table
             .clone()
-            .index_status(vec!["age", "name"])
+            .index_status(["age", "name"])
             .run(&conn)
             .await?
             .unwrap()

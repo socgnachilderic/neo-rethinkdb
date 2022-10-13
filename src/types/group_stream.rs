@@ -3,25 +3,27 @@ use std::fmt::Debug;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 
+use super::ReqlType;
+
 #[derive(Debug, Default, Clone, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct GroupStream<G: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
-    Vec<GroupItem<G, V>>,
+pub struct GroupedStream<G: DeserializeOwned + Serialize, V: DeserializeOwned + Serialize>(
+    Vec<GroupedItem<G, V>>,
 );
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct GroupItem<G, V> {
+pub struct GroupedItem<G, V> {
     pub group: G,
     pub values: Vec<V>,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize, Eq, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, Eq, PartialEq)]
 struct InnerGroup {
     #[serde(rename = "$reql_type$")]
-    reql_type: String,
+    reql_type: ReqlType,
     data: Vec<[Value; 2]>,
 }
 
-impl<'de, G, V> Deserialize<'de> for GroupStream<G, V>
+impl<'de, G, V> Deserialize<'de> for GroupedStream<G, V>
 where
     G: DeserializeOwned + Serialize,
     V: DeserializeOwned + Serialize,
@@ -30,29 +32,38 @@ where
         Deserialize::deserialize(deserializer).map(|item| {
             let inner: InnerGroup = item;
 
-            let data: Vec<GroupItem<G, V>> = inner
+            let data: Vec<GroupedItem<G, V>> = inner
                 .data
                 .into_iter()
                 .map(|item| {
                     let group: G = serde_json::from_value(item[0].clone()).unwrap();
                     let values: Vec<V> = serde_json::from_value(item[1].clone()).unwrap();
 
-                    GroupItem { group, values }
+                    GroupedItem { group, values }
                 })
                 .collect();
 
-            GroupStream(data)
+            GroupedStream(data)
         })
     }
 }
 
-impl<G, V> GroupStream<G, V>
+impl<G, V> GroupedStream<G, V>
 where
     G: DeserializeOwned + Serialize,
     V: DeserializeOwned + Serialize,
 {
-    pub fn collect(self) -> Vec<GroupItem<G, V>> {
+    pub fn collect(self) -> Vec<GroupedItem<G, V>> {
         self.0
+    }
+}
+
+impl Default for InnerGroup {
+    fn default() -> Self {
+        Self {
+            reql_type: ReqlType::GroupedData,
+            data: Default::default(),
+        }
     }
 }
 
@@ -60,7 +71,7 @@ where
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use super::GroupStream;
+    use super::GroupedStream;
 
     #[derive(Serialize, Deserialize, Debug)]
     struct Posts {
@@ -120,7 +131,7 @@ mod tests {
         }
         "#;
 
-        let elememt: GroupStream<u8, Posts> = serde_json::from_str(data).unwrap();
+        let elememt: GroupedStream<u8, Posts> = serde_json::from_str(data).unwrap();
         dbg!(elememt);
     }
 }

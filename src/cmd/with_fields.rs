@@ -1,19 +1,16 @@
 use ql2::term::TermType;
+use serde::Serialize;
 
-use crate::arguments::AnyParam;
 use crate::Command;
 
-pub(crate) fn new(fields: AnyParam) -> Command {
-    let arg: Command = fields.into();
-
-    Command::new(TermType::WithFields).with_arg(arg)
+pub(crate) fn new(fields: impl Serialize) -> Command {
+    Command::new(TermType::WithFields).with_arg(Command::from_json(fields))
 }
 
 #[cfg(test)]
 mod tests {
     use serde::{Deserialize, Serialize};
 
-    use crate::arguments::AnyParam;
     use crate::prelude::Converter;
     use crate::spec::{set_up, tear_down, Post};
     use crate::Result;
@@ -35,7 +32,7 @@ mod tests {
             .collect();
         let (conn, table, table_name) = set_up(true).await?;
         let mut data_obtained: Vec<InnerPost> = table
-            .with_fields(AnyParam::new(["id", "title"]))
+            .with_fields(["id", "title"])
             .run(&conn)
             .await?
             .unwrap()

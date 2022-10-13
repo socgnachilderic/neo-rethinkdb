@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use prelude::Func;
 use serde::Serialize;
 
 use arguments::Permission;
@@ -27,90 +28,1893 @@ macro_rules! args {
     ( $($a:expr),* ) => {{ $crate::arguments::Args(($($a),*)) }};
 }
 
-// TODO Put Clone Copy in all derive macro as possible
-
 #[allow(non_camel_case_types)]
 pub struct r;
 
 impl r {
+    /// Create a new connection to the database server.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_drop(db_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// If the connection cannot be established, a `ReqlDriverError` exception will be thrown.
+    ///
+    /// ## Examples
+    ///
+    /// Open a connection using the default host and port, specifying the default database.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().dbname("jam").connect().await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Open a new connection to the database.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection()
+    ///         .dbname("jam")
+    ///         .host("localhost")
+    ///         .port(28015)
+    ///         .connect()
+    ///         .await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Open a new connection to the database,
+    /// specifying a user/password combination for authentication.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection()
+    ///         .dbname("jam")
+    ///         .host("localhost")
+    ///         .port(28015)
+    ///         .user("jam_user", "jam_password")
+    ///         .connect()
+    ///         .await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [use_](crate::connection::Session::use_)
+    /// - [close](crate::connection::Session::close)
     pub fn connection(self) -> cmd::connect::ConnectionCommand {
         cmd::connect::ConnectionCommand::default()
     }
 
-    pub fn db_create(self, db_name: &str) -> Command {
+    /// Create a database.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_drop(db_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// A RethinkDB database is a collection of tables, similar to relational databases.
+    ///
+    /// If a database with the same name already exists, the command throws `ReqlRuntimeError`.
+    ///
+    /// ## Note
+    ///
+    /// Only alphanumeric characters, hyphens and underscores are valid for the database name.
+    ///
+    /// ## Examples
+    ///
+    /// Create a database named ‘simbad’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db_create("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response.dbs_created, Some(1));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [db_drop](Self::db_drop)
+    /// - [db_list](Self::db_list)
+    /// - [table_create](Self::table_create)
+    pub fn db_create(self, db_name: impl Into<String>) -> Command {
         cmd::db_create::new(db_name)
     }
 
-    pub fn db_drop(self, db_name: &str) -> Command {
+    /// Drop a database.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_drop(db_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// The database, all its tables, and corresponding data will be deleted.
+    ///
+    /// If the given database does not exist, the command throws `ReqlRuntimeError`.
+    ///
+    /// ## Examples
+    ///
+    /// Drop a database named ‘simbad’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db_drop("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response.dbs_dropped, Some(1));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [db_create](Self::db_create)
+    /// - [db_list](Self::db_list)
+    /// - [table_create](Self::table_create)
+    pub fn db_drop(self, db_name: impl Into<String>) -> Command {
         cmd::db_drop::new(db_name)
     }
 
+    /// List all database names in the system.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_list() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: Vec<String>
+    ///
+    /// ## Examples
+    ///
+    /// List all databases.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<String> = r.db_list().run(&conn).await?.unwrap().parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [db_create](Self::db_create)
+    /// - [db_drop](Self::db_drop)
     pub fn db_list(self) -> Command {
         cmd::db_list::new()
     }
 
-    pub fn db(self, db_name: &str) -> Command {
+    /// Reference a database.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.db(db_name) → db
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: impl Into<String>
+    ///
+    /// # Description
+    ///
+    /// The `db` command is optional. If it is not present in a query,
+    /// the query will run against the database specified in the `db`
+    /// argument given to [run](crate::Command::run) if one was specified.
+    /// Otherwise, the query will run against the default database for the connection,
+    /// specified in the `db` argument to [connection](Self::connection).
+    ///
+    /// ## Examples
+    ///
+    /// Explicitly specify a database for a query.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [table](crate::Command::table)
+    /// - [db_list](Self::db_list)
+    pub fn db(self, db_name: impl Into<String>) -> Command {
         cmd::db::new(db_name)
     }
 
+    /// Create a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table_create(table_name) → response
+    /// db.table_create(args!(table_name, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - table_name: &str | String | Cow<'static, str>
+    /// - options: [TableCreateOption](crate::cmd::table_create::TableCreateOption)
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// A RethinkDB table is a collection of JSON documents.
+    ///
+    /// If a table with the same name already exists,
+    /// the command throws `ReqlOpFailedError`.
+    ///
+    /// ```text
+    /// Note: Only alphanumeric characters and underscores are valid for the table name.
+    ///
+    /// Invoking table_create without specifying a database using db creates a table in
+    /// the database specified in connect, or test if no database was specified.
+    /// ```
+    ///
+    /// The [data type](https://rethinkdb.com/docs/data-types/) of a primary key is usually a string
+    /// (like a UUID) or a number, but it can also be a time, binary object, boolean or an array.
+    /// Data types can be mixed in the primary key field, but all values must be unique. Using an array
+    /// as a primary key causes the primary key to behave like a compound index; read the documentation on
+    /// [compound secondary indexes](https://rethinkdb.com/docs/secondary-indexes/python/#compound-indexes)
+    /// for more information, as it applies to primary keys as well.
+    /// (Note that the primary index still only covers a single field,
+    /// while compound secondary indexes can cover multiple fields in a single index.)
+    /// Primary keys cannot be objects.
+    ///
+    /// Tables will be available for writing when the command returns.
+    ///
+    /// ## Examples
+    ///
+    /// Create a table named ‘simbad’ with the default settings.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_create("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Create a table named ‘simbad’ using the field ‘name’ as primary key.
+    ///
+    /// ```
+    /// use reql_rust::cmd::table_create::TableCreateOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let table_create_option = TableCreateOption::default().primary_key("name");
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_create(args!("simbad", table_create_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Create a table set up for two shards and three replicas per shard.
+    /// This requires three available servers.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Replicas;
+    /// use reql_rust::cmd::table_create::TableCreateOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let table_create_option = TableCreateOption::default()
+    ///         .shards(2)
+    ///         .replicas(Replicas::Int(3));
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_create(args!("simbad", table_create_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Read [Sharding and replication](https://rethinkdb.com/docs/sharding-and-replication/)
+    /// for a complete discussion of the subject, including advanced topics.
+    ///
+    /// # Related commands
+    /// - [table_drop](Self::table_drop)
+    /// - [table_list](Self::table_list)
     pub fn table_create(self, args: impl cmd::table_create::TableCreateArg) -> Command {
         cmd::table_create::new(args)
     }
 
+    /// Drop a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table_drop(table_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - table_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// The table and all its data will be deleted.
+    ///
+    /// If the given table does not exist in the database,
+    /// the command throws `ReqlRuntimeError`.
+    ///
+    /// ## Examples
+    ///
+    /// Drop a table named ‘simbad’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_drop("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_dropped > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [table_create](Self::table_create)
+    /// - [table_list](Self::table_list)
     pub fn table_drop(self, table_name: &str) -> Command {
         cmd::table_drop::new(table_name)
     }
 
+    /// List all table names in a database.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table_list() → response
+    /// ```
+    ///
+    /// Where:
+    /// - response: Vec<String>
+    ///
+    /// ## Examples
+    ///
+    /// List all tables of the ‘test’ database.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<String> = r.db("test")
+    ///         .table_list()
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [table_create](Self::table_create)
+    /// - [table_drop](Self::table_drop)
     pub fn table_list(self) -> Command {
         cmd::table_list::new()
     }
 
+    /// Return all documents in a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table(name) → table
+    /// db.table(args!(name, options)) → table
+    /// r.table(name) → table
+    /// r.table(args!(name, options)) → table
+    /// ```
+    ///
+    /// Where:
+    /// - name: impl Into<String> | [Command](crate::Command)
+    /// - options: [TableOption](crate::cmd::table::TableOption)
+    ///
+    /// # Description
+    ///
+    /// Other commands may be chained after `table` to return a subset of documents
+    /// (such as [get](crate::Command::get) and [filter](crate::Command::filter))
+    /// or perform further processing.
+    ///
+    /// ## Examples
+    ///
+    /// Return all documents in the table ‘simbad’ of the default database.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all documents in the table ‘simbad’ of the database ‘heroes’.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table("simbad").run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Allow potentially out-of-date data in exchange for faster reads.
+    ///
+    /// ```
+    /// use reql_rust::cmd::table::TableOption;
+    /// use reql_rust::arguments::ReadMode;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let table_option = TableOption::default().read_mode(ReadMode::Outdated);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.db("heroes").table(args!("simbad", table_option)).run(&conn).await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [filter](crate::Command::filter)
+    /// - [get](crate::Command::get)
     pub fn table(self, args: impl cmd::table::TableArg) -> Command {
         cmd::table::new(args)
     }
 
-    pub fn map(self, args: impl cmd::map::MapArg) -> Command {
-        cmd::map::new(args)
+    /// Transform each element of one or more sequences
+    /// by applying a mapping function to them.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.map(func) → stream
+    /// sequence.map(sequence, func) → stream
+    /// sequence.map(sequences, func) → stream
+    /// r.map(sequence, func) → stream
+    /// r.map(sequence, sequence, func) → stream
+    /// r.map(sequence, sequences, func) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    /// - sequences: [...] | &[...] | vec![...]
+    ///
+    /// # Description
+    ///
+    /// If `map` is run with two or more sequences, it will iterate
+    /// for as many items as there are in the shortest sequence.
+    ///
+    /// Note that `map` can only be applied to sequences, not single values.
+    /// If you wish to apply a function to a single value/selection (including an array),
+    /// use the [do_](Self::do_) command.
+    ///
+    /// ## Examples
+    ///
+    /// Return the first five squares.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<u8> = r.expr([1, 2, 3, 4, 5])
+    ///         .map(func!(|val| val.clone() * val))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response, [1, 4, 9, 16, 25]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Sum the elements of three sequences.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let sequence1 = r.expr([100, 200, 300, 400]);
+    ///     let sequence2 = r.expr([10, 20, 30, 40]);
+    ///     let sequence3 = r.expr([1, 2, 3, 4]);
+    ///
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<u32> = r.map(sequence1, args!(
+    ///             [sequence2, sequence3],
+    ///             func!(|val1, val2, val3| val1 + val2 + val3)
+    ///         ))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response, [111, 222, 333, 444]);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Rename a field when retrieving documents
+    /// using `map` and [merge](crate::Command::merge).
+    ///
+    /// This example renames the field `id` to `user_id`
+    /// when retrieving documents from the table `users`.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .map(func!(|doc| {
+    ///             let mut user = HashMap::new();
+    ///             user.insert("user_id", doc.clone().g("id"));
+    ///             
+    ///             doc.merge(r.hash_map(user)).without("id")
+    ///         }))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Assign every superhero an archenemy.
+    ///
+    /// ```
+    /// use std::collections::HashMap;
+    ///
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("heroes")
+    ///         .map(args!(r.table("villains"), func!(|hero, villain| {
+    ///             let mut villain_obj = HashMap::new();
+    ///             villain_obj.insert("villain", villain);
+    ///
+    ///             hero.merge(r.hash_map(villain_obj))
+    ///         })))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [concat_map](crate::Command::concat_map)
+    /// - [reduce](Self::reduce)
+    /// - [do_](Self::do_)
+    pub fn map(self, sequence: Command, args: impl cmd::map::MapArg) -> Command {
+        sequence.map(args)
     }
 
+    // TODO write Doc
     pub fn order_by(self, args: impl cmd::order_by::OrderByArg) -> Command {
         cmd::order_by::new(args)
     }
 
-    pub fn union(self, args: impl cmd::union::UnionArg) -> Command {
-        cmd::union::new(args)
+    /// Merge two or more sequences.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// stream.union(sequence) → stream
+    /// stream.union(vec![sequence]) → stream
+    /// stream.union(args!(sequence, options)) → stream
+    /// stream.union(args!(vec![sequence], options)) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - sequence: [Command](crate::Command)
+    /// - options: [UnionOption](crate::cmd::union::UnionOption)
+    ///
+    /// ## Examples
+    ///
+    /// Construct a stream of all characters.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .union(r.table("kirikou"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn union(self, stream: Command, args: impl cmd::union::UnionArg) -> Command {
+        stream.union(args)
     }
 
-    pub fn reduce(self, args: impl cmd::reduce::ReduceArg) -> Command {
-        cmd::reduce::new(args)
+    /// Takes a stream and partitions it into multiple
+    /// groups based on the fields or functions provided.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.group(field) → grouped_stream
+    /// sequence.group(func) → grouped_stream
+    /// sequence.group(args!(field, options)) → grouped_stream
+    /// sequence.group(args!(func, options)) → grouped_stream
+    /// r.group(sequence, field) → grouped_stream
+    /// r.group(sequence, func) → grouped_stream
+    /// r.group(sequence, args!(field, options)) → grouped_stream
+    /// r.group(sequence, args!(func, options)) → grouped_stream
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str | [&str; N]
+    /// - func: func!(...) | [func!(...); N]
+    /// - grouped_stream: [GroupedStream](crate::types::GroupedStream)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// With the `multi` flag single documents can be assigned to multiple groups,
+    /// similar to the behavior of
+    /// [multi-indexes](https://rethinkdb.com/docs/secondary-indexes/javascript).
+    /// When `multi` is `true` and the grouping value is an array, documents
+    /// will be placed in each group that corresponds to the elements of the array.
+    /// If the array is empty the row will be ignored.
+    ///
+    /// Suppose that the table games has the following data:
+    ///
+    /// ```text
+    /// [
+    ///     {id: 2, player: "Moussa", points: 15, class: "ranked"},
+    ///     {id: 5, player: "Fatou", points: 7, class: "free"},
+    ///     {id: 11, player: "Moussa", points: 10, class: "free"},
+    ///     {id: 12, player: "Fatou", points: 2, class: "free"}
+    /// ]
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Group games by player.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::{GroupedItem, GroupedStream};
+    /// use reql_rust::{args, r, Result};
+    /// use serde::{Serialize, Deserialize};
+    ///
+    /// #[derive(Serialize, Deserialize, PartialEq, Eq)]
+    /// struct Player {
+    ///     id: u8,
+    ///     player: String,
+    ///     points: u8,
+    ///     class: String,
+    /// }
+    ///
+    /// impl Player {
+    ///     fn new(id: u8, player: &str, points: u8, class: &str) -> Self {
+    ///         Self {
+    ///             id,
+    ///             points,
+    ///             player: player.to_owned(),
+    ///             class: class.to_owned(),
+    ///         }
+    ///     }
+    /// }
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let expected_data = vec![
+    ///         GroupedItem {
+    ///             group: String::from("Fatou"),
+    ///             values: vec![
+    ///                 Player::new(5, "Fatou", 7, "free"),
+    ///                 Player::new(12, "Fatou", 2, "free"),
+    ///             ]
+    ///         },
+    ///         GroupedItem {
+    ///             group: String::from("Moussa"),
+    ///             values: vec![
+    ///                 Player::new(2, "Moussa", 15, "ranked"),
+    ///                 Player::new(11, "Moussa", 10, "free"),
+    ///             ]
+    ///         },
+    ///     ];
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: GroupedStream<String, Player> = r.table("games")
+    ///         .group("player")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.collect() == expected_data);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [ungroup](crate::Command::ungroup)
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    pub fn group(self, sequence: Command, args: impl cmd::group::GroupArg) -> Command {
+        sequence.group(args)
     }
 
-    pub fn count(self, args: impl cmd::count::CountArg) -> Command {
-        cmd::count::new(args)
+    /// Produce a single value from a sequence through
+    /// repeated application of a reduction function.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.fold(base, func) → value
+    /// ```
+    ///
+    /// Where:
+    /// - base, value: impl Serialize
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// The reduction function can be called on:
+    ///
+    /// - two elements of the sequence
+    /// - one element of the sequence and one result of a previous reduction
+    /// - two results of previous reductions
+    ///
+    /// The reduction function can be called on the results of
+    /// two previous reductions because the `reduce` command is
+    /// distributed and parallelized across shards and CPU cores.
+    /// A common mistaken when using the `reduce` command is to
+    /// suppose that the reduction is executed from left to right.
+    /// [Read the map-reduce in RethinkDB](https://rethinkdb.com/docs/map-reduce/)
+    /// article to see an example.
+    ///
+    /// If the sequence is empty, the server will produce a
+    /// `ReqlRuntimeError` that can be caught with default.
+    /// If the sequence has only one element, the first element will be returned.
+    ///
+    /// ## Examples
+    ///
+    /// Return the number of documents in the table posts.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .map(func!(|| r.expr(1)))
+    ///         .reduce(func!(|left, right| left + right))
+    ///         .default(0)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// A shorter way to execute this query is to use [count](Self::count).
+    ///
+    /// ## Examples
+    ///
+    /// Suppose that each `post` has a field `comments` that is an array of comments.
+    /// Return the maximum number comments per post.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .map(func!(|post| post.g("comments").count(())))
+    ///         .reduce(func!(|left, right| r.branch(
+    ///             left.clone().gt(right.clone()),
+    ///             args!(left, right)
+    ///         )))
+    ///         .default(0)
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// A shorter way to execute this query is to use [max](Self::max).
+    ///
+    /// # Related commands
+    /// - [group](crate::Command::group)
+    /// - [map](Self::map)
+    /// - [concat_map](crate::Command::concat_map)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    pub fn reduce(self, sequence: Command, func: Func) -> Command {
+        sequence.reduce(func)
     }
 
-    pub fn sum(self, args: impl cmd::sum::SumArg) -> Command {
-        cmd::sum::new(args)
+    /// Count the number of elements in sequence or key/value pairs in an object,
+    /// or returns the size of a string or binary object.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// binary.count(()) → number
+    /// string.count(()) → number
+    /// object.count(()) → number
+    /// sequence.count(()) → number
+    /// sequence.count(args!(value)) → number
+    /// sequence.count(func) → number
+    /// r.count(query_cmd) → number
+    /// r.count(query_cmd, args!(value)) → number
+    /// r.count(query_cmd, func) → number
+    /// ```
+    ///
+    /// Where:
+    /// - value: impl Serialize
+    /// - func: func!(...)
+    /// - sequence, binary, string, object, query_cmd: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// When `count` is called on a sequence with a predicate value or function,
+    /// it returns the number of elements in the sequence equal to that value or
+    /// where the function returns `true`. On a [binary](Self::binary) object, `count`
+    /// returns the size of the object in bytes; on strings, `count` returns the string’s length.
+    /// This is determined by counting the number of Unicode codepoints in the string,
+    /// counting combining codepoints separately.
+    ///
+    /// ## Examples
+    ///
+    /// Count the number of users.
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .count(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Count the number of 18 year old users.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .g("age")
+    ///         .count(args!(18))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Count the number of users over 18.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .g("age")
+    ///         .count(func!(|age| age.gt(18)))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the length of a Unicode string.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: usize = r.expr("こんにちは")
+    ///         .count(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 5);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the length of an array.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: usize = r.expr(['0','1','2'])
+    ///         .count(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 3);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    /// - [group](crate::Command::group)
+    pub fn count(self, query: Command, args: impl cmd::count::CountArg) -> Command {
+        query.count(args)
     }
 
-    pub fn avg(self, args: impl cmd::avg::AvgArg) -> Command {
-        cmd::avg::new(args)
+    /// Sum all the elements of sequence.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.sum(()) → number
+    /// sequence.sum(field) → number
+    /// sequence.sum(func) → number
+    /// r.sum(sequence) → number
+    /// r.sum(sequence, field) → number
+    /// r.sum(sequence, func) → number
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// If called with a field name, sums all the values of that field in
+    /// the sequence, skipping elements of the sequence that lack that field.
+    /// If called with a function, calls that function on every element of the
+    /// sequence and sums the results, skipping elements of the sequence
+    /// where that function returns `None` or non-existence error.
+    ///
+    /// Returns `0` when called on an empty sequence.
+    ///
+    /// ## Examples
+    ///
+    /// What's 3 + 5 + 7?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([3, 5, 7])
+    ///         .sum(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// How many points have been scored across all games?
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .sum("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// How many points have been scored across all games, counting bonus points?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .sum(func!(|game| game.clone().g("points") + game.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    /// - [group](crate::Command::group)
+    pub fn sum(self, sequence: Command, args: impl cmd::sum::SumArg) -> Command {
+        sequence.sum(args)
     }
 
-    pub fn min(self, args: impl cmd::min::MinArg) -> Command {
-        cmd::min::new(args)
+    /// Averages all the elements of sequence.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.avg(()) → Option<f64>
+    /// sequence.avg(field) → Option<f64>
+    /// sequence.avg(func) → Option<f64>
+    /// r.avg(sequence) → Option<f64>
+    /// r.avg(sequence, field) → Option<f64>
+    /// r.avg(sequence, func) → Option<f64>
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// If called with a field name, averages all the values of that field in
+    /// the sequence, skipping elements of the sequence that lack that field.
+    /// If called with a function, calls that function on every element of the
+    /// sequence and averages the results, skipping elements of the sequence
+    /// where that function returns `None` or non-existence error.
+    ///
+    /// Produces a non-existence error when called on an empty sequence.
+    /// You can handle this case with `default`.
+    ///
+    /// ## Examples
+    ///
+    /// What's the average of 3, 5 and 7?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Option<f64> = r.expr([3, 5, 7])
+    ///         .avg(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == Some(5.));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// What's the average number of points scored in a games?
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .avg("points")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// What's the average number of points scored in a games, counting bonus points?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("games")
+    ///         .avg(func!(|game| game.clone().g("points") + game.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [min](Self::min)
+    /// - [max](Self::max)
+    /// - [group](crate::Command::group)
+    pub fn avg(self, sequence: Command, args: impl cmd::avg::AvgArg) -> Command {
+        sequence.avg(args)
     }
 
-    pub fn max(self, args: impl cmd::max::MaxArg) -> Command {
-        cmd::max::new(args)
+    /// Finds the minimum element of a sequence.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.min(()) → element
+    /// sequence.min(args!(field)) → element
+    /// sequence.min(func) → element
+    /// sequence.min(options) → element
+    /// r.min(sequence) → element
+    /// r.min(sequence, args!(field)) → element
+    /// r.min(sequence, func) → element
+    /// r.min(sequence, options) → element
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - options: [MinOption](crate::cmd::min::MinOption)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// The `min` command can be called with:
+    /// - a `field name`, to return the element of the sequence
+    /// with the largest value in that field;
+    /// - a `function`, to apply the function to every element within the sequence
+    /// and return the element which returns the largest value from the function,
+    /// ignoring any elements where the function produces a non-existence error;
+    /// - an `index` (the primary key or a secondary index), to return the element
+    /// of the sequence with the largest value in that index;
+    ///
+    /// For more information on RethinkDB’s sorting order, read the section in
+    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
+    ///
+    /// Calling `min` on an empty sequence will throw a non-existence error;
+    /// this can be handled using the [default](crate::Command::default) command.
+    ///
+    /// ## Examples
+    ///
+    /// Return the minimum value in the list [3, 5, 7].
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([3, 5, 7])
+    ///         .min(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 3);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the fewest points.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .min(args!("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// The same as above, but using a secondary index on the `points` field.
+    ///
+    /// ```
+    /// use reql_rust::cmd::min::MinOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .min(MinOption::default().index("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the fewest points,
+    /// adding in bonus points from a separate field using a function.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .min(func!(|user| user.clone().g("points") + user.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the highest number of points any user has ever scored.
+    /// This returns the value of that `points` field, not a document.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.table("users")
+    ///         .min(args!("points"))
+    ///         .g("points")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 2);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [max](Self::max)
+    /// - [group](crate::Command::group)
+    pub fn min(self, sequence: Command, args: impl cmd::min::MinArg) -> Command {
+        sequence.min(args)
     }
 
-    pub fn distinct(self, args: impl cmd::distinct::DistinctArg) -> Command {
-        cmd::distinct::new(args)
+    /// Finds the maximum element of a sequence.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.max(()) → element
+    /// sequence.max(args!(field)) → element
+    /// sequence.max(func) → element
+    /// sequence.max(options) → element
+    /// r.max(sequence) → element
+    /// r.max(sequence, args!(field)) → element
+    /// r.max(sequence, func) → element
+    /// r.max(sequence, options) → element
+    /// ```
+    ///
+    /// Where:
+    /// - field: &str, String, Cow<'static, str>
+    /// - func: func!(...)
+    /// - options: [MaxOption](crate::cmd::max::MaxOption)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// The `max` command can be called with:
+    /// - a `field name`, to return the element of the sequence
+    /// with the largest value in that field;
+    /// - a `function`, to apply the function to every element within the sequence
+    /// and return the element which returns the largest value from the function,
+    /// ignoring any elements where the function produces a non-existence error;
+    /// - an `index` (the primary key or a secondary index), to return the element
+    /// of the sequence with the largest value in that index;
+    ///
+    /// For more information on RethinkDB’s sorting order, read the section in
+    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
+    ///
+    /// Calling `max` on an empty sequence will throw a non-existence error;
+    /// this can be handled using the [default](crate::Command::default) command.
+    ///
+    /// ## Examples
+    ///
+    /// Return the maximum value in the list [3, 5, 7].
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.expr([3, 5, 7])
+    ///         .max(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 7);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the most points.
+    ///
+    /// ```
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(args!("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// The same as above, but using a secondary index on the `points` field.
+    ///
+    /// ```
+    /// use reql_rust::cmd::max::MaxOption;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(MaxOption::default().index("points"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the user who has scored the most points,
+    /// adding in bonus points from a separate field using a function.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .max(func!(|user| user.clone().g("points") + user.g("bonus_points")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the highest number of points any user has ever scored.
+    /// This returns the value of that `points` field, not a document.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: u8 = r.table("users")
+    ///         .max(args!("points"))
+    ///         .g("points")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == 15);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
+    /// - [count](Self::count)
+    /// - [sum](Self::sum)
+    /// - [avg](Self::avg)
+    /// - [min](Self::min)
+    /// - [group](crate::Command::group)
+    pub fn max(self, sequence: Command, args: impl cmd::max::MaxArg) -> Command {
+        sequence.max(args)
     }
 
-    pub fn contains(self, args: impl cmd::contains::ContainsArg) -> Command {
-        cmd::contains::new(args)
+    /// Removes duplicate elements from a sequence.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// sequence.distinct(()) → array
+    /// table.distinct(options) → stream
+    /// r.distinct(sequence) → array
+    /// r.distinct(table, options) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - options: [DistinctOption](crate::cmd::distinct::DistinctOption)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// The `distinct` command can be called on any sequence or table with an index.
+    ///
+    /// ```text
+    /// While `distinct` can be called on a table without an index,
+    /// the only effect will be to convert the table into a stream;
+    /// the content of the stream will not be affected.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Which unique villains have been vanquished by Marvel heroes?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .concat_map(func!(|hero| hero.g("villain_list")))
+    ///         .distinct(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Topics in a table of messages have a secondary index on them,
+    /// and more than one message can have the same topic.
+    /// What are the unique topics in the table?
+    ///
+    /// ```
+    /// use reql_rust::cmd::distinct::DistinctOption;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("messages")
+    ///         .distinct(DistinctOption::default().index("topics"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// The above structure is functionally identical to:
+    ///
+    /// ```
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("messages")
+    ///         .g("topics")
+    ///         .distinct(())
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// However, the first form (passing the index as an argument to `distinct`) is faster,
+    /// and won’t run into array limit issues since it’s returning a stream.
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [concat_map](crate::Command::concat_map)
+    /// - [group](crate::Command::group)
+    pub fn distinct(self, seq_or_table: Command, args: impl cmd::distinct::DistinctArg) -> Command {
+        seq_or_table.distinct(args)
+    }
+
+    /// When called with values, returns `true`
+    /// if a sequence contains all the specified values.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// query.contains(value) → bool
+    /// r.contains(sequence, value) → bool
+    /// ```
+    ///
+    /// Where:
+    /// - value: impl Serialize | [Command](crate::Command)
+    /// - sequence: [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// When called with predicate functions, returns `true`
+    /// if for each predicate there exists at least one element
+    /// of the stream where that predicate returns `true`.
+    ///
+    /// Values and predicates may be mixed freely in the argument list.
+    ///
+    /// ## Examples
+    ///
+    /// Has Iron Man ever fought Superman?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .get("ironman")
+    ///         .g("opponents")
+    ///         .contains("superman")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Has Iron Man ever defeated Superman in battle?
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .get("ironman")
+    ///         .g("battles")
+    ///         .contains(func!(|battle| battle.clone().g("winner").eq("ironman").and(
+    ///             battle.g("loser").eq("superman")
+    ///         )))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return all heroes who have fought both Loki and the Hulk.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .filter(func!(|hero| hero.g("opponents").contains(["loki", "hulk"])))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Use contains with a predicate function to simulate an or.
+    /// Return the Marvel superheroes who live in Detroit, Chicago or Hoboken.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: bool = r.table("marvel")
+    ///         .filter(func!(|hero| r.expr(["Detroit", "Chicago", "Hoboken"]).contains(hero.g("city"))))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [concat_map](crate::Command::concat_map)
+    /// - [group](crate::Command::group)
+    pub fn contains(self, sequence: Command, args: impl cmd::contains::ContainsArg) -> Command {
+        sequence.contains(args)
     }
 
     /// TODO Write docs
@@ -118,9 +1922,9 @@ impl r {
         cmd::literal::new(value)
     }
 
-    /// Creates an object from a list of key-value pairs, 
+    /// Creates an object from a list of key-value pairs,
     /// where the keys must be strings.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -138,7 +1942,7 @@ impl r {
     /// use reql_rust::prelude::*;
     /// use reql_rust::{r, Result};
     /// use serde::{Deserialize, Serialize};
-    /// 
+    ///
     /// #[derive(Debug, PartialEq, Eq, Serialize, Deserialize)]
     /// struct Post {
     ///     id: String,
@@ -188,13 +1992,13 @@ impl r {
     /// Where:
     /// - value: [Command](crate::Command) | bool
     /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
-    /// 
+    ///
     /// # Description
-    /// 
-    /// The `and` command can be used as an infix operator after its 
-    /// first argument (`r.expr(true).and(false)`) or given all of 
+    ///
+    /// The `and` command can be used as an infix operator after its
+    /// first argument (`r.expr(true).and(false)`) or given all of
     /// its arguments as parameters (`r.and(args!([true, false]))`).
-    /// 
+    ///
     /// Calling `or` with zero arguments will return `false`.
     ///
     /// ## Examples
@@ -263,13 +2067,13 @@ impl r {
     /// Where:
     /// - value: [Command](crate::Command) | bool
     /// - values: [Command](crate::Command) | vec![...] | [...] | &[...]
-    /// 
+    ///
     /// # Description
-    /// 
-    /// The `or` command can be used as an infix operator after 
-    /// its first argument (`r.expr(true).or(false)`) or given all 
+    ///
+    /// The `or` command can be used as an infix operator after
+    /// its first argument (`r.expr(true).or(false)`) or given all
     /// of its arguments as parameters (`r.or(args!([true, false]))`).
-    /// 
+    ///
     /// Calling `or` with zero arguments will return `false`.
     ///
     /// ## Examples
@@ -316,14 +2120,14 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
-    /// 
+    ///
     /// ## Note
-    /// 
-    /// When using `or` inside a `filter` predicate to test the values of 
-    /// fields that may not exist on the documents being tested, 
-    /// you should use the `default` command with those fields so 
+    ///
+    /// When using `or` inside a `filter` predicate to test the values of
+    /// fields that may not exist on the documents being tested,
+    /// you should use the `default` command with those fields so
     /// they explicitly return `false`.
-    /// 
+    ///
     /// ```
     /// use reql_rust::prelude::*;
     /// use reql_rust::{args, r, Result};
