@@ -1,5 +1,10 @@
+.idea
+.vscode
+
 target
 *.bk
 *.swp
 Cargo.lock
 rethinkdb_data
+
+tarpaulin-report.html

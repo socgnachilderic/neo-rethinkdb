@@ -1,27 +1,14 @@
-# Open source RethinkDB Rust driver
+# Unofficial open source RethinkDB Rust driver
 
 ## Overview
 
+NeoR for ***"Neo Reql"***
 
 ### Note
 This is project is a fork for [rethink-rs]("https://github.com/rethinkdb/rethinkdb-rs") project
 
 ### What is RethinkDB?
 RethinkDB is the first open-source scalable database built for realtime applications. It exposes a new database access model -- instead of polling for changes, the developer can tell the database to continuously push updated query results to applications in realtime. RethinkDB allows developers to build scalable realtime apps in a fraction of the time with less effort.
-
-# ReQL Driver
-
-This is a [ReQL] driver written in [Rust].
-
-[![travis-badge][]][travis]
-[![cratesio-badge][]][cratesio]
-[![docsrs-badge][]][docsrs]
-
-## Sponsors
-
-Development of this driver has in part been sponsored by [WideFind AB], an 
-IoT company based in Sweden, developing high-accuracy, high performance 
-indoor positioning hardware and software solutions.
 
 ## License
 
