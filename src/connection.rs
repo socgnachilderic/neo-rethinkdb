@@ -16,7 +16,7 @@ use super::cmd::run::Response;
 use super::cmd::StaticString;
 use crate::cmd::TcpStreamConnection;
 use crate::proto::{Payload, Query};
-use crate::types::ServerInfo;
+use crate::types::ServerInfoResponse;
 use crate::{err, r, ReqlDriverError, Result};
 
 type Sender = UnboundedSender<Result<(ResponseType, Response)>>;
@@ -130,7 +130,38 @@ impl Session {
         Ok(())
     }
 
-    pub async fn server(&self) -> Result<ServerInfo> {
+    /// Return information about the server being used by a connection.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// result.server() -> response
+    /// ```
+    ///
+    /// Where:
+    /// - server: [ServerInfoResponse](crate::types::ServerInfoResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Return server information.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::ServerInfoResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: ServerInfoResponse = conn.server().await?;
+    ///
+    ///     assert_eq!(response.id.to_string(), "404bef53-4b2c-433f-9184-bc3f7bda4a15");
+    ///     assert_eq!(response.name, Some("amadeus".to_string()));
+    ///     assert_eq!(response.proxy, false);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    pub async fn server(&self) -> Result<ServerInfoResponse> {
         let mut conn = self.connection()?;
         let payload = Payload(QueryType::ServerInfo, None, Default::default());
         trace!("retrieving server information; token: {}", conn.token);
@@ -140,7 +171,7 @@ impl Session {
             conn.token,
             typ,
         );
-        let mut vec = serde_json::from_value::<Vec<ServerInfo>>(resp.r)?;
+        let mut vec = serde_json::from_value::<Vec<ServerInfoResponse>>(resp.r)?;
         let info = vec
             .pop()
             .ok_or_else(|| ReqlDriverError::Other("server info is empty".into()))?;

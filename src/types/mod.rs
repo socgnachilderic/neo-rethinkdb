@@ -43,10 +43,13 @@ pub enum GeoType {
 }
 
 #[derive(Debug, Default, Clone, Deserialize, Serialize, PartialEq, PartialOrd)]
-#[non_exhaustive]
-pub struct ServerInfo {
+pub struct ServerInfoResponse {
+    /// the UUID of the server the client is connected to.
     pub id: Uuid,
+    /// a boolean indicating whether the server is a
+    /// [RethinkDB proxy node](https://rethinkdb.com/docs/sharding-and-replication/#running-a-proxy-node).
     pub proxy: bool,
+    /// the server name. If `proxy` is `true`, this field will not be returned.
     pub name: Option<String>,
 }
 
