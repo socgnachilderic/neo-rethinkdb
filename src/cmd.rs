@@ -310,6 +310,158 @@ impl<'a> Command {
         table::new(args).with_parent(self)
     }
 
+    /// Create a new secondary index on a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.index_drop(index_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - index_name: &str | String | Cow<'static, str>
+    /// - response: [IndexResponse](crate::types::IndexResponse)
+    ///
+    /// # Description
+    ///
+    /// Secondary indexes improve the speed of many read queries at the slight
+    /// cost of increased storage space and decreased write performance.
+    /// For more information about secondary indexes,  read the article
+    /// “[Using secondary indexes in RethinkDB](https://rethinkdb.com/docs/secondary-indexes/python/).”
+    ///
+    /// RethinkDB supports different types of secondary indexes:
+    /// - **Simple indexes** based on the value of a single field.
+    /// - **Compound indexes** based on multiple fields.
+    /// - **Multi indexes** based on arrays of values.
+    /// - **Geospatial indexes** based on indexes of geometry objects,
+    /// created when the geo optional argument is true.
+    /// - Indexes based on **arbitrary expressions**.
+    ///
+    /// The `index_function` can be an anonymous function or a binary
+    /// representation obtained from the `function` field of [index_status](Self::index_status).
+    /// The function must be deterministic, and so cannot use a subquery or the `r.js` command.
+    ///
+    /// If successful, `create_index` will return an object of the form `{"created": 1}`.
+    /// If an index by that name already exists on the table, a `ReqlRuntimeError` will be thrown.
+    ///
+    /// ```text
+    /// that an index may not be immediately available after creation.
+    /// If your application needs to use indexes immediately after creation,
+    /// use the index_wait command to ensure the indexes are ready before use.
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Create a simple index based on the field `post_id`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexResponse = r.table("comments")
+    ///         .index_create("post_id")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Create a simple index based on the nested field `author > name`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::IndexResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexResponse = r.table("comments")
+    ///         .index_create(args!("author_name", func!(|comment| comment.g("author").g("name"))))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Create a geospatial index based on the field `location`.
+    ///
+    /// ```
+    /// use reql_rust::cmd::index_create::IndexCreateOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let index_create_option = IndexCreateOption::default().geo(true);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexResponse = r.table("places")
+    ///         .index_create(args!("location", index_create_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// A geospatial index field should contain only geometry objects.
+    /// It will work with geometry ReQL terms
+    /// ([get_intersecting](Self::get_intersecting) and [get_nearest](Self::get_nearest))
+    /// as well as index-specific terms  ([index_status](Self::index_status),
+    /// [index_wait](Self::index_wait), [index_drop](Self::index_drop) and [index_list](Self::index_list)).
+    /// Using terms that rely on non-geometric ordering such as [get_all](Self::get_all),
+    /// [order_by](Self::order_by) and [between](Self::between) will result in an error.
+    ///
+    /// ## Examples
+    ///
+    /// Create a compound index based on the fields `post_id` and `date`.
+    ///
+    /// ```
+    /// use reql_rust::prelude::*;
+    /// use reql_rust::types::IndexResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let index_create_option = IndexCreateOption::default().geo(true);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexResponse = r.table("comments")
+    ///         .index_create(args!("post_and_date", index_create_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [index_wait](Self::index_wait)
+    /// - [index_status](Self::index_status)
+    /// - [index_list](Self::index_list)
+    /// - [index_drop](Self::index_drop)
     pub fn index_create(self, args: impl index_create::IndexCreateArg) -> Self {
         index_create::new(args).with_parent(self)
     }
