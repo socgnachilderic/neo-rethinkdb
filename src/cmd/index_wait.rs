@@ -31,7 +31,7 @@ impl IndexWaitArg for &str {
     }
 }
 
-impl IndexWaitArg for Vec<&str> {
+impl<const N: usize> IndexWaitArg for [&str; N] {
     fn into_index_wait_opts(self) -> Option<CmdOpts> {
         let args = self.into_iter().map(Command::from_json).collect();
 
@@ -95,7 +95,7 @@ mod tests {
 
         let indexes_waited: Vec<IndexStatusResponse> = table
             .clone()
-            .index_wait(vec!["age", "name"])
+            .index_wait(["age", "name"])
             .run(&conn)
             .await?
             .unwrap()

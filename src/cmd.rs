@@ -330,6 +330,71 @@ impl<'a> Command {
         index_status::new(args).with_parent(self)
     }
 
+    /// Wait for the specified indexes on this table to be ready, 
+    /// or for all indexes on this table to be ready if no indexes are specified.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.index_wait(()) → response
+    /// table.index_wait(index) → response
+    /// ```
+    ///
+    /// Where:
+    /// - index: &str | [&str; N]
+    /// - response: [IndexStatusResponse](crate::types::IndexStatusResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Wait for all indexes on the table `test` to be ready:
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexStatusResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexStatusResponse = r.table("test")
+    ///         .index_wait(())
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.ready);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Wait for the index `timestamp` to be ready:
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexStatusResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexStatusResponse = r.table("test")
+    ///         .index_wait("timestamp")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.ready);
+    ///     assert_eq!(response.index, "author");
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [index_status](Self::index_status)
     pub fn index_wait(self, args: impl index_wait::IndexWaitArg) -> Self {
         index_wait::new(args).with_parent(self)
     }
