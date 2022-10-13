@@ -147,6 +147,37 @@ impl Session {
         Ok(info)
     }
 
+    /// Close a cursor.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// result.close()
+    /// ```
+    ///
+    /// # Description
+    ///
+    /// Closing a result cancels the corresponding query and
+    /// frees the memory associated with the open request.
+    ///
+    /// ## Examples
+    ///
+    /// Close a result.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     
+    ///     conn.close().await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
     pub async fn close(&self, noreply_wait: bool) -> Result<()> {
         self.connection()?.close(noreply_wait).await
     }
