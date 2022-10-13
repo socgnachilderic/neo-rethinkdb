@@ -5,35 +5,36 @@ use ql2::term::TermType;
 use reql_macros::CommandOptions;
 use serde::{Serialize, Serializer};
 
-use crate::arguments::{Durability, Replicas};
+use crate::arguments::{Args, Durability, Replicas};
 use crate::Command;
 
-use super::CmdOpts;
-
 pub(crate) fn new(args: impl TableCreateArg) -> Command {
-    let (args, opts) = args.into_table_create_opts();
+    let (arg, opts) = args.into_table_create_opts();
 
-    args.add_to_cmd(Command::new(TermType::TableCreate))
+    Command::new(TermType::TableCreate)
+        .with_arg(arg)
         .with_opts(opts)
 }
 
 pub trait TableCreateArg {
-    fn into_table_create_opts(self) -> (CmdOpts, TableCreateOption);
+    fn into_table_create_opts(self) -> (Command, TableCreateOption);
 }
 
-impl TableCreateArg for &str {
-    fn into_table_create_opts(self) -> (CmdOpts, TableCreateOption) {
-        let arg = Command::from_json(self);
-
-        (CmdOpts::Single(arg), Default::default())
+impl<T> TableCreateArg for T
+where
+    T: Into<String>,
+{
+    fn into_table_create_opts(self) -> (Command, TableCreateOption) {
+        (Command::from_json(self.into()), Default::default())
     }
 }
 
-impl TableCreateArg for (&str, TableCreateOption) {
-    fn into_table_create_opts(self) -> (CmdOpts, TableCreateOption) {
-        let arg = Command::from_json(self.0);
-
-        (CmdOpts::Single(arg), self.1)
+impl<T> TableCreateArg for Args<(T, TableCreateOption)>
+where
+    T: Into<String>,
+{
+    fn into_table_create_opts(self) -> (Command, TableCreateOption) {
+        (Command::from_json(self.0 .0.into()), self.0 .1)
     }
 }
 
@@ -102,7 +103,7 @@ mod tests {
 
     use crate::cmd::table_create::TableCreateOption;
     use crate::types::DbResponse;
-    use crate::{prelude::*, Session};
+    use crate::{args, prelude::*, Session};
     use crate::{r, Result};
 
     #[tokio::test]
@@ -126,7 +127,7 @@ mod tests {
         let table_options = TableCreateOption::default().primary_key("id");
         let table_created = r
             .db("test")
-            .table_create((table_name.as_str(), table_options))
+            .table_create(args!(table_name.as_str(), table_options))
             .run(&conn)
             .await?
             .unwrap()

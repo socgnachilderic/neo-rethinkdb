@@ -93,6 +93,132 @@ impl r {
         cmd::db::new(db_name)
     }
 
+    /// Create a table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.table_create(table_name) → response
+    /// db.table_create(args!(table_name, options)) → response
+    /// ```
+    ///
+    /// Where:
+    /// - table_name: &str | String | Cow<'static, str>
+    /// - options: [TableCreateOption](crate::cmd::table_create::TableCreateOption)
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// A RethinkDB table is a collection of JSON documents.
+    ///
+    /// If a table with the same name already exists,
+    /// the command throws `ReqlOpFailedError`.
+    ///
+    /// ```text
+    /// Note: Only alphanumeric characters and underscores are valid for the table name.
+    ///
+    /// Invoking table_create without specifying a database using db creates a table in
+    /// the database specified in connect, or test if no database was specified.
+    /// ```
+    ///
+    /// The [data type](https://rethinkdb.com/docs/data-types/) of a primary key is usually a string
+    /// (like a UUID) or a number, but it can also be a time, binary object, boolean or an array.
+    /// Data types can be mixed in the primary key field, but all values must be unique. Using an array
+    /// as a primary key causes the primary key to behave like a compound index; read the documentation on
+    /// [compound secondary indexes](https://rethinkdb.com/docs/secondary-indexes/python/#compound-indexes)
+    /// for more information, as it applies to primary keys as well.
+    /// (Note that the primary index still only covers a single field,
+    /// while compound secondary indexes can cover multiple fields in a single index.)
+    /// Primary keys cannot be objects.
+    ///
+    /// Tables will be available for writing when the command returns.
+    ///
+    /// ## Examples
+    ///
+    /// Create a table named ‘simbad’ with the default settings.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_create("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Create a table named ‘simbad’ using the field ‘name’ as primary key.
+    ///
+    /// ```
+    /// use reql_rust::cmd::table_create::TableCreateOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let table_create_option = TableCreateOption::default().primary_key("name");
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_create(args!("simbad", table_create_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Create a table set up for two shards and three replicas per shard.
+    /// This requires three available servers.
+    ///
+    /// ```
+    /// use reql_rust::arguments::Replicas;
+    /// use reql_rust::cmd::table_create::TableCreateOption;
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let table_create_option = TableCreateOption::default()
+    ///         .shards(2)
+    ///         .replicas(Replicas::Int(3));
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db("test")
+    ///         .table_create(args!("simbad", table_create_option))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.tables_created > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Read [Sharding and replication](https://rethinkdb.com/docs/sharding-and-replication/)
+    /// for a complete discussion of the subject, including advanced topics.
+    ///
+    /// # Related commands
+    /// - [table_drop](Self::table_drop)
+    /// - [table_list](Self::table_list)
     pub fn table_create(self, args: impl cmd::table_create::TableCreateArg) -> Command {
         cmd::table_create::new(args)
     }
