@@ -36,7 +36,56 @@ impl r {
         cmd::connect::ConnectionCommand::default()
     }
 
-    pub fn db_create(self, db_name: &str) -> Command {
+    /// Create a database.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_drop(db_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// A RethinkDB database is a collection of tables, similar to relational databases.
+    ///
+    /// If a database with the same name already exists, the command throws `ReqlRuntimeError`.
+    ///
+    /// ## Note
+    ///
+    /// Only alphanumeric characters, hyphens and underscores are valid for the database name.
+    ///
+    /// ## Examples
+    ///
+    /// Create a database named ‘simbad’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: DbResponse = r.db_create("simbad")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert_eq!(response.dbs_created, Some(1));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [db_drop](Self::db_drop)
+    /// - [db_list](Self::db_list)
+    /// - [table_create](Self::table_create)
+    pub fn db_create(self, db_name: impl Into<String>) -> Command {
         cmd::db_create::new(db_name)
     }
 
