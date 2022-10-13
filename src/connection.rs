@@ -110,8 +110,44 @@ impl Session {
         Ok(())
     }
 
-    pub async fn use_(&mut self, db_name: &'static str) {
+    /// Change the default database on this connection.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// conn.use_(db_name)
+    /// ```
+    ///
+    /// Where
+    /// - db_name: &'static str
+    ///
+    /// ## Examples
+    ///
+    /// Change the default database so that we don’t need
+    /// to specify the database when referencing a table.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut conn = r.connection().connect().await?;
+    ///     conn.use_("simbad").await?;
+    ///     
+    ///     r.table("simbad").run(&conn).await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [connection](crate::r::connection)
+    /// - [close](Self::close)
+    /// - [reconnect](Self::reconnect)
+    pub async fn use_(&mut self, db_name: &'static str) -> Result<()> {
         *self.inner.db.lock().await = db_name.static_string();
+
+        Ok(())
     }
 
     /// `noreply_wait` ensures that previous queries with
