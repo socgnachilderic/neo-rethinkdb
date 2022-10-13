@@ -32,6 +32,85 @@ macro_rules! args {
 pub struct r;
 
 impl r {
+    /// Create a new connection to the database server.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// db.db_drop(db_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - db_name: &str | String | Cow<'static, str>
+    /// - response: [DbResponse](crate::types::DbResponse)
+    ///
+    /// # Description
+    ///
+    /// If the connection cannot be established, a `ReqlDriverError` exception will be thrown.
+    ///
+    /// ## Examples
+    ///
+    /// Open a connection using the default host and port, specifying the default database.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().dbname("jam").connect().await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Open a new connection to the database.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection()
+    ///         .dbname("jam")
+    ///         .host("localhost")
+    ///         .port(28015)
+    ///         .connect()
+    ///         .await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Open a new connection to the database,
+    /// specifying a user/password combination for authentication.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::DbResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection()
+    ///         .dbname("jam")
+    ///         .host("localhost")
+    ///         .port(28015)
+    ///         .user("jam_user", "jam_password")
+    ///         .connect()
+    ///         .await?;
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [use_](crate::connection::Session::use_)
+    /// - [close](crate::connection::Session::close)
     pub fn connection(self) -> cmd::connect::ConnectionCommand {
         cmd::connect::ConnectionCommand::default()
     }

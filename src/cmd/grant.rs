@@ -33,9 +33,8 @@ mod tests {
             }],
         };
         let permissions = Permission::default().read(true).write(true);
-        // TODO Replace current user when test user should be created
         let response: GrantResponse = table
-            .grant("bob", permissions)
+            .grant("malika", permissions)
             .run(&conn)
             .await?
             .unwrap()

@@ -646,6 +646,7 @@ impl<'a> Command {
     /// Create a compound index based on the fields `post_id` and `date`.
     ///
     /// ```
+    /// use reql_rust::cmd::index_create::IndexCreateOption;
     /// use reql_rust::prelude::*;
     /// use reql_rust::types::IndexResponse;
     /// use reql_rust::{args, r, Result};
