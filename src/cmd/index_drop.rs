@@ -1,10 +1,8 @@
 use crate::Command;
 use ql2::term::TermType;
 
-pub(crate) fn new(index_name: &str) -> Command {
-    let args = Command::from_json(index_name);
-
-    Command::new(TermType::IndexDrop).with_arg(args)
+pub(crate) fn new(index_name: impl Into<String>) -> Command {
+    Command::new(TermType::IndexDrop).with_arg(Command::from_json(index_name.into()))
 }
 
 #[cfg(test)]

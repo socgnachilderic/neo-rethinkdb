@@ -314,7 +314,46 @@ impl<'a> Command {
         index_create::new(args).with_parent(self)
     }
 
-    pub fn index_drop(self, index_name: &str) -> Self {
+    /// Delete a previously created secondary index of this table.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.index_drop(index_name) → response
+    /// ```
+    ///
+    /// Where:
+    /// - index_name: &str | String | Cow<'static, str>
+    /// - response: [IndexResponse](crate::types::IndexResponse)
+    ///
+    /// ## Examples
+    ///
+    /// Drop a secondary index named ‘code_name’.
+    ///
+    /// ```
+    /// use reql_rust::prelude::Converter;
+    /// use reql_rust::types::IndexResponse;
+    /// use reql_rust::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: IndexResponse = r.table("comments")
+    ///         .index_drop("code_name")
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response.dropped > Some(0));
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [index_create](Self::index_create)
+    /// - [index_list](Self::index_list)
+    pub fn index_drop(self, index_name: impl Into<String>) -> Self {
         index_drop::new(index_name).with_parent(self)
     }
 
