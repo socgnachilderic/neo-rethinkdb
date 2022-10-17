@@ -33,14 +33,14 @@ async fn test_union_data() -> Result<()> {
         .run(&conn)
         .await?;
 
-    let data_obtained: Vec<AuthorPost> = table
+    let response: Vec<AuthorPost> = table
         .union(r.table(table_name2.as_str()))
         .run(&conn)
         .await?
         .unwrap()
         .parse()?;
 
-    assert!(data_obtained.len() > 0);
+    assert!(response.len() > 0);
 
     r.table_drop(table_name2.as_str()).run(&conn).await?;
     tear_down(conn, &table_name).await

@@ -1,8 +1,10 @@
+use std::usize;
+
 use ql2::term::TermType;
 
 use crate::arguments::{Args, OrderByOption};
 use crate::command_tools::CmdOpts;
-use crate::{Command, Func};
+use crate::{Command, CommandArg, Func};
 
 pub(crate) fn new(args: impl OrderByArg) -> Command {
     let (args, opts) = args.into_order_by_opts();
@@ -25,6 +27,18 @@ impl OrderByArg for OrderByOption {
     }
 }
 
+impl<T> OrderByArg for T
+where
+    T: Into<String>,
+{
+    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
+        (
+            Some(CmdOpts::Single(Command::from_json(self.into()))),
+            Default::default(),
+        )
+    }
+}
+
 impl OrderByArg for Func {
     fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
         (Some(CmdOpts::Single(self.0)), Default::default())
@@ -37,34 +51,24 @@ impl OrderByArg for Command {
     }
 }
 
-impl OrderByArg for Args<(Func, OrderByOption)> {
+impl<T> OrderByArg for Args<(T, OrderByOption)>
+where
+    T: Into<CommandArg>,
+{
     fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
-        let Func(func) = self.0 .0;
-
-        (Some(CmdOpts::Single(func)), self.0 .1)
+        (Some(CmdOpts::Single(self.0 .0.into().to_cmd())), self.0 .1)
     }
 }
 
-impl OrderByArg for Args<(Command, OrderByOption)> {
-    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
-        (Some(CmdOpts::Single(self.0 .0)), self.0 .1)
-    }
-}
-
-impl OrderByArg for Args<(Command, Command)> {
+impl<T, const N: usize> OrderByArg for Args<[T; N]>
+where
+    T: Into<CommandArg>,
+{
     fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
         (
-            Some(CmdOpts::Many(vec![self.0 .0, self.0 .1])),
-            Default::default(),
-        )
-    }
-}
-
-impl OrderByArg for Args<(Func, Command)> {
-    fn into_order_by_opts(self) -> (Option<CmdOpts>, OrderByOption) {
-        let Func(func) = self.0 .0;
-        (
-            Some(CmdOpts::Many(vec![func, self.0 .1])),
+            Some(CmdOpts::Many(
+                self.0.into_iter().map(|cmd| cmd.into().to_cmd()).collect(),
+            )),
             Default::default(),
         )
     }

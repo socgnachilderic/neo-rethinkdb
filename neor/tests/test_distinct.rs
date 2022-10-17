@@ -13,14 +13,14 @@ async fn test_distinct_data() -> Result<()> {
         .collect::<Vec<String>>();
     data.pop();
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: Vec<String> = table
+    let response: Vec<String> = table
         .distinct(DistinctOption::default().index("title"))
         .run(&conn)
         .await?
         .unwrap()
         .parse()?;
 
-    assert!(data_obtained == data);
+    assert!(response == data);
 
     tear_down(conn, &table_name).await
 }

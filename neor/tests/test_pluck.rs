@@ -19,7 +19,7 @@ async fn test_pluck_data() -> Result<()> {
         title: data.title,
     };
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: InnerPost = table
+    let response: InnerPost = table
         .get(1)
         .pluck(["id", "title"])
         .run(&conn)
@@ -27,7 +27,7 @@ async fn test_pluck_data() -> Result<()> {
         .unwrap()
         .parse()?;
 
-    assert!(data_obtained == data);
+    assert!(response == data);
 
     tear_down(conn, &table_name).await
 }

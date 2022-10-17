@@ -28,7 +28,7 @@ async fn test_default_ops() -> Result<()> {
         .collect();
     let (conn, table, table_name) = set_up(true).await?;
     let response: Vec<InnerPost> = table
-        .order_by(r.expr("title"))
+        .order_by("title")
         .map(func!(|doc| {
             let mut post = HashMap::new();
             post.insert("title", doc.g("title"));

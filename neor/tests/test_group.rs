@@ -8,12 +8,12 @@ mod common;
 #[tokio::test]
 async fn test_group_data() -> Result<()> {
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: GroupedStream<String, Post> =
+    let response: GroupedStream<String, Post> =
         table.group("title").run(&conn).await?.unwrap().parse()?;
 
-    let data_obtained = data_obtained.collect();
+    let response = response.collect();
 
-    assert!(data_obtained.len() == 4);
+    assert!(response.len() == 4);
 
     tear_down(conn, &table_name).await
 }

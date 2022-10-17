@@ -7,7 +7,7 @@ mod common;
 #[tokio::test]
 async fn test_ge_data() -> Result<()> {
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: bool = table
+    let response: bool = table
         .get(1)
         .g("view")
         .ge(10)
@@ -16,7 +16,7 @@ async fn test_ge_data() -> Result<()> {
         .unwrap()
         .parse()?;
 
-    assert!(data_obtained);
+    assert!(response);
 
     tear_down(conn, &table_name).await
 }
@@ -24,9 +24,9 @@ async fn test_ge_data() -> Result<()> {
 #[tokio::test]
 async fn test_ge_data_r() -> Result<()> {
     let conn = r.connection().connect().await?;
-    let data_obtained: bool = r.ge(args!([7, 6, 5])).run(&conn).await?.unwrap().parse()?;
+    let response: bool = r.ge(args!([7, 6, 5])).run(&conn).await?.unwrap().parse()?;
 
-    assert!(data_obtained);
+    assert!(response);
 
     Ok(())
 }

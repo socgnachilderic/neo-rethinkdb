@@ -21,16 +21,16 @@ async fn test_with_fields() -> Result<()> {
         })
         .collect();
     let (conn, table, table_name) = set_up(true).await?;
-    let mut data_obtained: Vec<InnerPost> = table
+    let mut response: Vec<InnerPost> = table
         .with_fields(["id", "title"])
         .run(&conn)
         .await?
         .unwrap()
         .parse()?;
 
-    data_obtained.sort_by(|a, b| a.id.cmp(&b.id));
+    response.sort_by(|a, b| a.id.cmp(&b.id));
 
-    assert!(data_obtained == data);
+    assert!(response == data);
 
     tear_down(conn, &table_name).await
 }

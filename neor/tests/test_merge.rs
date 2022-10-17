@@ -52,7 +52,7 @@ async fn test_merge_ops() -> Result<()> {
 
             r.hash_map(posts)
         }))
-        .order_by(r.expr("id"))
+        .order_by("id")
         .run(&conn)
         .await?
         .unwrap()

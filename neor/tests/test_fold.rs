@@ -13,11 +13,11 @@ async fn test_fold_ops() -> Result<()> {
         });
     let (conn, table, table_name) = set_up(true).await?;
     let response: String = table
-        .order_by(r.expr("id"))
+        .order_by("id")
         .fold(
             "",
             func!(|acc, post| acc.clone()
-                + r.branch(acc.eq(""), args!(r.expr(""), r.expr(", ")))
+                + r.branch(acc.eq(""), args!("", ", "))
                 + post.g("title")),
         )
         .run(&conn)

@@ -9,7 +9,7 @@ mod common;
 async fn test_limit_data() -> Result<()> {
     let data = Post::get_many_data();
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: Vec<Post> = table
+    let response: Vec<Post> = table
         .order_by(OrderByOption::default().index("title"))
         .limit(1)
         .run(&conn)
@@ -17,7 +17,7 @@ async fn test_limit_data() -> Result<()> {
         .unwrap()
         .parse()?;
 
-    assert!(data_obtained.first() == data.first());
+    assert!(response.first() == data.first());
 
     tear_down(conn, &table_name).await
 }

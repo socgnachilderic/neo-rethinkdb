@@ -16,9 +16,9 @@ async fn test_object_converted() -> Result<()> {
     let object = vec!["id", "id1", "title", "title1"];
 
     let conn = r.connection().connect().await?;
-    let data_obtained: InnerPost = r.object(object).run(&conn).await?.unwrap().parse()?;
+    let response: InnerPost = r.object(object).run(&conn).await?.unwrap().parse()?;
 
-    assert!(data_obtained == post);
+    assert!(response == post);
 
     Ok(())
 }

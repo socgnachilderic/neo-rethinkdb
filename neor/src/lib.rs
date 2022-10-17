@@ -741,11 +741,6 @@ impl r {
         sequence.map(args)
     }
 
-    // TODO write Doc
-    pub fn order_by(&self, args: impl cmd::order_by::OrderByArg) -> Command {
-        cmd::order_by::new(args)
-    }
-
     /// Merge two or more sequences.
     ///
     /// # Command syntax
@@ -1899,6 +1894,7 @@ impl r {
     }
 
     /// TODO Write docs
+    #[doc(hidden)]
     pub fn literal(&self, value: impl Into<CommandArg>) -> Command {
         cmd::literal::new(value)
     }
@@ -3565,6 +3561,50 @@ impl r {
         DateTime::iso8601(args)
     }
 
+    /// Take one or more values as arguments and return an array.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// r.array(values) -> number
+    /// ```
+    ///
+    /// Where:
+    /// - values: `impl IntoIterator<Item = T>`
+    /// - T: `impl Into<Serialize>` | [Command](crate::Command)
+    ///
+    /// ## Examples
+    ///
+    /// Create an array.
+    ///
+    /// ```
+    /// use neor::{r, Converter, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let data = vec![1u8, 2, 3, 4];
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<u8> = r.array(data.iter().map(|value| r.expr(value)))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///
+    ///     assert!(response == data);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [hash_map](Self::hash_map)
+    pub fn array<S, T>(&self, values: T) -> Command
+    where
+        S: Into<CommandArg>,
+        T: IntoIterator<Item = S>,
+    {
+        cmd::array::new(values)
+    }
+
     /// Convert `HashMap` to object.
     ///
     /// # Command syntax
@@ -3575,8 +3615,8 @@ impl r {
     ///
     /// Where:
     /// - value: `HashMap<Key, Value>`
-    /// - Key: `Into<String>` | [Command](crate::Command)
-    /// - Value: `Into<Serialize>` | [Command](crate::Command)
+    /// - Key: `impl Into<String>` | [Command](crate::Command)
+    /// - Value: `impl Into<Serialize>` | [Command](crate::Command)
     ///
     /// ## Examples
     ///
@@ -3609,6 +3649,9 @@ impl r {
     ///     Ok(())
     /// }
     /// ```
+    ///
+    /// # Related commands
+    /// - [array](Self::array)
     pub fn hash_map<K, V>(&self, value: HashMap<K, V>) -> Command
     where
         K: Into<CommandArg>,
@@ -3746,7 +3789,7 @@ impl r {
         cmd::binary::new(data)
     }
 
-    //// Call an anonymous function using return values
+    /// Call an anonymous function using return values
     /// from other ReQL commands or queries as arguments.
     ///
     /// # Command syntax
@@ -5258,7 +5301,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("simbad")
-    ///         .order_by(args!(r.expr("id"), r.asc("character")))
+    ///         .order_by(args!([r.expr("id"), r.asc("character")]))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -5291,7 +5334,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("simbad")
-    ///         .order_by(args!(r.expr("id"), r.desc("character")))
+    ///         .order_by(args!([r.expr("id"), r.desc("character")]))
     ///         .run(&conn)
     ///         .await?;
     ///

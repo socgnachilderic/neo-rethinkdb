@@ -8,7 +8,7 @@ mod common;
 async fn test_asc_ops() -> Result<()> {
     let (conn, table, table_name) = set_up(true).await?;
     let response: Vec<Post> = table
-        .order_by(args!(r.expr("view"), r.asc("title")))
+        .order_by(args!([r.expr("view"), r.asc("title")]))
         .run(&conn)
         .await?
         .unwrap()

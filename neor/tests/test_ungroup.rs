@@ -8,7 +8,7 @@ mod common;
 #[tokio::test]
 async fn test_ungroup_data() -> Result<()> {
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: Vec<UngroupItem<String, Post>> = table
+    let response: Vec<UngroupItem<String, Post>> = table
         .group("title")
         .ungroup()
         .run(&conn)
@@ -16,7 +16,7 @@ async fn test_ungroup_data() -> Result<()> {
         .unwrap()
         .parse()?;
 
-    assert!(data_obtained.len() == 4);
+    assert!(response.len() == 4);
 
     tear_down(conn, &table_name).await
 }

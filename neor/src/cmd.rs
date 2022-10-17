@@ -2,6 +2,7 @@ pub mod add;
 pub mod and;
 pub mod append;
 pub mod args;
+pub mod array;
 pub mod asc;
 pub mod avg;
 pub mod between;
@@ -479,11 +480,16 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// table.index_drop(index_name) → response
+    /// table.index_create(index_name) → response
+    /// table.index_create(args!(index_create, func)) → response
+    /// table.index_create(args!(index_create, options)) → response
+    /// table.index_create(args!(index_create, func, options)) → response
     /// ```
     ///
     /// Where:
     /// - index_name: `impl Into<String>` | [Command](crate::Command)
+    /// - func: [Func](crate::Func)
+    /// - options: [IndexCreateOption](crate::arguments::IndexCreateOption)
     /// - response: [IndexResponse](crate::types::IndexResponse)
     ///
     /// # Description
@@ -1463,8 +1469,8 @@ impl<'a> Command {
     ///         .update(func!(|post| r.branch(
     ///             post.g("views").gt(100),
     ///             args!(
-    ///                 r.expr(json!({"type": "hot"})),
-    ///                 r.expr(json!({"type": "normal"}))
+    ///                 json!({"type": "hot"}),
+    ///                 json!({"type": "normal"})
     ///             )
     ///         )))
     ///         .run(&conn)
@@ -3183,12 +3189,356 @@ impl<'a> Command {
         with_fields::new(fields).with_parent(self)
     }
 
-    // TODO write Doc
+    /// Concatenate one or more elements into
+    /// a single sequence using a mapping function.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// stream.concat_map(func) → stream
+    /// ```
+    ///
+    /// Where:
+    /// - func: [Func](crate::Func)
+    ///
+    /// # Description
+    ///
+    /// `concat_map` works in a similar fashion to [map](Self::map),
+    /// applying the given function to each element in a sequence,
+    /// but it will always return a single sequence.
+    /// If the mapping function returns a sequence,
+    /// `map` would produce a sequence of sequences:
+    ///
+    /// ```ignore
+    /// r.expr([1, 2, 3]).map(func!(|x| r.array(x.clone(), x * 2))).run(&conn)
+    /// ```
+    ///
+    /// Result :
+    ///
+    /// ```text
+    /// [[1, 2], [2, 4], [3, 6]]
+    /// ```
+    ///
+    /// Whereas `concat_map` with the same mapping
+    /// function would merge those sequences into one:
+    ///
+    /// ```
+    /// use neor::{func, r, Converter, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response: Vec<u8> = r
+    ///         .expr([1, 2, 3])
+    ///         .concat_map(func!(|x| r.array([x.clone(), x * 2])))
+    ///         .run(&conn)
+    ///         .await?
+    ///         .unwrap()
+    ///         .parse()?;
+    ///     
+    ///     assert!(response == vec![1, 2, 2, 4, 3, 6]);
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// The return value, array or stream, will be the same type as the input.
+    ///
+    /// ## Examples
+    ///
+    /// Construct a sequence of all monsters defeated by Marvel heroes.
+    /// The field “defeatedMonsters” is an array of one or more monster names.
+    ///
+    /// ```
+    /// use neor::{func, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("marvel")
+    ///         .concat_map(func!(|hero| hero.g("defeatedMonsters")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    /// - [reduce](Self::reduce)
     pub fn concat_map(&self, func: Func) -> Command {
         concat_map::new(func).with_parent(self)
     }
 
-    // TODO write Doc
+    /// Sort the sequence by document values of the given key(s).
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// table.order_by(options) → table_slice
+    /// table.order_by(args!(predicate, options)) → table_slice
+    /// sequence.order_by(predicate) → array
+    /// sequence.order_by(predicates) → array
+    /// ```
+    ///
+    /// Where:
+    /// - options: [OrderByOption](crate::arguments::OrderByOption)
+    /// - predicate: `impl Into<String>` | [Func](crate::Func) | [Command](crate::Command)
+    /// - predicates: `[predicate; N]`
+    ///
+    /// # Description
+    ///
+    /// To specify the ordering, wrap the attribute with
+    /// either `r.asc` or `r.desc` (defaults to ascending).
+    ///
+    /// ## Note
+    ///
+    /// RethinkDB uses byte-wise ordering for `order_by` and does not support
+    /// Unicode collations; non-ASCII characters will be sorted by UTF-8 codepoint.
+    /// For more information on RethinkDB’s sorting order, read the section in
+    /// [ReQL data types](https://rethinkdb.com/docs/data-types/#sorting-order).
+    ///
+    ///
+    /// Sorting without an index requires the server to hold the sequence in memory,
+    /// and is limited to 100,000 documents
+    /// (or the setting of the `array_limit` option for [run](Self::run)).
+    /// Sorting with an index can be done on arbitrarily large tables,
+    /// or after a [between](Self::between) command using the same index.
+    /// This applies to both secondary indexes and the primary key
+    /// (e.g., `OrderByOption::default().index("id")`).
+    ///
+    /// Sorting functions passed to `order_by` must be deterministic.
+    /// You cannot, for instance, order rows using the [random](crate::r::random) command.
+    /// Using a non-deterministic function with `order_by` will raise a `ReqlQueryLogicError`.
+    ///
+    /// ## Examples
+    ///
+    /// Order all the posts using the index `date`.
+    ///
+    /// ```
+    /// use neor::arguments::OrderByOption;
+    /// use neor::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .order_by(OrderByOption::default().index("date"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// The index must either be the primary key or have
+    /// been previously created with [index_create](Self::index_create).
+    ///
+    /// ```ignore
+    /// r.table("posts").index_create("date").run(&conn)
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Order a sequence without an index.
+    ///
+    /// ```
+    /// use neor::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .get(1)
+    ///         .g("comments")
+    ///         .order_by("date")
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// You can also select a descending ordering:
+    ///
+    /// ```ignore
+    /// r.table("posts").get(1).g("comments").order_by(r.desc("date")).run(&conn)
+    /// ```
+    ///
+    /// If you’re doing ad-hoc analysis and know your table won’t have more then 100,000 elements
+    /// (or you’ve changed the setting of the `array_limit` option for [run](Self::run))
+    /// you can run `order_by` without an index:
+    ///
+    /// ```ignore
+    /// r.table("small_table").order_by("date").run(&conn)
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// You can efficiently order using multiple fields by using a
+    /// [compound index](https://rethinkdb.com/docs/secondary-indexes/python/).
+    ///
+    /// Order by date and title.
+    ///
+    /// ```
+    /// use neor::arguments::OrderByOption;
+    /// use neor::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .order_by(OrderByOption::default().index("date_and_title"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// The index must either be the primary key or have been
+    /// previously created with [index_create](Self::index_create).
+    ///
+    /// ```ignore
+    /// r.table("posts").index_create(
+    ///     "date_and_title",
+    ///     func!(|post| r.array([post.g("date"), post.g("title")]))
+    /// ).run(&conn)
+    /// ```
+    ///
+    /// **Note:** You cannot specify multiple orders in a compound index.
+    /// See [issue #2306](https://github.com/rethinkdb/rethinkdb/issues/2306)
+    /// to track progress.
+    ///
+    /// ## Examples
+    ///
+    /// If you have a sequence with fewer documents than the `array_limit`,
+    /// you can order it by multiple fields without an index.
+    ///
+    /// ```
+    /// use neor::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("small_table")
+    ///         .order_by(args!([r.expr("date"), r.desc("title")]))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Notice that an index ordering always has highest precedence.
+    /// The following query orders posts by date, and if multiple posts
+    /// were published on the same date, they will be ordered by title.
+    ///
+    /// ```
+    /// use neor::arguments::OrderByOption;
+    /// use neor::{args, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .order_by(args!("title", OrderByOption::default().index("date")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// You can use
+    /// [nested field](https://rethinkdb.com/docs/cookbook/python/#filtering-based-on-nested-fields)
+    /// syntax to sort on fields from subdocuments.
+    /// (You can also create indexes on nested fields using this syntax with `index_create`.)
+    ///
+    /// ```
+    /// use neor::{func, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("users")
+    ///         .order_by(func!(|user| user.g("group").g("id")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// You can efficiently order data on arbitrary expressions using indexes.
+    ///
+    /// ```
+    /// use neor::arguments::OrderByOption;
+    /// use neor::{r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("posts")
+    ///         .order_by(OrderByOption::default().index("votes"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// The index must have been previously created with index_create.
+    ///
+    /// ```ignore
+    /// r.table("posts").index_create("votes", func!(|post| post.g("upvotes") - post.g("downvotes")))
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// If you have a sequence with fewer documents than the `array_limit`,
+    /// you can order it with an arbitrary function directly.
+    ///
+    /// ```
+    /// use neor::{func, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("small_table")
+    ///         .order_by(func!(|doc| doc.g("upvotes") - doc.g("downvotes")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// You can also select a descending ordering:
+    ///
+    /// ```ignore
+    /// r.table("small_table").order_by(r.desc(func!(|doc| doc.g("upvotes") - doc.g("downvotes"))))
+    /// ```
+    ///
+    /// # Related commands
+    /// - [skip](Self::skip)
+    /// - [limit](Self::limit)
+    /// - [slice](Self::slice)
     pub fn order_by(&self, args: impl order_by::OrderByArg) -> Self {
         order_by::new(args).with_parent(self)
     }
@@ -3295,7 +3645,36 @@ impl<'a> Command {
     ///
     /// # Description
     ///
-    /// // TODO Complete this description
+    /// `slice` returns the range between `start_offset` and `end_offset`.
+    /// If only `start_offset` is specified, `slice` returns the range from
+    /// that index to the end of the sequence. Specify `left_bound` or `right_bound`
+    /// option as `Status::Open` or `Status::Closed` to indicate whether
+    /// to include that endpoint of the range by default:
+    /// `Status::Closed` returns that endpoint, while `Status::Open` does not.
+    /// By default, left_bound is `Status::Closed` and right_bound is `Status::Open`, so
+    /// the range `(10,13)` will return the tenth, eleventh and twelfth elements in the sequence.
+    ///
+    /// If `end_offset` is past the end of the sequence,
+    /// all elements from `start_offset` to the end of the sequence will be returned.
+    /// If `start_offset` is past the end of the sequence or `end_offset` is less
+    /// than `start_offset`, a zero-element sequence will be returned.
+    ///
+    /// Negative `start_offset` and `end_offset` values are allowed with arrays;
+    /// in that case, the returned range counts back from the array’s end.
+    /// That is, the range `(-2)` returns the last two elements, and the range of `(2,-1)`
+    /// returns the second element through the next-to-last element of the range.
+    /// An error will be raised on a negative `start_offset` or `end_offset` with non-arrays.
+    /// (An `end_offset` of −1 is allowed with a stream if right_bound is closed;
+    /// this behaves as if no `end_offset` was specified.)
+    ///
+    /// If `slice` is used with a [binary](crate::r::binary) object,
+    /// the indexes refer to byte positions within the object.
+    /// That is, the range `(10,20)` will refer to the 10th byte through the 19th byte.
+    ///
+    /// With a string, `slice` behaves similarly, with the indexes referring to Unicode codepoints.
+    /// String indexes start at `0`.
+    /// (Note that [combining codepoints](https://en.wikipedia.org/wiki/Combining_character)
+    /// are counted separately.)
     ///
     /// ## Examples
     ///
@@ -3563,7 +3942,7 @@ impl<'a> Command {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("marvel")
     ///         .union(r.table("dc"))
-    ///         .order_by(r.expr("popularity"))
+    ///         .order_by("popularity")
     ///         .offsets_of(func!(|hero| hero.g("superpowers").contains("invisibility")))
     ///         .run(&conn)
     ///         .await?;
@@ -4078,11 +4457,11 @@ impl<'a> Command {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("words")
-    ///         .order_by(r.expr("id"))
+    ///         .order_by("id")
     ///         .fold(
     ///             "",
     ///             func!(|acc, word| acc.clone()
-    ///                 + r.branch(acc.eq(""), args!(r.expr(""), r.expr(", ")))
+    ///                 + r.branch(acc.eq(""), args!("", ", "))
     ///                 + word),
     ///         )
     ///         .run(&conn)

@@ -9,7 +9,7 @@ mod common;
 async fn test_nth_data() -> Result<()> {
     let data = Post::get_many_data();
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: Post = table
+    let response: Post = table
         .order_by(OrderByOption::default().index("title"))
         .nth(-1)
         .run(&conn)
@@ -17,7 +17,7 @@ async fn test_nth_data() -> Result<()> {
         .unwrap()
         .parse()?;
 
-    assert!(data.last() == Some(&data_obtained));
+    assert!(data.last() == Some(&response));
 
     tear_down(conn, &table_name).await
 }

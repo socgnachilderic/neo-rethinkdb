@@ -7,7 +7,7 @@ mod common;
 #[tokio::test]
 async fn test_has_fields() -> Result<()> {
     let (conn, table, table_name) = set_up(true).await?;
-    let data_obtained: bool = table
+    let response: bool = table
         .get(1)
         .has_fields("title")
         .run(&conn)
@@ -15,7 +15,7 @@ async fn test_has_fields() -> Result<()> {
         .unwrap()
         .parse()?;
 
-    assert!(data_obtained);
+    assert!(response);
 
     tear_down(conn, &table_name).await
 }
