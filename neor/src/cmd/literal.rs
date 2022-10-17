@@ -1,12 +1,7 @@
 use ql2::term::TermType;
-use serde::Serialize;
 
-use crate::Command;
+use crate::{Command, CommandArg};
 
-pub(crate) fn new(selector: impl Serialize) -> Command {
-    let arg = Command::from_json(selector);
-
-    Command::new(TermType::Literal).with_arg(arg)
+pub(crate) fn new(value: impl Into<CommandArg>) -> Command {
+    value.into().add_to_cmd(TermType::Literal)
 }
-
-// TODO write test

@@ -11,7 +11,7 @@ where
     type Output = Self;
 
     /// Find the remainder when dividing two numbers.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text

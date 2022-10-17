@@ -11,7 +11,7 @@ where
     type Output = Self;
 
     /// Multiply two numbers, or make a periodic array.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text

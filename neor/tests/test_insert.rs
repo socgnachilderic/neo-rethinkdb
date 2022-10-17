@@ -11,13 +11,7 @@ mod common;
 async fn test_insert_data() -> Result<()> {
     let data = Post::get_one_data();
     let (conn, table, table_name) = set_up(false).await?;
-    let data_inserted: MutationResponse = table
-        .clone()
-        .insert(&data)
-        .run(&conn)
-        .await?
-        .unwrap()
-        .parse()?;
+    let data_inserted: MutationResponse = table.insert(&data).run(&conn).await?.unwrap().parse()?;
 
     assert!(data_inserted.inserted == 1);
 
@@ -28,13 +22,7 @@ async fn test_insert_data() -> Result<()> {
 async fn test_insert_many_data() -> Result<()> {
     let data = Post::get_many_data();
     let (conn, table, table_name) = set_up(false).await?;
-    let data_inserted: MutationResponse = table
-        .clone()
-        .insert(&data)
-        .run(&conn)
-        .await?
-        .unwrap()
-        .parse()?;
+    let data_inserted: MutationResponse = table.insert(&data).run(&conn).await?.unwrap().parse()?;
 
     assert!(data_inserted.inserted == data.len());
 
@@ -70,7 +58,6 @@ async fn test_insert_data_with_opts() -> Result<()> {
     let (conn, table, table_name) = set_up(false).await?;
     let insert_options = InsertOption::default().return_changes(ReturnChanges::Bool(true));
     let data_inserted: MutationResponse = table
-        .clone()
         .insert(args!(&data, insert_options))
         .run(&conn)
         .await?

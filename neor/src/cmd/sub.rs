@@ -11,7 +11,7 @@ where
     type Output = Self;
 
     /// Subtract two numbers.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text

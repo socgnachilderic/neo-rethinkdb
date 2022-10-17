@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use neor::{r, Result, Converter};
+use neor::{r, Converter, Result};
 
 use common::Post;
 
@@ -11,7 +11,7 @@ async fn test_hash_map_ops() -> Result<()> {
     let expected_post = Post::get_one_data();
     let conn = r.connection().connect().await?;
     let mut post = HashMap::new();
-    
+
     post.insert("id", r.expr(&expected_post.id));
     post.insert("title", r.expr(&expected_post.title));
     post.insert("content", r.expr(&expected_post.content));

@@ -203,8 +203,8 @@ impl DateTime {
         Command::from(self.to_owned())
     }
 
-    pub fn value(self) -> Time {
-        Time::from(self)
+    pub fn value(&self) -> Time {
+        Time::from(self.to_owned())
     }
 }
 

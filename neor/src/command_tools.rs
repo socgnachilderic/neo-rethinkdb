@@ -27,6 +27,7 @@ impl From<CmdOpts> for Option<Command> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CommandArg(Command);
 
 impl CommandArg {
@@ -48,6 +49,12 @@ impl<T: Serialize> From<T> for CommandArg {
 impl From<Command> for CommandArg {
     fn from(arg: Command) -> Self {
         CommandArg(arg)
+    }
+}
+
+impl From<&Command> for CommandArg {
+    fn from(arg: &Command) -> Self {
+        CommandArg(arg.clone())
     }
 }
 

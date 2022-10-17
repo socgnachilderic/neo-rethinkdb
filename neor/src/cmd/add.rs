@@ -11,7 +11,7 @@ where
     type Output = Self;
 
     /// Sum two or more numbers, or concatenate two or more strings or arrays.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -25,12 +25,12 @@ where
     /// - number: `i8, u8, ..., isize, usize, f32, f64` | [Command](crate::Command)
     /// - value: `impl impl Serialize` | [Command](crate::Command)
     /// - time: [Time](crate::types::Time) | [Command](crate::Command)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// The `add` command can be called in either prefix or infix form; 
-    /// both forms are equivalent. 
-    /// Note that ReQL will not perform type coercion. 
+    ///
+    /// The `add` command can be called in either prefix or infix form;
+    /// both forms are equivalent.
+    /// Note that ReQL will not perform type coercion.
     /// You cannot, for example, `add` a string and a number together.
     ///
     /// ## Examples

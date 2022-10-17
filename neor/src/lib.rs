@@ -693,7 +693,7 @@ impl r {
     ///     let response = r.table("users")
     ///         .map(func!(|doc| {
     ///             let mut user = HashMap::new();
-    ///             user.insert("user_id", doc.clone().g("id"));
+    ///             user.insert("user_id", doc.g("id"));
     ///             
     ///             doc.merge(r.hash_map(user)).without("id")
     ///         }))
@@ -970,7 +970,7 @@ impl r {
     ///     let response = r.table("posts")
     ///         .map(func!(|post| post.g("comments").count(())))
     ///         .reduce(func!(|left, right| r.branch(
-    ///             left.clone().gt(right.clone()),
+    ///             left.gt(&right),
     ///             args!(left, right)
     ///         )))
     ///         .default(0)
@@ -1226,7 +1226,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("games")
-    ///         .sum(func!(|game| game.clone().g("points") + game.g("bonus_points")))
+    ///         .sum(func!(|game| game.g("points") + game.g("bonus_points")))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -1329,7 +1329,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("games")
-    ///         .avg(func!(|game| game.clone().g("points") + game.g("bonus_points")))
+    ///         .avg(func!(|game| game.g("points") + game.g("bonus_points")))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -1463,7 +1463,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("users")
-    ///         .min(func!(|user| user.clone().g("points") + user.g("bonus_points")))
+    ///         .min(func!(|user| user.g("points") + user.g("bonus_points")))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -1621,7 +1621,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("users")
-    ///         .max(func!(|user| user.clone().g("points") + user.g("bonus_points")))
+    ///         .max(func!(|user| user.g("points") + user.g("bonus_points")))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -1831,7 +1831,7 @@ impl r {
     ///     let response: bool = r.table("marvel")
     ///         .get("ironman")
     ///         .g("battles")
-    ///         .contains(func!(|battle| battle.clone().g("winner").eq("ironman").and(
+    ///         .contains(func!(|battle| battle.g("winner").eq("ironman").and(
     ///             battle.g("loser").eq("superman")
     ///         )))
     ///         .run(&conn)
@@ -1899,7 +1899,7 @@ impl r {
     }
 
     /// TODO Write docs
-    pub fn literal(&self, value: impl Serialize) -> Command {
+    pub fn literal(&self, value: impl Into<CommandArg>) -> Command {
         cmd::literal::new(value)
     }
 
@@ -2110,8 +2110,9 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("table")
-    ///         .filter(func!(|post| post.clone()
-    ///             .g("category").default("foo").eq("article")
+    ///         .filter(func!(|post| post.g("category")
+    ///             .default("foo")
+    ///             .eq("article")
     ///             .or(post.g("genre").default("foo").eq("mystery"))
     ///         ))
     ///         .run(&conn)
@@ -3444,7 +3445,7 @@ impl r {
     ///     let timezone = offset!(+01:00);
     ///
     ///     let date_time = r.time(args!(date, time, timezone));
-    ///     let time1 = date_time.clone().value();
+    ///     let time1 = date_time.value();
     ///     let time2: Time = date_time.cmd()
     ///         .run(&conn)
     ///         .await?
@@ -3487,7 +3488,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let date_time = r.epoch_time(531360000)?;
-    ///     let time1 = date_time.clone().value();
+    ///     let time1 = date_time.value();
     ///     let time2: Time = date_time.cmd()
     ///         .run(&conn)
     ///         .await?
@@ -3543,7 +3544,7 @@ impl r {
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let date_time = r.iso8601(args!("1986-11-03T08:30:00", offset!(+01:00)))?;
-    ///     let time1 = date_time.clone().value();
+    ///     let time1 = date_time.value();
     ///     let time2: Time = date_time.cmd()
     ///         .run(&conn)
     ///         .await?
@@ -3565,7 +3566,7 @@ impl r {
     }
 
     /// Convert `HashMap` to object.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
@@ -3583,11 +3584,11 @@ impl r {
     ///
     /// ```
     /// use std::collections::HashMap;
-    /// 
+    ///
     /// use serde::{Deserialize, Serialize};
-    /// 
+    ///
     /// use neor::{r, Converter, Result};
-    /// 
+    ///
     /// #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
     /// pub struct Post {
     ///     pub id: u8,
@@ -3600,7 +3601,7 @@ impl r {
     ///     let mut post = HashMap::new();
     ///     post.insert("id", r.expr(&expected_post.id));
     ///     post.insert("title", r.expr(&expected_post.title));
-    /// 
+    ///
     ///     let response: Post = r.hash_map(post).run(&conn).await?.unwrap().parse()?;
     ///
     ///     assert_eq!(response, expected_post);
@@ -3745,9 +3746,133 @@ impl r {
         cmd::binary::new(data)
     }
 
-    // FIXME Command no work
-    pub fn do_(&self, args: impl cmd::do_::DoArg) -> Command {
-        cmd::do_::new(args)
+    //// Call an anonymous function using return values
+    /// from other ReQL commands or queries as arguments.
+    ///
+    /// # Command syntax
+    ///
+    /// ```text
+    /// any.do_(predicate) → any
+    /// r.do_(arg, predicate) → any
+    /// r.do_(args, predicate) → any
+    /// ```
+    /// Where:
+    /// - predicate: [Func](crate::Func) | [Command](crate::Command) | `impl Serialize`
+    /// - arg: [Command](crate::Command)
+    /// - args: `impl IntoIterator<Item = T>`
+    /// - T: `impl Serialize` | [Command](crate::Command)
+    ///
+    /// # Description
+    ///
+    /// The last argument to `do_` (or, in some forms, the only argument) is an
+    /// expression or an anonymous function which receives values from either
+    /// the previous arguments or from prefixed commands chained before `do_`.
+    /// The `do_` command is essentially a single-element [map](Self::map),
+    /// letting you map a function over just one document.
+    /// This allows you to bind a query result to a
+    /// local variable within the scope of `do_`,
+    /// letting you compute the result just once and reuse it in
+    /// a complex expression or in a series of ReQL commands.
+    ///
+    /// Arguments passed to the `do_` function must be basic data types,
+    /// and cannot be streams or selections.
+    /// ([Read about ReQL data types](https://rethinkdb.com/docs/data-types/).)
+    /// While the arguments will all be evaluated before the function is executed,
+    /// they may be evaluated in any order, so their values should not be dependent on one another.
+    /// The type of `do_`’s result is the type of the value returned from the function or last expression.
+    ///
+    /// ## Examples
+    ///
+    /// Compute a golfer’s net score for a game.
+    ///
+    /// ```
+    /// use neor::{func, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///         .get("86be93eb-a112-48f5-a829-15b2cb49de1d")
+    ///         .do_(func!(|player| player.g("gross_score") - player.g("course_handicap")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Examples
+    ///
+    /// Return the name of the best scoring player in a two-player golf match.
+    ///
+    /// ```
+    /// use neor::{args, func, r, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let (id1, id2) = (1, 2);
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.do_(
+    ///         [r.table("players").get(id1), r.table("players").get(id2)],
+    ///         func!(|player1, player2| r.branch(
+    ///             player1.g("gross_score").lt(player2.g("gross_score")),
+    ///             args!(player1, player2)
+    ///         ))
+    ///     )
+    ///     .run(&conn)
+    ///     .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// Note that `branch`, the ReQL conditional command, must be used instead of `if`.
+    /// See the `branch` [documentation](Self::branch) for more.
+    ///
+    /// ## Examples
+    ///
+    /// Take different actions based on the result of a ReQL insert command.
+    ///
+    /// ```
+    /// use neor::{args, func, r, Result};
+    /// use serde_json::json;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let new_data = json!({
+    ///         "id": 100,
+    ///         "name": "Agatha",
+    ///         "gross_score": 57,
+    ///         "course_handicap": 4
+    ///     });
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("players")
+    ///     .insert(new_data)
+    ///     .do_(func!(|doc| r.branch(
+    ///         doc.g("inserted").ne(0),
+    ///         args!(
+    ///             r.table("log").insert(json!({"time": r.now(), "result": "ok"})),
+    ///             r.table("log").insert(json!({"time": r.now(), "result": "error"}))
+    ///         )
+    ///     )))
+    ///     .run(&conn)
+    ///     .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// # Related commands
+    /// - [map](Self::map)
+    pub fn do_<A, E>(&self, args: A, expr: E) -> Command
+    where
+        A: cmd::do_::DoArg,
+        E: Into<CommandArg>,
+    {
+        args.into_do_opts().add_to_cmd(cmd::do_::new(expr))
     }
 
     /// Perform a branching conditional equivalent to `if-then-else`.
@@ -3853,12 +3978,12 @@ impl r {
     ///
     ///     let response = r.table("pricings")
     ///         .map(func!(|offer| r.branch(
-    ///             offer.clone().g("price").gt(100),
+    ///             offer.g("price").gt(100),
     ///             args!(
-    ///                 offer.clone().g("offer").add("premium"),
+    ///                 offer.g("offer").add("premium"),
     ///                 [(
-    ///                     offer.clone().g("price").gt(10),
-    ///                     offer.clone().g("offer").add("standard")
+    ///                     offer.g("price").gt(10),
+    ///                     offer.g("offer").add("standard")
     ///                 )],
     ///                 offer.g("offer").add("freemium")
     ///         ))))

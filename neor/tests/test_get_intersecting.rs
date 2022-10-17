@@ -35,7 +35,6 @@ async fn test_get_intersecting_ops() -> Result<()> {
         .parse()?;
     r.table_create(table_name.as_str()).run(&conn).await?;
     table
-        .clone()
         .index_create(args!("area", IndexCreateOption::default().geo(true)))
         .run(&conn)
         .await?;

@@ -5,7 +5,7 @@ async fn test_seconds_ops() -> Result<()> {
     let conn = r.connection().connect().await?;
 
     let seconds = r.now().seconds();
-    let seconds1 = seconds.clone().value();
+    let seconds1 = seconds.value();
     let seconds2: f64 = seconds.cmd().run(&conn).await?.unwrap().parse()?;
 
     assert!(seconds1.is_normal());

@@ -31,7 +31,7 @@ async fn test_default_ops() -> Result<()> {
         .order_by(r.expr("title"))
         .map(func!(|doc| {
             let mut post = HashMap::new();
-            post.insert("title", doc.clone().g("title"));
+            post.insert("title", doc.g("title"));
             post.insert("content", doc.g("content").default("Anonymous"));
             r.hash_map(post)
         }))

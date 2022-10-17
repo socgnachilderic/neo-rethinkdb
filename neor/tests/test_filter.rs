@@ -11,7 +11,6 @@ async fn test_filter_data() -> Result<()> {
     let data = Post::get_many_data();
     let (conn, table, table_name) = set_up(true).await?;
     let data_filtered: Vec<Post> = table
-        .clone()
         .filter(json!({"view": 2}))
         .run(&conn)
         .await?
@@ -30,7 +29,6 @@ async fn test_filter_data_with_func() -> Result<()> {
     let data = Post::get_many_data();
     let (conn, table, table_name) = set_up(true).await?;
     let data_filtered: Vec<Post> = table
-        .clone()
         .filter(func!(|user| user.g("view").eq(r.expr(2))))
         .run(&conn)
         .await?

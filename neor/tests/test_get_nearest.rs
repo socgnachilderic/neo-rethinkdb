@@ -29,7 +29,6 @@ async fn test_get_nearest_ops() -> Result<()> {
     let table = r.table(table_name.as_str());
     r.table_create(table_name.as_str()).run(&conn).await?;
     table
-        .clone()
         .index_create(args!("area", IndexCreateOption::default().geo(true)))
         .run(&conn)
         .await?;

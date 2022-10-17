@@ -9,7 +9,6 @@ mod common;
 async fn test_for_each_opts() -> Result<()> {
     let (conn, table, table_name) = set_up(true).await?;
     let response: MutationResponse = table
-        .clone()
         .for_each(func!(|doc| table.get(doc.g("id")).delete(())))
         .run(&conn)
         .await?

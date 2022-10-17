@@ -70,7 +70,7 @@ async fn test_merge_ops_multi() -> Result<()> {
 
     let response = post_table
         .get(1)
-        .merge(args!([comment_table.clone().get(1), comment_table.get(2),]))
+        .merge(args!([comment_table.get(1), comment_table.get(2),]))
         .run(&conn)
         .await?;
 
@@ -113,7 +113,7 @@ async fn set_up2() -> Result<(
         .run(&conn)
         .await?;
     let comment_table = r.table(comment_table_name.as_str());
-    comment_table.clone().insert(comments).run(&conn).await?;
+    comment_table.insert(comments).run(&conn).await?;
 
     Ok((
         conn,

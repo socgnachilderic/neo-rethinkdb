@@ -11,7 +11,7 @@ where
     type Output = Self;
 
     /// Divide two numbers.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text

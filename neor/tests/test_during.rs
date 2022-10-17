@@ -9,10 +9,8 @@ async fn test_during_ops() -> Result<()> {
 
     let datetime = r.epoch_time(1661990400)?;
 
-    let response = datetime
-        .clone()
-        .during(start_date.clone(), end_date.clone(), None);
-    let response2: bool = response.clone().cmd().run(&conn).await?.unwrap().parse()?;
+    let response = datetime.during(start_date.clone(), end_date.clone(), None);
+    let response2: bool = response.cmd().run(&conn).await?.unwrap().parse()?;
     let response3: bool = datetime
         .cmd()
         .during(args!(start_date, end_date))

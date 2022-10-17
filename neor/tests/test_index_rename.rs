@@ -11,7 +11,6 @@ async fn test_rename_index() -> Result<()> {
     let (conn, table, table_name) = set_up(false).await?;
     table.index_create("author").run(&conn).await?;
     let index_renamed: IndexResponse = table
-        .clone()
         .index_rename(args!("author", "author_name"))
         .run(&conn)
         .await?
@@ -30,7 +29,6 @@ async fn test_rename_index_with_overwrite() -> Result<()> {
     table.index_create("author_name").run(&conn).await?;
 
     let index_renamed: IndexResponse = table
-        .clone()
         .index_rename(args!(
             "author",
             "author_name",

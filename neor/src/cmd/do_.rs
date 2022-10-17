@@ -1,12 +1,9 @@
 use ql2::term::TermType;
 
-use crate::arguments::Args;
-use crate::command_tools::CmdOpts;
-use crate::{Command, Func};
+use crate::{command_tools::CmdOpts, Command, CommandArg};
 
-pub(crate) fn new(args: impl DoArg) -> Command {
-    args.into_do_opts()
-        .add_to_cmd(Command::new(TermType::Funcall))
+pub(crate) fn new(expr: impl Into<CommandArg>) -> Command {
+    expr.into().add_to_cmd(TermType::Funcall)
 }
 
 pub trait DoArg {
@@ -19,41 +16,12 @@ impl DoArg for Command {
     }
 }
 
-impl DoArg for Func {
+impl<S, T> DoArg for T
+where
+    S: Into<CommandArg>,
+    T: IntoIterator<Item = S>,
+{
     fn into_do_opts(self) -> CmdOpts {
-        CmdOpts::Single(self.0)
-    }
-}
-
-impl DoArg for Args<(Command, Command)> {
-    fn into_do_opts(self) -> CmdOpts {
-        CmdOpts::Many(vec![self.0 .0, self.0 .1])
-    }
-}
-
-impl DoArg for Args<(Command, Func)> {
-    fn into_do_opts(self) -> CmdOpts {
-        let Func(func) = self.0 .1;
-
-        CmdOpts::Many(vec![self.0 .0, func])
-    }
-}
-
-impl<const N: usize> DoArg for Args<([Command; N], Func)> {
-    fn into_do_opts(self) -> CmdOpts {
-        let Func(func) = self.0 .1;
-        let mut args = self.0 .0.to_vec();
-
-        args.push(func);
-        CmdOpts::Many(args)
-    }
-}
-
-impl<const N: usize> DoArg for Args<([Command; N], Command)> {
-    fn into_do_opts(self) -> CmdOpts {
-        let mut args = self.0 .0.to_vec();
-
-        args.push(self.0 .1);
-        CmdOpts::Many(args)
+        CmdOpts::Many(self.into_iter().map(|cmd| cmd.into().to_cmd()).collect())
     }
 }

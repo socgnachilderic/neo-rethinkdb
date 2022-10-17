@@ -113,7 +113,6 @@ impl Comment {
             .run(&conn)
             .await?;
         comment_table
-            .clone()
             .insert(Self::get_many_data())
             .run(&conn)
             .await?;

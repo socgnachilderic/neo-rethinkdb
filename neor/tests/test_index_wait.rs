@@ -10,13 +10,8 @@ async fn test_get_index_waited() -> Result<()> {
     let (conn, table, table_name) = set_up(false).await?;
     generate_data(&conn, &table).await?;
 
-    let indexes_waited: Vec<IndexStatusResponse> = table
-        .clone()
-        .index_wait(())
-        .run(&conn)
-        .await?
-        .unwrap()
-        .parse()?;
+    let indexes_waited: Vec<IndexStatusResponse> =
+        table.index_wait(()).run(&conn).await?.unwrap().parse()?;
 
     assert!(indexes_waited.len() == 3);
     indexes_waited
@@ -32,7 +27,6 @@ async fn test_get_index_status_with_param() -> Result<()> {
     generate_data(&conn, &table).await?;
 
     let index_waited = table
-        .clone()
         .index_wait("author")
         .run(&conn)
         .await?
@@ -53,7 +47,6 @@ async fn test_get_index_status_with_params() -> Result<()> {
     generate_data(&conn, &table).await?;
 
     let indexes_waited: Vec<IndexStatusResponse> = table
-        .clone()
         .index_wait(args!(["age", "name"]))
         .run(&conn)
         .await?
