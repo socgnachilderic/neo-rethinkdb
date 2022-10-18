@@ -13,7 +13,7 @@ the genesis version of this project is a fork of the official [rethink-rs](https
 ...
 
 [dependencies]
-neor = { version = "0.0.9", registry = "https://gitlab.com/exytech/community/neo-rethinkdb/-/tree/master/neor" }
+neor = { version = "0.0.9", git = "https://gitlab.com/exytech/community/neo-rethinkdb", branch = "master" }
 ```
 
 - Build and open doc
