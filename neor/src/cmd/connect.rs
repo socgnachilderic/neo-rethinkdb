@@ -78,8 +78,8 @@ impl ConnectionCommand {
     }
 
     /// This method set database host
-    pub fn host(mut self, host: &'static str) -> Self {
-        self.host = host.static_string();
+    pub fn host(mut self, host: impl Into<String>) -> Self {
+        self.host = host.into().static_string();
         self
     }
 
@@ -90,15 +90,19 @@ impl ConnectionCommand {
     }
 
     /// This method set database name
-    pub fn dbname(mut self, dbname: &'static str) -> Self {
-        self.db = Cow::from(dbname);
+    pub fn dbname(mut self, dbname: impl Into<String>) -> Self {
+        self.db = Cow::from(dbname.into());
         self
     }
 
     /// This method set database user
-    pub fn user(mut self, user: &'static str, password: &'static str) -> Self {
-        self.user = user.static_string();
-        self.password = password.static_string();
+    pub fn user<U, P>(mut self, user: U, password: P) -> Self
+    where
+        U: Into<String>,
+        P: Into<String>,
+    {
+        self.user = user.into().static_string();
+        self.password = password.into().static_string();
         self
     }
 
