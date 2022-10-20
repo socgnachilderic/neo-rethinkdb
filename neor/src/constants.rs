@@ -11,6 +11,7 @@ pub(crate) const TIMEZONE_FORMAT: &str = "[offset_hour sign:mandatory]:[offset_m
 pub(crate) const MINUTE: f64 = 60.;
 pub(crate) const HOUR: f64 = 60. * MINUTE;
 
+pub const RETHINKDB_DRIVER_NAME: &str = "rethinkdb";
 pub const DEFAULT_RETHINKDB_HOSTNAME: &str = "localhost";
 pub const DEFAULT_RETHINKDB_DBNAME: &str = "test";
 pub const DEFAULT_RETHINKDB_PORT: u16 = 28015;

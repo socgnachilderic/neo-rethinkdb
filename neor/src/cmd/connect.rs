@@ -19,8 +19,9 @@ use tokio::time;
 
 use crate::constants::{
     DEFAULT_RETHINKDB_DBNAME, DEFAULT_RETHINKDB_HOSTNAME, DEFAULT_RETHINKDB_PASSWORD,
-    DEFAULT_RETHINKDB_PORT, DEFAULT_RETHINKDB_USER,
+    DEFAULT_RETHINKDB_PORT, DEFAULT_RETHINKDB_USER, RETHINKDB_DRIVER_NAME,
 };
+use crate::err::ReqlDriverError;
 use crate::{InnerSession, Result, Session, StaticString, TcpStreamConnection};
 
 #[derive(Debug)]
@@ -128,6 +129,43 @@ impl ConnectionCommand {
         self.tls_connector = Some(TlsConnector::new().add_root_certificate(certificate));
 
         self
+    }
+
+    /// This method builds a connection from an uri
+    pub fn from_uri(mut self, uri: impl Into<String>) -> Result<Self> {
+        let db_url = url::Url::parse(uri.into().as_str())?;
+
+        if db_url.scheme() != RETHINKDB_DRIVER_NAME {
+            return Err(ReqlDriverError::DriverUrl(format!(
+                "Driver scheme is not '{}'",
+                RETHINKDB_DRIVER_NAME
+            ))
+            .into());
+        } else {
+            self.user = db_url.username().to_string().static_string();
+            self.host = db_url
+                .host_str()
+                .ok_or(ReqlDriverError::DriverUrl("Host not found.".to_string()))?
+                .to_string()
+                .static_string();
+            self.port = db_url
+                .port()
+                .ok_or(ReqlDriverError::DriverUrl("Port not found.".to_string()))?;
+            self.db = db_url
+                .path_segments()
+                .ok_or(ReqlDriverError::DriverUrl("DB Name not found.".to_string()))?
+                .next()
+                .unwrap()
+                .to_string()
+                .static_string();
+            self.password = db_url
+                .password()
+                .unwrap_or(DEFAULT_RETHINKDB_PASSWORD)
+                .to_string()
+                .static_string();
+
+            Ok(self)
+        }
     }
 
     async fn create_session(self) -> Result<Session> {
