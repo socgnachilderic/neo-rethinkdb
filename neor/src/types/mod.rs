@@ -243,6 +243,33 @@ pub struct InfoResponse {
 }
 
 #[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ChangesResponse<T> {
+    pub old_val: Option<T>,
+    pub new_val: Option<T>,
+    pub state: Option<ChangesState>,
+    #[serde(rename = "type")]
+    pub typ: Option<ChangesType>,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum ChangesState {
+    Initializing,
+    Ready,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum ChangesType {
+    Add,
+    Remove,
+    Change,
+    Initial,
+    Uninitial,
+    State,
+}
+
+#[derive(Debug, Clone, Deserialize, Serialize, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct DbInfo {
     id: Cow<'static, str>,
     name: Cow<'static, str>,

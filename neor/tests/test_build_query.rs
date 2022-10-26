@@ -9,7 +9,7 @@ async fn simple() -> Result<()> {
     let response = r
         .db("rethinkdb")
         .table("users")
-        .make_query(args!(&conn, run_option))
+        .build_query(args!(&conn, run_option))
         .try_next()
         .await?;
 
@@ -29,7 +29,7 @@ async fn concurrency() -> Result<()> {
     let mut streams = Vec::new();
 
     for msg in expected_messages.iter() {
-        streams.push(r.expr(msg).make_query(&conn));
+        streams.push(r.expr(msg).build_query(&conn));
     }
 
     let mut list = select_all(streams);

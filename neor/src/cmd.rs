@@ -175,6 +175,127 @@ use crate::arguments::{Permission, ReconfigureOption};
 use crate::{Command, CommandArg, Func, Result};
 
 impl<'a> Command {
+    /// Turn a query into a changefeed, an infinite stream of objects 
+    /// representing changes to the query’s results as they occur.
+    /// 
+    /// # Command syntax
+    /// 
+    /// ```text
+    /// stream.changes(()) → stream
+    /// stream.changes(options) → stream
+    /// ```
+    /// 
+    /// Where:
+    /// - options: [ChangesOption](crate::arguments::ChangesOption)
+    /// 
+    /// # Description
+    /// 
+    /// A changefeed may return changes to a table or 
+    /// an individual document (a “point” changefeed). 
+    /// Commands such as filter or map may be used before 
+    /// the changes command to transform or filter the output, and 
+    /// many commands that operate on sequences can be chained after changes.
+    /// 
+    /// There are currently two states:
+    /// - `{state: 'initializing'}` indicates the following documents represent 
+    /// initial values on the feed rather than changes. 
+    /// This will be the first document of a feed that returns initial values.
+    /// - `{state: 'ready'}` indicates the following documents represent changes. 
+    /// This will be the first document of a feed that does **not** return initial values; 
+    /// otherwise, it will indicate the initial values have all been sent.
+    /// 
+    /// ```text
+    /// Starting with RethinkDB 2.2, state documents will only be sent 
+    /// if the include_states option is true, even on point changefeeds. 
+    /// Initial values will only be sent if include_initial is true. 
+    /// If include_states is true and include_initial is false, 
+    /// the first document on the feed will be {'state': 'ready'}.
+    /// ```
+    /// 
+    /// If the table becomes unavailable, the changefeed will be disconnected, 
+    /// and a runtime exception will be thrown by the driver.
+    /// 
+    /// Changefeed notifications take the form of a two-field object:
+    /// 
+    /// ```text
+    /// {
+    ///     "old_val": <document before change>,
+    ///     "new_val": <document after change>
+    /// }
+    /// ```
+    /// 
+    /// When `include_types` is `true`, there will be three fields:
+    /// 
+    /// ```text
+    /// {
+    ///     "old_val": <document before change>,
+    ///     "new_val": <document after change>,
+    ///     "type": <result type>
+    /// }
+    /// ```
+    /// 
+    /// When a document is deleted, `new_val` will be `None`; 
+    /// when a document is inserted, `old_val` will be `None`.
+    /// 
+    /// ## Note
+    /// 
+    /// Certain document transformation commands can be chained before changefeeds. 
+    /// For more information, read the 
+    /// [discussion of changefeeds](https://rethinkdb.com/docs/changefeeds/python/) 
+    /// in the “Query language” documentation.
+    /// 
+    /// Changefeeds ignore the `read_mode` flag to `run`, and always behave as 
+    /// if it is set to `single` (i.e., the values they return are in memory on 
+    /// the primary replica, but have not necessarily been written to disk yet).
+    /// For more details read [Consistency guarantees](https://rethinkdb.com/docs/consistency).
+    /// 
+    /// The server will buffer up to 100,000 elements. 
+    /// If the buffer limit is hit, early changes will be discarded, 
+    /// and the client will receive an object of the form 
+    /// `{"error": "Changefeed cache over array size limit, skipped X elements."}` 
+    /// where X is the number of elements skipped.
+    /// 
+    /// Commands that operate on streams (such as [filter](Self::filter) 
+    /// or [map](Self::map)) can usually be chained after `changes`. 
+    /// However, since the stream produced by `changes` has no ending, 
+    /// commands that need to consume the entire stream before returning 
+    /// (such as [reduce](Self::reduce) or [count](Self::count)) cannot.
+    /// 
+    /// ## Examples
+    ///
+    /// Subscribe to the changes on a table.
+    ///
+    /// ```
+    /// use futures::TryStreamExt;
+    /// use neor::arguments::ChangesOption;
+    /// use neor::types::ChangesResponse;
+    /// use neor::{r, Converter, Result};
+    /// use serde_json::Value;
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let session = r.connection().connect().await?;
+    ///     let mut connection = session.connection()?;
+    ///     let mut response = Vec::new();
+    ///     let conn = connection.clone();
+    ///     let changes_options = ChangesOption::default()
+    ///         .include_initial(true)
+    ///         .include_states(true)
+    ///         .include_types(true);
+    /// 
+    ///     let mut query = r.table("simbad").changes(()).build_query(conn);
+    /// 
+    ///     while let Some(value) = query.try_next().await? {
+    ///         response = value.parse::<Vec<ChangesResponse<Value>>>()?;
+    ///         
+    ///         connection.close(false).await?;
+    ///         break;
+    ///     }
+    /// 
+    ///     assert!(response.len() > 0);
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn changes(&self, args: impl changes::ChangesArg) -> Self {
         changes::new(args).with_parent(self)
     }
@@ -10680,7 +10801,7 @@ impl<'a> Command {
     /// # Related commands
     /// - [connection](crate::r::connection)
     pub async fn run(&self, args: impl run::RunArg) -> Result<Option<Value>> {
-        self.make_query(args).try_next().await
+        self.build_query(args).try_next().await
     }
 
     /// Prepare query for execution
@@ -10690,12 +10811,12 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// query.make_query(&session) → stream
-    /// query.make_query(connection) → stream
-    /// query.make_query(args!(&session, options)) → stream
-    /// query.make_query(args!(connection, options)) → stream
-    /// query.make_query(&mut session) → stream
-    /// query.make_query(args!(&mut session, options)) → stream
+    /// query.build_query(&session) → stream
+    /// query.build_query(connection) → stream
+    /// query.build_query(args!(&session, options)) → stream
+    /// query.build_query(args!(connection, options)) → stream
+    /// query.build_query(&mut session) → stream
+    /// query.build_query(args!(&mut session, options)) → stream
     /// ```
     ///
     /// Where:
@@ -10706,12 +10827,12 @@ impl<'a> Command {
     /// # Description
     ///
     /// This method has the same parameters as `run`.
-    /// The main difference between `make_query` and `run` is that
-    /// `make_query` can be used to execute multiple requests
+    /// The main difference between `build_query` and `run` is that
+    /// `build_query` can be used to execute multiple requests
     ///
     /// ## Examples
     ///
-    /// You can use `query.make_query` to get the same result than `query.run`
+    /// You can use `query.build_query` to get the same result than `query.run`
     ///
     /// ```
     /// use futures::TryStreamExt;
@@ -10720,7 +10841,7 @@ impl<'a> Command {
     /// async fn example() -> neor::Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///
-    ///     r.table("simbad").make_query(&conn).try_next().await?;
+    ///     r.table("simbad").build_query(&conn).try_next().await?;
     ///     // is same than
     ///     r.table("simbad").run(&conn).await?;
     ///     
@@ -10745,7 +10866,7 @@ impl<'a> Command {
     ///         .collect();
     ///
     ///     for msg in expected_messages.iter() {
-    ///         streams.push(r.expr(msg).make_query(&conn));
+    ///         streams.push(r.expr(msg).build_query(&conn));
     ///     }
     ///
     ///     let mut list = select_all(streams);
@@ -10764,7 +10885,7 @@ impl<'a> Command {
     ///
     /// # Related commands
     /// - [run](self::run)
-    pub fn make_query(&self, args: impl run::RunArg) -> impl Stream<Item = Result<Value>> {
+    pub fn build_query(&self, args: impl run::RunArg) -> impl Stream<Item = Result<Value>> {
         Box::pin(run::new(self.clone(), args))
     }
 }

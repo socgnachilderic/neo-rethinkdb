@@ -83,7 +83,35 @@ pub struct Session {
 }
 
 impl Session {
-    #[doc(hidden)]
+    /// Get connection from session.
+    /// 
+    /// # Command syntax
+    ///
+    /// ```text
+    /// conn.connection()
+    /// ```
+    /// 
+    /// ## Examples
+    ///
+    /// Replace a session to run a query.
+    ///
+    /// ```
+    /// use neor::{r, Converter, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let mut session = r.connection().connect().await?;
+    ///     let conn = session.connection()?;
+    /// 
+    ///     let response = r.db_list().run(conn).await?;
+    ///     
+    ///     // Is Same that
+    ///     // let response = r.db_list().run(&session).await?;
+    ///     
+    ///     assert!(response.is_some());
+    ///     
+    ///     Ok(())
+    /// }
+    /// ```
     pub fn connection(&self) -> Result<Connection> {
         self.inner.broken()?;
         self.inner.change_feed()?;
@@ -361,9 +389,9 @@ impl Connection {
         self.set_closed(true);
 
         let arg = if noreply_wait {
-            Some(r.expr(json!({ "noreply": false })))
-        } else {
             None
+        } else {
+            Some(r.expr(json!({ "noreply": false })))
         };
 
         let payload = Payload(QueryType::Stop, arg.as_ref().map(Query), Default::default());
