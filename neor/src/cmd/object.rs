@@ -1,17 +1,16 @@
 use ql2::term::TermType;
-use serde::Serialize;
 
 use crate::Command;
+use crate::command_tools::CommandArg;
 
 pub(crate) fn new<S, T>(values: T) -> Command
 where
-    S: Serialize,
+    S: Into<CommandArg>,
     T: IntoIterator<Item = S>,
 {
     values
         .into_iter()
-        .map(Command::from_json)
         .fold(Command::new(TermType::Object), |cmd, value| {
-            cmd.with_arg(value)
+            cmd.with_arg(value.into().to_cmd())
         })
 }

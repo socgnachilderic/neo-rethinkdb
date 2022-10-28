@@ -1909,7 +1909,8 @@ impl r {
     /// ```
     ///
     /// Where:
-    /// - values: `impl IntoIterator<Item = impl Serialize>`
+    /// - values: `impl IntoIterator<Item = value>`
+    /// - value: `impl Serialize` | [Command](crate::Command)
     ///
     /// ## Examples
     ///
@@ -1949,7 +1950,7 @@ impl r {
     /// - [keys](crate::Command::keys)
     pub fn object<S, T>(&self, values: T) -> Command
     where
-        S: Serialize,
+        S: Into<CommandArg>,
         T: IntoIterator<Item = S>,
     {
         cmd::object::new(values)

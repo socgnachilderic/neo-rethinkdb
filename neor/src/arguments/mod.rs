@@ -3,11 +3,9 @@ use std::{borrow::Cow, collections::HashMap};
 use neor_macros::CommandOptions;
 use serde::{Deserialize, Serialize};
 
-pub use any_param::AnyParam;
 pub use options::*;
 pub use return_changes::ReturnChanges;
 
-mod any_param;
 mod options;
 mod return_changes;
 
