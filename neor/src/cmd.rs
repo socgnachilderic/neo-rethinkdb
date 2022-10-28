@@ -72,6 +72,7 @@ pub mod hours;
 pub mod http;
 pub mod in_timezone;
 pub mod includes;
+pub mod index;
 pub mod index_create;
 pub mod index_drop;
 pub mod index_list;
@@ -175,57 +176,57 @@ use crate::arguments::{Permission, ReconfigureOption};
 use crate::{Command, CommandArg, Func, Result};
 
 impl<'a> Command {
-    /// Turn a query into a changefeed, an infinite stream of objects 
+    /// Turn a query into a changefeed, an infinite stream of objects
     /// representing changes to the query’s results as they occur.
-    /// 
+    ///
     /// # Command syntax
-    /// 
+    ///
     /// ```text
     /// stream.changes(()) → stream
     /// stream.changes(options) → stream
     /// ```
-    /// 
+    ///
     /// Where:
     /// - options: [ChangesOption](crate::arguments::ChangesOption)
-    /// 
+    ///
     /// # Description
-    /// 
-    /// A changefeed may return changes to a table or 
-    /// an individual document (a “point” changefeed). 
-    /// Commands such as filter or map may be used before 
-    /// the changes command to transform or filter the output, and 
+    ///
+    /// A changefeed may return changes to a table or
+    /// an individual document (a “point” changefeed).
+    /// Commands such as filter or map may be used before
+    /// the changes command to transform or filter the output, and
     /// many commands that operate on sequences can be chained after changes.
-    /// 
+    ///
     /// There are currently two states:
-    /// - `{state: 'initializing'}` indicates the following documents represent 
-    /// initial values on the feed rather than changes. 
+    /// - `{state: 'initializing'}` indicates the following documents represent
+    /// initial values on the feed rather than changes.
     /// This will be the first document of a feed that returns initial values.
-    /// - `{state: 'ready'}` indicates the following documents represent changes. 
-    /// This will be the first document of a feed that does **not** return initial values; 
+    /// - `{state: 'ready'}` indicates the following documents represent changes.
+    /// This will be the first document of a feed that does **not** return initial values;
     /// otherwise, it will indicate the initial values have all been sent.
-    /// 
+    ///
     /// ```text
-    /// Starting with RethinkDB 2.2, state documents will only be sent 
-    /// if the include_states option is true, even on point changefeeds. 
-    /// Initial values will only be sent if include_initial is true. 
-    /// If include_states is true and include_initial is false, 
+    /// Starting with RethinkDB 2.2, state documents will only be sent
+    /// if the include_states option is true, even on point changefeeds.
+    /// Initial values will only be sent if include_initial is true.
+    /// If include_states is true and include_initial is false,
     /// the first document on the feed will be {'state': 'ready'}.
     /// ```
-    /// 
-    /// If the table becomes unavailable, the changefeed will be disconnected, 
+    ///
+    /// If the table becomes unavailable, the changefeed will be disconnected,
     /// and a runtime exception will be thrown by the driver.
-    /// 
+    ///
     /// Changefeed notifications take the form of a two-field object:
-    /// 
+    ///
     /// ```text
     /// {
     ///     "old_val": <document before change>,
     ///     "new_val": <document after change>
     /// }
     /// ```
-    /// 
+    ///
     /// When `include_types` is `true`, there will be three fields:
-    /// 
+    ///
     /// ```text
     /// {
     ///     "old_val": <document before change>,
@@ -233,34 +234,34 @@ impl<'a> Command {
     ///     "type": <result type>
     /// }
     /// ```
-    /// 
-    /// When a document is deleted, `new_val` will be `None`; 
+    ///
+    /// When a document is deleted, `new_val` will be `None`;
     /// when a document is inserted, `old_val` will be `None`.
-    /// 
+    ///
     /// ## Note
-    /// 
-    /// Certain document transformation commands can be chained before changefeeds. 
-    /// For more information, read the 
-    /// [discussion of changefeeds](https://rethinkdb.com/docs/changefeeds/python/) 
+    ///
+    /// Certain document transformation commands can be chained before changefeeds.
+    /// For more information, read the
+    /// [discussion of changefeeds](https://rethinkdb.com/docs/changefeeds/python/)
     /// in the “Query language” documentation.
-    /// 
-    /// Changefeeds ignore the `read_mode` flag to `run`, and always behave as 
-    /// if it is set to `single` (i.e., the values they return are in memory on 
+    ///
+    /// Changefeeds ignore the `read_mode` flag to `run`, and always behave as
+    /// if it is set to `single` (i.e., the values they return are in memory on
     /// the primary replica, but have not necessarily been written to disk yet).
     /// For more details read [Consistency guarantees](https://rethinkdb.com/docs/consistency).
-    /// 
-    /// The server will buffer up to 100,000 elements. 
-    /// If the buffer limit is hit, early changes will be discarded, 
-    /// and the client will receive an object of the form 
-    /// `{"error": "Changefeed cache over array size limit, skipped X elements."}` 
+    ///
+    /// The server will buffer up to 100,000 elements.
+    /// If the buffer limit is hit, early changes will be discarded,
+    /// and the client will receive an object of the form
+    /// `{"error": "Changefeed cache over array size limit, skipped X elements."}`
     /// where X is the number of elements skipped.
-    /// 
-    /// Commands that operate on streams (such as [filter](Self::filter) 
-    /// or [map](Self::map)) can usually be chained after `changes`. 
-    /// However, since the stream produced by `changes` has no ending, 
-    /// commands that need to consume the entire stream before returning 
+    ///
+    /// Commands that operate on streams (such as [filter](Self::filter)
+    /// or [map](Self::map)) can usually be chained after `changes`.
+    /// However, since the stream produced by `changes` has no ending,
+    /// commands that need to consume the entire stream before returning
     /// (such as [reduce](Self::reduce) or [count](Self::count)) cannot.
-    /// 
+    ///
     /// ## Examples
     ///
     /// Subscribe to the changes on a table.
@@ -281,16 +282,16 @@ impl<'a> Command {
     ///         .include_initial(true)
     ///         .include_states(true)
     ///         .include_types(true);
-    /// 
+    ///
     ///     let mut query = r.table("simbad").changes(()).build_query(conn);
-    /// 
+    ///
     ///     while let Some(value) = query.try_next().await? {
     ///         response = value.parse::<Vec<ChangesResponse<Value>>>()?;
     ///         
     ///         connection.close(false).await?;
     ///         break;
     ///     }
-    /// 
+    ///
     ///     assert!(response.len() > 0);
     ///     
     ///     Ok(())
@@ -3397,14 +3398,14 @@ impl<'a> Command {
     /// # Command syntax
     ///
     /// ```text
-    /// table.order_by(options) → table_slice
-    /// table.order_by(args!(predicate, options)) → table_slice
+    /// table.order_by(index) → table_slice
+    /// table.order_by(args!(predicate, index)) → table_slice
     /// sequence.order_by(predicate) → array
     /// sequence.order_by(predicates) → array
     /// ```
     ///
     /// Where:
-    /// - options: [OrderByOption](crate::arguments::OrderByOption)
+    /// - index: [index](crate::r::index)
     /// - predicate: `impl Into<String>` | [Func](crate::Func) | [Command](crate::Command)
     /// - predicates: `[predicate; N]`
     ///
@@ -3427,7 +3428,7 @@ impl<'a> Command {
     /// Sorting with an index can be done on arbitrarily large tables,
     /// or after a [between](Self::between) command using the same index.
     /// This applies to both secondary indexes and the primary key
-    /// (e.g., `OrderByOption::default().index("id")`).
+    /// (e.g., `r.index("id")`).
     ///
     /// Sorting functions passed to `order_by` must be deterministic.
     /// You cannot, for instance, order rows using the [random](crate::r::random) command.
@@ -3438,13 +3439,12 @@ impl<'a> Command {
     /// Order all the posts using the index `date`.
     ///
     /// ```
-    /// use neor::arguments::OrderByOption;
     /// use neor::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("posts")
-    ///         .order_by(OrderByOption::default().index("date"))
+    ///         .order_by(r.index("date"))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -3505,13 +3505,12 @@ impl<'a> Command {
     /// Order by date and title.
     ///
     /// ```
-    /// use neor::arguments::OrderByOption;
     /// use neor::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("posts")
-    ///         .order_by(OrderByOption::default().index("date_and_title"))
+    ///         .order_by(r.index("date_and_title"))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -3563,13 +3562,12 @@ impl<'a> Command {
     /// were published on the same date, they will be ordered by title.
     ///
     /// ```
-    /// use neor::arguments::OrderByOption;
     /// use neor::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("posts")
-    ///         .order_by(args!("title", OrderByOption::default().index("date")))
+    ///         .order_by(args!("title", r.index("date")))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -3607,13 +3605,12 @@ impl<'a> Command {
     /// You can efficiently order data on arbitrary expressions using indexes.
     ///
     /// ```
-    /// use neor::arguments::OrderByOption;
     /// use neor::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("posts")
-    ///         .order_by(OrderByOption::default().index("votes"))
+    ///         .order_by(r.index("votes"))
     ///         .run(&conn)
     ///         .await?;
     ///
@@ -3680,13 +3677,12 @@ impl<'a> Command {
     /// Only so many can fit in our Pantheon of heroes.
     ///
     /// ```
-    /// use neor::arguments::OrderByOption;
     /// use neor::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("players")
-    ///         .order_by(OrderByOption::default().index("age"))
+    ///         .order_by(r.index("age"))
     ///         .skip(10)
     ///         .run(&conn)
     ///         .await?;
@@ -3722,13 +3718,12 @@ impl<'a> Command {
     /// Only so many can fit in our Pantheon of heroes.
     ///
     /// ```
-    /// use neor::arguments::OrderByOption;
     /// use neor::{r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("players")
-    ///         .order_by(OrderByOption::default().index("age"))
+    ///         .order_by(r.index("age"))
     ///         .limit(10)
     ///         .run(&conn)
     ///         .await?;
@@ -3803,13 +3798,12 @@ impl<'a> Command {
     /// (The youngest player is at index 0, so those are elements 3-5.)
     ///
     /// ```
-    /// use neor::arguments::OrderByOption;
     /// use neor::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("players")
-    ///         .order_by(OrderByOption::default().index("age"))
+    ///         .order_by(r.index("age"))
     ///         .slice(args!(3, 6))
     ///         .run(&conn)
     ///         .await?;
@@ -3849,17 +3843,16 @@ impl<'a> Command {
     /// We want to include ticket `Y`.
     ///
     /// ```
-    /// use neor::arguments::{OrderByOption, SliceOption, Status};
+    /// use neor::arguments::{SliceOption, Status};
     /// use neor::{args, r, Result};
     ///
     /// async fn example() -> Result<()> {
     ///     let x = 3;
     ///     let y = 6;
-    ///     let order_by_options = OrderByOption::default().index("ticket");
     ///     let slice_options = SliceOption::default().right_bound(Status::Closed);
     ///     let conn = r.connection().connect().await?;
     ///     let response = r.table("users")
-    ///         .order_by(order_by_options)
+    ///         .order_by(r.index("ticket"))
     ///         .slice(args!(x, y, slice_options))
     ///         .run(&conn)
     ///         .await?;

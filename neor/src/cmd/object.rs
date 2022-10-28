@@ -1,7 +1,7 @@
 use ql2::term::TermType;
 
-use crate::Command;
 use crate::command_tools::CommandArg;
+use crate::Command;
 
 pub(crate) fn new<S, T>(values: T) -> Command
 where

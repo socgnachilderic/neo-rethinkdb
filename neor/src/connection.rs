@@ -84,13 +84,13 @@ pub struct Session {
 
 impl Session {
     /// Get connection from session.
-    /// 
+    ///
     /// # Command syntax
     ///
     /// ```text
     /// conn.connection()
     /// ```
-    /// 
+    ///
     /// ## Examples
     ///
     /// Replace a session to run a query.
@@ -101,7 +101,7 @@ impl Session {
     /// async fn example() -> Result<()> {
     ///     let mut session = r.connection().connect().await?;
     ///     let conn = session.connection()?;
-    /// 
+    ///
     ///     let response = r.db_list().run(conn).await?;
     ///     
     ///     // Is Same that

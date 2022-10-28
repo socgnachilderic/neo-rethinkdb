@@ -2,7 +2,6 @@ use neor::{args, r, Result};
 use serde_json::json;
 
 #[tokio::test]
-#[ignore = "work with internet connection"]
 async fn test_http_ops() -> Result<()> {
     let conn = r.connection().connect().await?;
     let response = r.http("http://httpbin.org/get").run(&conn).await?;
@@ -13,7 +12,6 @@ async fn test_http_ops() -> Result<()> {
 }
 
 #[tokio::test]
-#[ignore = "work with internet connection"]
 async fn test_http_ops_with_params() -> Result<()> {
     let conn = r.connection().connect().await?;
     let response = r

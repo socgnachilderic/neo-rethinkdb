@@ -5348,6 +5348,55 @@ impl r {
         cmd::desc::new(args)
     }
 
+    /// Use the index for [order_by](crate::Command::order_by)
+    ///
+    /// # Command syntax
+    /// ```text
+    /// r.index(index_name)
+    /// ```
+    ///
+    /// Where:
+    /// - index_name: `impl Into<String>` | [Command](crate::Command)
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use neor::{r, Converter, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .order_by(r.index("id"))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    ///
+    /// ## Example
+    ///
+    /// ```
+    /// use neor::{r, Converter, Result};
+    ///
+    /// async fn example() -> Result<()> {
+    ///     let conn = r.connection().connect().await?;
+    ///     let response = r.table("simbad")
+    ///         .order_by(r.index(r.desc("id")))
+    ///         .run(&conn)
+    ///         .await?;
+    ///
+    ///     assert!(response.is_some());
+    ///
+    ///     Ok(())
+    /// }
+    /// ```
+    pub fn index(&self, args: impl cmd::index::IndexArg) -> cmd::index::Index {
+        cmd::index::new(args)
+    }
+
     /// max_val are used with some commands such as `between`
     /// to specify absolute upper bounds.
     ///

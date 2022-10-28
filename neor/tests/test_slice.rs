@@ -1,5 +1,4 @@
-use neor::arguments::OrderByOption;
-use neor::{args, Converter, Result};
+use neor::{args, r, Converter, Result};
 
 use common::{set_up, tear_down, Post};
 
@@ -10,7 +9,7 @@ async fn test_slice_data() -> Result<()> {
     let data = Post::get_many_data();
     let (conn, table, table_name) = set_up(true).await?;
     let response: Vec<Post> = table
-        .order_by(OrderByOption::default().index("id"))
+        .order_by(r.index("id"))
         .slice(args!(4, 5))
         .run(&conn)
         .await?

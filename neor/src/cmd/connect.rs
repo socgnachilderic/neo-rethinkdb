@@ -145,15 +145,15 @@ impl ConnectionCommand {
             self.user = db_url.username().to_string().static_string();
             self.host = db_url
                 .host_str()
-                .ok_or(ReqlDriverError::DriverUrl("Host not found.".to_string()))?
+                .ok_or_else(|| ReqlDriverError::DriverUrl("Host not found.".to_string()))?
                 .to_string()
                 .static_string();
             self.port = db_url
                 .port()
-                .ok_or(ReqlDriverError::DriverUrl("Port not found.".to_string()))?;
+                .ok_or_else(|| ReqlDriverError::DriverUrl("Port not found.".to_string()))?;
             self.db = db_url
                 .path_segments()
-                .ok_or(ReqlDriverError::DriverUrl("DB Name not found.".to_string()))?
+                .ok_or_else(|| ReqlDriverError::DriverUrl("DB Name not found.".to_string()))?
                 .next()
                 .unwrap()
                 .to_string()
