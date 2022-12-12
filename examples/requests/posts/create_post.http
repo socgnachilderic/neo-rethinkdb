@@ -1,0 +1,9 @@
+@host=http://localhost:7000
+
+POST {{host}}/api/posts HTTP/1.1
+Content-Type: application/json 
+
+{
+    "title": "first article title",
+    "text": "description for first article"
+}

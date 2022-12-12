@@ -130,10 +130,6 @@ impl Command {
     pub(crate) fn change_feed(&self) -> bool {
         self.change_feed
     }
-
-    // pub(crate) fn into_arg(&self) -> Self {
-    //     Command::new(TermType::Datum).with_arg(self.to_owned())
-    // }
 }
 
 impl From<Datum> for Command {

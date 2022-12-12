@@ -1,0 +1,13 @@
+[package]
+name = "models"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+futures = "0.3.25"
+neor = { path = "../../neor" }
+serde = { workspace = true }
+serde_json = "1.0.89"
+tokio = { version = "1.22.0", features = ["full"] }

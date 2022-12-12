@@ -1,0 +1,3 @@
+@host=http://localhost:7000
+
+GET {{host}}/api/posts HTTP/1.1

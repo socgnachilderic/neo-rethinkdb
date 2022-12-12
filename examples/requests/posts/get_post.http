@@ -1,0 +1,4 @@
+@host=http://localhost:7000
+@id=844e8c7a-85b4-4b2c-b383-683fef4e49a7
+
+GET {{host}}/api/posts/{{id}} HTTP/1.1

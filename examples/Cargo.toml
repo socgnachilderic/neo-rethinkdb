@@ -1,0 +1,9 @@
+[workspace]
+members = [
+    "models",
+
+    "actix-example",
+]
+
+[workspace.dependencies]
+serde = { version = "1.0.148", features = ["derive"] }
